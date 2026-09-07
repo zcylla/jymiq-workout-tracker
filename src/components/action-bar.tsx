@@ -3,6 +3,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chromeShadow, color, fabShadow, radius, text } from '@/theme';
 
+/** The plane the bar occupies, so a `Screen` under it can clear its last row. */
+export function useActionBarHeight() {
+  const insets = useSafeAreaInsets();
+  return BAR_HEIGHT + Math.max(insets.bottom + 8, 30);
+}
+
+const BAR_HEIGHT = 56;
+
 /**
  * kit's `actionbar()`. A pushed screen has no tab bar, so its primary action
  * takes that plane — same geometry as the bar it replaces.
@@ -34,7 +42,7 @@ export function ActionBar({
           onPress={onSecondary}
           style={({ pressed }) => [
             {
-              minHeight: 56,
+              minHeight: BAR_HEIGHT,
               paddingHorizontal: 18,
               alignItems: 'center',
               justifyContent: 'center',
@@ -55,7 +63,7 @@ export function ActionBar({
         style={({ pressed }) => [
           {
             flex: 1,
-            minHeight: 56,
+            minHeight: BAR_HEIGHT,
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: radius.bar,

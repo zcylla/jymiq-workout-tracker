@@ -7,6 +7,8 @@ import { Chevron, Grip } from './icon';
 
 type Props = {
   title: string;
+  /** kit's numbered gutter — the position column on a routine's lifts. */
+  lead?: string;
   /** 15px/400 instead of 17px/500 — a secondary row, like a template to copy. */
   quiet?: boolean;
   /** The mono line under the title. */
@@ -29,12 +31,16 @@ type Props = {
 /** The gap kit puts between the right-hand value and the chevron. */
 const VALUE_GAP = 10;
 
+/** kit's numbered gutter on a lift row. */
+const LEAD_WIDTH = 20;
+
 /**
  * kit's `lrow()`. No fill and no border — 44pt tall so the touch target is real,
  * and whatever wraps it (a RowPlate) carries the containment.
  */
 export function ListRow({
   title,
+  lead,
   quiet = false,
   meta,
   valueLabel,
@@ -60,6 +66,9 @@ export function ListRow({
       ]}
     >
       {grip ? <Grip /> : null}
+      {lead ? (
+        <Text style={[text.meta, { width: LEAD_WIDTH, color: color.dim }]}>{lead}</Text>
+      ) : null}
 
       <View style={{ gap: 3, flexShrink: 1 }}>
         <Text style={quiet ? text.rowName : text.rowTitle} numberOfLines={1}>

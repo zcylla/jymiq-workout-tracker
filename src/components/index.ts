@@ -1,4 +1,4 @@
-export { ActionBar } from './action-bar';
+export { ActionBar, useActionBarHeight } from './action-bar';
 export { Chip, ChipStrip } from './chip';
 export { Delta } from './delta';
 export { Field } from './field';
