@@ -15,6 +15,7 @@ import {
   SearchField,
   useTabBarHeight,
 } from '@/components';
+import { exerciseStill } from '@/data/exercise-art';
 import { exerciseListQuery } from '@/data/queries/exercises';
 import type { Equipment } from '@/data/schema';
 import { color, space, text } from '@/theme';
@@ -95,6 +96,7 @@ export default function LibraryScreen() {
         <RowPlate onPress={() => router.push(`/exercise/${item.id}`)}>
           <ListRow
             quiet
+            art={exerciseStill(item.id)}
             title={item.name}
             meta={`${item.equipment.toUpperCase()} · ${item.kind.toUpperCase()}`}
           />
