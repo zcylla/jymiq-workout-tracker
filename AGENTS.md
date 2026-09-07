@@ -59,6 +59,18 @@ next, and the environment facts that break the build if missed (Gradle needs **J
 - Changing `babel.config.js`, `metro.config.js` or a config plugin means a native rebuild, and
   `npx expo start -c` — a stale Metro cache fails as wrong output, not as an error.
 
+## Tooling that will reject your work
+
+- **Conventional commits are enforced.** lefthook's `commit-msg` hook runs commitlint, and the
+  scope must be one of `theme components icons app data lib dev design build deps`
+  (`commitlint.config.js`). Single-line messages, no body, no trailers.
+- **Biome formats, ESLint lints.** Biome owns formatting only; ESLint keeps the React Native,
+  React Compiler and Expo rules plus the custom `somethingSV` rule, which Biome cannot express.
+  `src/theme/type.ts` has a `lineWidth: 110` override so the type ramp stays a one-line-per-step
+  table — that is the point of that file.
+- `pre-commit` runs Biome and `tsc`; `npm run check` runs format, typecheck, lint, the icon style
+  check and the tests.
+
 ## Commands
 
 ```bash

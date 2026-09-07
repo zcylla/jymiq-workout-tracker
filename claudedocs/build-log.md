@@ -3,7 +3,7 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-06, after Phase 4.
+Last updated 2026-09-06, mid Phase 5.
 
 ---
 
@@ -28,8 +28,38 @@ computed features in v1.
 | **2 — The design system** | `kit.py` translated into `src/components/`. **Verified on device against Lab 34 A1.** |
 | **3 — Data and maths** | `src/lib/**` (23 tests, green) and the drizzle schema; migrations generated and **verified running on device**. |
 | **4 — The navigation shell** | Headless `expo-router/ui` tabs behind the W2 bar. **Verified on device**: tabs switch, a push loses the bar, live takes over, back returns to Today. |
+| **5 — The real screens** | **In progress.** Seed, queries and the Library are on the device; three screens remain. |
 
-Phase 5 (the real screens) has not started.
+### Where Phase 5 got to
+
+Done and on the device: the seed (1295 exercises), `src/data/queries/{exercises,routines}.ts`,
+`src/lib/id.ts`, the `Chip`/`ChipStrip`/`SearchField`/`Field`/`Toggle`/`ActionBar` primitives, the
+Session hub (`(tabs)/session/`) and the **Library** (Lab 35 B1) reading real rows with live search
+and equipment filters.
+
+**Not done:** routine detail (Lab 34 A2), custom exercise (Lab 35 B3), and
+`src/data/mutations/` — nothing writes to the database yet. Exercise detail
+(`app/exercise/[id].tsx`) renders but is unverified on device.
+
+**Two structural findings worth keeping:**
+
+1. **The Session tab is a hub, not a screen.** Lab 34 A1 (Routines) and Lab 35 B1 (Library) are
+   both drawn *with the tab bar*, so they are views of the Session tab, not pushed detail screens.
+   That needs a `Stack` nested inside the tab (`(tabs)/session/_layout.tsx`); a sibling of `(tabs)`
+   would lose the bar. A true detail screen — exercise, routine — stays a sibling and gets an
+   `ActionBar` on the plane the tab bar vacates.
+2. **Content scrolls under the tab bar**, so any scroller inside a tab must pad by
+   `useTabBarHeight()` to clear its last row. `Screen` takes a `bottomInset` for this. The Library
+   cannot use `Screen` at all — it is ~1300 rows, and FlashList cannot live inside a ScrollView, so
+   it is the scroller with the header in `ListHeaderComponent`.
+
+**`useLiveQuery`** (`drizzle-orm/expo-sqlite`) is the read path: the query modules export
+*builders*, not results, and the hook re-runs them when the tables change — so a mutation refreshes
+every list without anything invalidating anything.
+
+**Session-derived numbers are absent, not faked.** BEST, TOP SET, e1RM, rep maxes, LAST THREE and
+volume deltas all need session history, which Phase 6 writes. `Rail` and `Chart` are deferred to
+Phase 7 for the same reason: both need a series.
 
 ### The seeded library
 
@@ -161,7 +191,10 @@ that, and W5's minimise-on-scroll, are still open.
 
 ## Next, in order
 
-1. **Phase 5 — library, exercise detail, routines, routine detail, custom exercise.**
+1. **Finish Phase 5** — routine detail (Lab 34 A2), custom exercise (Lab 35 B3), and
+   `src/data/mutations/`. Verify `app/exercise/[id].tsx` on the device; it has never been opened.
+   Confirm on device that the tab-bar bottom inset actually clears the last row — the fix is
+   written and typechecked but was not re-verified.
 2. **Phase 6 — the live session.** Test the Android back-gesture conflict *first*, before building
    the rest of the screen. The phone is on gesture navigation, which is the configuration that
    matters.
@@ -181,6 +214,21 @@ Phase 2 did not build.
   reads or writes it except the dev screen.
 - **Settings storage** is decided (`expo-sqlite/kv-store`) but not written.
 - Still open on the design side and not blocking: the calendar's plate, the body map, the IA.
+- **Supabase is agreed but not started.** Architecture settled: **local-first** — SQLite stays the
+  source of truth so the app works in a basement gym, and Supabase is the sync/backup/multi-device
+  layer. Still needed from the owner: project URL, the anon/publishable key (never the
+  `service_role` key), the auth decision (anonymous / magic link / one account), the project ref,
+  and a personal access token if migrations are to run via the CLI. The Postgres mirror will need
+  two columns SQLite does not: `user_id` for RLS and `deleted_at` for tombstones — sync cannot
+  represent a delete without them, and retrofitting either means a migration on real data.
+- **Demonstration media is unresolved.** Researched: the only genuinely shippable free source is
+  **`bryllim/workout-guide`** — white-on-transparent SVG line art, 3 motion frames, 302 exercises
+  (~23% coverage), CC-BY-SA 4.0. ShareAlike triggers only on *Adapted Material*, so bundling the
+  SVGs unmodified is attribution-only and never touches the app's own licence; tint at render time
+  rather than editing files. Skia can render SVG, so it may need no new dependency.
+  **Do not use free-exercise-db's images** — the maintainer disclaims knowing their origin and
+  upstream admits scraping. Gym visual's media (in the dataset we seed from) is licensed per use
+  and was ruled too expensive.
 
 ---
 
