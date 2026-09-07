@@ -277,7 +277,10 @@ plan said to avoid.
    is not there. Two of them need Postgres 15+'s `on delete set null (column_list)` — a bare
    `SET NULL` would try to null `user_id` as well, which is NOT NULL, and fail the cascade.
 
-`user_id` also carries `default auth.uid()`, so a sync insert cannot omit it.
+`user_id` also carries `default auth.uid()`, so a sync insert cannot omit it. `force row level
+security` was considered and left off: `service_role` has `bypassrls` so it would not be constrained
+either way, and all `force` adds is filtering the owner's own connection — which is the one used to
+run migrations and to look at the data.
 
 **RLS** is on for all eight tables, one policy each:
 
