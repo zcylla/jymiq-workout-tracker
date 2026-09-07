@@ -1,0 +1,43 @@
+import { Pressable, Text, View } from 'react-native';
+
+import { color, size, text } from '@/theme';
+
+import { Chevron } from './icon';
+
+/**
+ * kit's `field()`: a mono label over a 17px value, 44pt tall, chevron if it
+ * opens a picker. No box and no underline — §0 is explicit that a field is
+ * type and space, not a control drawn around them.
+ */
+export function Field({
+  label,
+  value,
+  placeholder = false,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  /** The value is a prompt, not an answer yet. */
+  placeholder?: boolean;
+  onPress?: () => void;
+}) {
+  const body = (
+    <View style={{ gap: 6, paddingVertical: 7 }}>
+      <Text style={text.label}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: size.hit }}>
+        <Text style={[text.field, placeholder && { color: color.dim }]} numberOfLines={1}>
+          {value}
+        </Text>
+        <View style={{ flex: 1 }} />
+        {onPress ? <Chevron /> : null}
+      </View>
+    </View>
+  );
+
+  if (!onPress) return body;
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => (pressed ? { opacity: 0.7 } : null)}>
+      {body}
+    </Pressable>
+  );
+}
