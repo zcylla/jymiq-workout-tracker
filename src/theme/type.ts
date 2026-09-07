@@ -34,6 +34,9 @@ export const text = {
   rowTitle: { ...sans(500), fontSize: 17, lineHeight: lh(17), color: color.hi },
   rowName: { ...sans(400), fontSize: 15, lineHeight: lh(15), color: color.hi },
 
+  /** kit's field value — 17px regular, distinct from rowTitle's medium. */
+  field: { ...sans(400), fontSize: 17, lineHeight: lh(17), color: color.hi },
+
   /** Model output and other sentences that carry a verdict. */
   lead: { ...sans(400), fontSize: 17, lineHeight: 25, color: color.hi },
   body: { ...sans(400), fontSize: 15, lineHeight: 23, color: color.mid },

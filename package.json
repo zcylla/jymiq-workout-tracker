@@ -57,7 +57,8 @@
     "check": "npm run typecheck && npm run lint && npm run icons:check && npm test",
     "db:gen": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
-    "icons:check": "node --experimental-strip-types scripts/check-icons.mjs"
+    "icons:check": "node --experimental-strip-types scripts/check-icons.mjs",
+    "seed:gen": "node scripts/build-seed.mjs"
   },
   "private": true
 }

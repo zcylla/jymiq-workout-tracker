@@ -128,6 +128,12 @@ export const motion = {
  */
 export const wash = {
   track: 'rgba(255,255,255,0.08)',
+  /** A field's ground, and a chip that is off. Not a plate — no lit edge. */
+  field: 'rgba(255,255,255,0.05)',
+  /** A toggle's track when off. */
+  off: 'rgba(255,255,255,0.10)',
+  /** A chip that is on. One step up from `accent`, which the boards use for pills. */
+  chip: 'rgba(228,198,140,0.15)',
   accent: 'rgba(228,198,140,0.13)',
   done: 'rgba(159,174,58,0.16)',
   live: 'rgba(223,84,65,0.14)',
