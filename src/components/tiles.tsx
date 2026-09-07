@@ -18,7 +18,23 @@ export type Tile = {
  * Stat tiles, two per row, never four. Order inside a tile is label → number →
  * visual; a comparison attaches to the number it describes, never its own tile.
  */
-export function StatTiles({ items, columns = 2 }: { items: Tile[]; columns?: number }) {
+export function StatTiles({
+  items,
+  columns = 2,
+  surface = 'panel',
+}: {
+  items: Tile[];
+  columns?: number;
+  /**
+   * The surface the tiles sit on, not the tiles' own fill — a tile takes the
+   * other colour so it reads as a step. Raised tiles on a raised plate are
+   * invisible, which is kit's reason for inverting it here rather than at the
+   * call site.
+   */
+  surface?: 'panel' | 'raised';
+}) {
+  const fill = surface === 'raised' ? color.panel : color.raised;
+
   // Chunked rather than wrapped: flexWrap would stretch a short last row.
   const rows: Tile[][] = [];
   for (let i = 0; i < items.length; i += columns) rows.push(items.slice(i, i + columns));
@@ -35,7 +51,7 @@ export function StatTiles({ items, columns = 2 }: { items: Tile[]; columns?: num
                 gap: 5,
                 paddingVertical: 11,
                 paddingHorizontal: 12,
-                backgroundColor: color.raised,
+                backgroundColor: fill,
                 borderRadius: radius.tile,
                 borderCurve: 'continuous',
               }}
