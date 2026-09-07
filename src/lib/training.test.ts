@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { estimate1RM, loadForReps, percentOf1RM } from './e1rm.ts';
 import { detectSessionVolumePr, detectSetPrs, type PrBaseline } from './pr.ts';
 import { DEFAULT_INVENTORY, solvePlates, warmupRamp } from './plates.ts';
+import { DEFAULT_REST_SEC, resolveRestSec } from './rest.ts';
 import { LOAD_SCALE, RPE_SCALE, indexOf, valueAt } from './scale.ts';
 import { elapsedSec, formatClock, formatDuration, formatRest, restRemainingSec } from './time.ts';
 import { formatTonnage, setVolume, topSet, totalVolume, type SetLike } from './volume.ts';
@@ -246,4 +247,14 @@ test('clocks format and rest is derived from wall clock', () => {
   assert.equal(restRemainingSec(91_000, 1_000), 90);
   assert.equal(restRemainingSec(null), 0);
   assert.equal(elapsedSec(0, 0, 65_000), 65);
+});
+
+// ---------------------------------------------------------------- rest ----
+test('rest resolves routine over exercise over the kind default', () => {
+  assert.equal(resolveRestSec(240, 120, 'compound'), 240);
+  assert.equal(resolveRestSec(null, 120, 'compound'), 120);
+  assert.equal(resolveRestSec(null, null, 'compound'), DEFAULT_REST_SEC.compound);
+  assert.equal(resolveRestSec(undefined, undefined, 'isolation'), DEFAULT_REST_SEC.isolation);
+  // Zero is a choice ("no rest"), not an absent value, so it must not fall through.
+  assert.equal(resolveRestSec(0, 120, 'compound'), 0);
 });
