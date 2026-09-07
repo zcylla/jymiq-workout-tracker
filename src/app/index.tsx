@@ -22,6 +22,9 @@ export default function TodayScreen() {
       <Link href="/dev/fonts" style={{ marginTop: space.between }}>
         <Text style={text.body}>Type ramp proof sheet →</Text>
       </Link>
+      <Link href="/dev/db">
+        <Text style={text.body}>Database →</Text>
+      </Link>
     </View>
   );
 }
