@@ -9,7 +9,7 @@ export function Delta({ value, positive = true }: { value: string; positive?: bo
   const tone = positive ? color.done : color.live;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-      <Icon name={positive ? 'up' : 'down'} size={9} tone={tone} />
+      <Icon name={positive ? 'up' : 'down'} tone={tone} />
       <Text style={[text.numSm, { color: tone }]}>{value}</Text>
     </View>
   );

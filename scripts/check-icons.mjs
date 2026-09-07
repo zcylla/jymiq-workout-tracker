@@ -16,20 +16,20 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'icons', 'ui');
+import { ICON_SIZE as DRAWN_AT } from '../src/components/icon-sizes.ts';
 
-/** The size each icon is actually rendered at. Adding an icon means adding it here. */
-const DRAWN_AT = {
-  today: 22, session: 22, strength: 22, load: 22, search: 22,
-  gear: 22, back: 22, plus: 22, cal: 22, dots: 22,
-  chev: 13, up: 9, down: 9,
-};
+const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'icons', 'ui');
 
 /** kit's on-screen stroke widths run 1.38 (chev) to 1.80 (back). */
 const MIN_PT = 1.3;
 const MAX_PT = 1.9;
 
-const attr = (svg, name) => svg.match(new RegExp(`${name}="([^"]*)"`))?.[1];
+/**
+ * Read an attribute off the ROOT <svg> tag only. Scanning the whole file would
+ * let a child carrying stroke-linecap="round" satisfy the root's requirement,
+ * which is exactly the shape a tool-exported icon arrives in.
+ */
+const attr = (root, name) => root.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1];
 const fail = [];
 
 const files = readdirSync(dir).filter((f) => f.endsWith('.svg')).sort();
@@ -43,14 +43,20 @@ for (const name of names) {
   const svg = readFileSync(join(dir, `${name}.svg`), 'utf8');
   const say = (msg) => fail.push(`${name}.svg: ${msg}`);
 
-  const box = attr(svg, 'viewBox')?.match(/^0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)$/);
+  const root = svg.match(/<svg\b[^>]*>/)?.[0];
+  if (!root) {
+    say('no <svg> element — not an SVG');
+    continue;
+  }
+
+  const box = attr(root, 'viewBox')?.match(/^0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)$/);
   if (!box) say('viewBox must be "0 0 N N"');
   else if (box[1] !== box[2]) say(`viewBox must be square, got ${box[1]}x${box[2]}`);
 
-  if (attr(svg, 'fill') !== 'none') say('root needs fill="none" — icons are strokes, not shapes');
-  if (attr(svg, 'stroke') !== '#000000') say('root needs stroke="#000000" — one layer, recoloured at runtime');
-  if (attr(svg, 'stroke-linecap') !== 'round') say('root needs stroke-linecap="round"');
-  if (attr(svg, 'stroke-linejoin') !== 'round') say('root needs stroke-linejoin="round"');
+  if (attr(root, 'fill') !== 'none') say('root needs fill="none" — icons are strokes, not shapes');
+  if (attr(root, 'stroke') !== '#000000') say('root needs stroke="#000000" — one layer, recoloured at runtime');
+  if (attr(root, 'stroke-linecap') !== 'round') say('root needs stroke-linecap="round"');
+  if (attr(root, 'stroke-linejoin') !== 'round') say('root needs stroke-linejoin="round"');
 
   const shapes = [...svg.matchAll(/<(\w+)/g)].map((m) => m[1]).filter((t) => t !== 'svg');
   const bad = [...new Set(shapes.filter((t) => t !== 'path'))];
@@ -61,7 +67,7 @@ for (const name of names) {
   if (size === undefined) {
     say('not in DRAWN_AT — add it with the size this icon is rendered at');
   } else if (box) {
-    const width = Number(attr(svg, 'stroke-width'));
+    const width = Number(attr(root, 'stroke-width'));
     const onScreen = (width / Number(box[1])) * size;
     if (!(onScreen >= MIN_PT && onScreen <= MAX_PT)) {
       say(

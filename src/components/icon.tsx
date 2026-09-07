@@ -4,6 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import glyphMap from '@/../assets/icons/nanoicons/WorkoutIcons.glyphmap.json';
 import { color, type Ink } from '@/theme';
 
+import { ICON_SIZE } from './icon-sizes';
+
 /**
  * The icon set: Lucide paths, re-stroked to the boards' 1.6/22 ratio and
  * compiled to a subsetted font at prebuild by react-native-nano-icons.
@@ -21,22 +23,26 @@ const NanoIcon = createNanoIconSet(glyphMap);
 
 export type IconName = keyof typeof glyphMap.i;
 
+// Fails to compile if the font gains an icon that has no declared size.
+const SIZE: Record<IconName, number> = ICON_SIZE;
+
 export function Icon({
   name,
-  size = 22,
+  size,
   tone = color.lo,
 }: {
   name: IconName;
+  /** Defaults to the size the icon was drawn for — override only with a reason. */
   size?: number;
   /** Ink, never a raw string — the compiler is what keeps hexes out of screens. */
   tone?: Ink;
 }) {
-  return <NanoIcon name={name} size={size} color={tone} />;
+  return <NanoIcon name={name} size={size ?? SIZE[name]} color={tone} />;
 }
 
 /** The row and field chevron. Drawn at 13pt, so its glyph carries a heavier stroke. */
 export function Chevron({ tone = color.lo }: { tone?: Ink }) {
-  return <Icon name="chev" size={13} tone={tone} />;
+  return <Icon name="chev" tone={tone} />;
 }
 
 const grip = StyleSheet.create({

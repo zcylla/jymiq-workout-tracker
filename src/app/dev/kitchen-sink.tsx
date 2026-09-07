@@ -17,6 +17,7 @@ import {
   Section,
   StatTiles,
 } from '@/components';
+import { ICON_SIZE } from '@/components/icon-sizes';
 import { color, space, text } from '@/theme';
 
 /**
@@ -42,12 +43,12 @@ export default function KitchenSinkScreen() {
         />
       </Section>
 
-      <Section label="ICONS · 22PT" plated={false}>
+      <Section label="ICONS · AT THE SIZE EACH IS DRAWN" plated={false}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 18 }}>
           {NAMES.map((n) => (
-            <View key={n} style={{ alignItems: 'center', gap: 6, width: 62 }}>
+            <View key={n} style={{ alignItems: 'center', gap: 6, width: 78 }}>
               <Icon name={n} />
-              <Text style={text.meta}>{n}</Text>
+              <Text style={text.meta}>{`${n} ${ICON_SIZE[n]}`}</Text>
             </View>
           ))}
         </View>
