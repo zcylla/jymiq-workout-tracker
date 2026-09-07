@@ -1,4 +1,4 @@
-# Workout tracker
+# Jymiq
 
 Expo SDK 57 / RN 0.86 / React 19, New Architecture, React Compiler on, typed routes on.
 Android first (there is no iOS device to verify against); iOS paths stay isolated but untested.

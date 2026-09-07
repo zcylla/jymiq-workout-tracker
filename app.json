@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Workout",
-    "slug": "workout-tracker",
+    "name": "Jymiq",
+    "slug": "jymiq",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "workouttracker",
+    "scheme": "jymiq",
     "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -18,7 +18,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.zcylla.workouttracker"
+      "package": "com.zcylla.jymiq"
     },
     "web": {
       "output": "static",

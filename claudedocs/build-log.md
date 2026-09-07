@@ -44,7 +44,7 @@ Verified on device — `/dev/db` reads EXERCISES 672.
 
 ### What is on the device right now
 
-A dev build of `com.zcylla.workouttracker` on a Nothing Phone (Android 15, API 35, gesture
+A dev build of `com.zcylla.jymiq` on a Nothing Phone (Android 15, API 35, gesture
 navigation, 411 × 914 dp). It shows a placeholder Today screen with links to four dev screens:
 
 - `/dev/fonts` — the type-ramp proof sheet. **This is Phase 1's gate**, and it passed: all seven
