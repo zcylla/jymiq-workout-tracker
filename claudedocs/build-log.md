@@ -3,7 +3,7 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-06, after Phase 2.
+Last updated 2026-09-06, after Phase 4.
 
 ---
 
@@ -27,8 +27,9 @@ computed features in v1.
 | **1 — Foundation** | Scaffold stripped, deps installed, build config written, Geist vendored, tokens and type ramp written. **Verified on device.** |
 | **2 — The design system** | `kit.py` translated into `src/components/`. **Verified on device against Lab 34 A1.** |
 | **3 — Data and maths** | `src/lib/**` (23 tests, green) and the drizzle schema; migrations generated and **verified running on device**. |
+| **4 — The navigation shell** | Headless `expo-router/ui` tabs behind the W2 bar. **Verified on device**: tabs switch, a push loses the bar, live takes over, back returns to Today. |
 
-Phase 4 (the navigation shell) has not started.
+Phase 5 (the real screens) has not started.
 
 ### What is on the device right now
 
@@ -41,6 +42,9 @@ navigation, 411 × 914 dp). It shows a placeholder Today screen with links to fo
 - `/dev/db` — row counts per table, proving migrations ran.
 - `/dev/kitchen-sink` — every primitive in every state. **This is Phase 2's gate.**
 - `/dev/lab34-a1` — the routines screen rebuilt from the primitives alone, for board comparison.
+
+The four tabs are placeholders apart from Today's dev links. `/library` is a stub whose only job is
+to prove a pushed route loses the bar; `/live` is a stub proving the takeover.
 
 ### Three risks closed by that build, not by argument
 
@@ -110,18 +114,43 @@ together.
 
 ---
 
+## What Phase 4 settled
+
+`src/app/(tabs)/_layout.tsx` runs the headless navigator; `src/components/tab-bar.tsx` draws it.
+Measured against kit's `nav()`: bar margins 16.00pt, bar height 59.81 against 60, start button
+52.19 x 51.81 against 52, and 30.10pt of air beneath it. Verified on device: the four tabs switch,
+`/library` pushes over the bar and loses it, the start button opens `/live` as a takeover, and
+Android back returns to Today (`backBehavior: 'firstRoute'`).
+
+**Three things about `expo-router/ui` that are not guessable** — read
+`node_modules/expo-router/build/ui/*` over any blog post, and note the published guide documents a
+`reset` prop that does not exist in 57.0.19:
+
+1. **The hidden `TabList` is load-bearing.** `Tabs` walks its children for *literal* `TabTrigger`
+   elements inside a *literal* `TabList` — an identity check. Wrapping a declaration trigger in a
+   component of ours registers nothing and says nothing. The triggers that *draw* the bar can live
+   anywhere under `Tabs`, which is the whole trick.
+2. **`style` on `Tabs` replaces rather than merges**, so `flex: 1` has to be restated or the
+   navigator collapses. `TabList` merges correctly, which makes the inconsistency easy to miss.
+3. **`asChild` goes through a Radix slot that merges style by object spread**, so a `style={[a, b]}`
+   array on the child element is silently destroyed. Style the child from inside its own component.
+
+Safe area is entirely ours — neither `Tabs` nor `TabSlot` touches insets. The bar and `TabSlot` are
+flex siblings, so content stops above the bar rather than scrolling under it behind kit's fade;
+that, and W5's minimise-on-scroll, are still open.
+
+---
+
 ## Next, in order
 
-1. **Phase 4 — the navigation shell.** Headless `expo-router/ui` tabs with the W2 bar (hidden
-   `TabList` + custom bar of `TabTrigger`s), detail routes as siblings of `(tabs)` so they lose the
-   bar, live session as its own root route.
-2. **Phase 5 — library, exercise detail, routines, routine detail, custom exercise.**
-3. **Phase 6 — the live session.** Test the Android back-gesture conflict *first*, before building
+1. **Phase 5 — library, exercise detail, routines, routine detail, custom exercise.**
+2. **Phase 6 — the live session.** Test the Android back-gesture conflict *first*, before building
    the rest of the screen. The phone is on gesture navigation, which is the configuration that
    matters.
-4. **Phase 7 — summary, session detail, history, trimmed settings, export.**
+3. **Phase 7 — summary, session detail, history, trimmed settings, export.**
 
-Today (Lab 45 W3) can be built any time after Phase 2, since it needs the primitives.
+Today (Lab 45 W3) can be built any time now — it needs the week strip and the rail, which
+Phase 2 did not build.
 
 ---
 
