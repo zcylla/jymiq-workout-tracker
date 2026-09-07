@@ -255,6 +255,9 @@ export const personalRecords = sqliteTable(
 );
 
 export type Exercise = typeof exercises.$inferSelect;
+/** The library's filter vocabulary, derived from the column so the two cannot drift. */
+export type Equipment = Exercise['equipment'];
+export type ExerciseKind = Exercise['kind'];
 export type Routine = typeof routines.$inferSelect;
 export type RoutineExercise = typeof routineExercises.$inferSelect;
 export type Session = typeof sessions.$inferSelect;

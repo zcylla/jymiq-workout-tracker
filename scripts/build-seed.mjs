@@ -128,6 +128,9 @@ const ISOLATION_TARGETS = new Set([
 /** Not lifts. */
 const SKIP_BODY_PART = new Set(['cardio']);
 
+/** The source stores names lowercase ("barbell full squat"); the boards title-case. */
+const title = (s) => s.replace(/[\p{L}\p{N}]+/gu, (w) => w[0].toUpperCase() + w.slice(1));
+
 const slug = (s) =>
   s
     .toLowerCase()
@@ -193,7 +196,7 @@ for (const e of raw) {
 
   rows.push({
     id,
-    name: e.name,
+    name: title(e.name),
     equipment,
     kind,
     barWeightKg: equipment === 'barbell' ? 20 : null,

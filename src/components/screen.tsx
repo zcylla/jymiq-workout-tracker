@@ -11,7 +11,14 @@ import { color, space } from '@/theme';
  * Content scrolls under the chrome rather than stopping short of it, so the
  * bottom pad is a section's worth of air; Phase 4's tab bar sits on top of it.
  */
-export function Screen({ children }: { children: ReactNode }) {
+export function Screen({
+  children,
+  bottomInset = 0,
+}: {
+  children: ReactNode;
+  /** Height of any chrome the content scrolls under — the tab bar, or an action bar. */
+  bottomInset?: number;
+}) {
   const insets = useSafeAreaInsets();
   return (
     <ScrollView
@@ -19,7 +26,7 @@ export function Screen({ children }: { children: ReactNode }) {
       contentContainerStyle={{
         paddingHorizontal: space.pad,
         paddingTop: insets.top,
-        paddingBottom: insets.bottom + space.between,
+        paddingBottom: insets.bottom + space.between + bottomInset,
       }}
       showsVerticalScrollIndicator={false}
     >

@@ -16,6 +16,13 @@ import { Icon, type IconName } from './icon';
  * RenderEffect re-capture, measured at +98% frame duration with moving content
  * behind it, which is exactly a bar over a scrolling list.
  */
+/** Plate (4 + 52 + 4) plus the air beneath it. Content scrolls under the bar,
+ *  so any scroller inside a tab must pad by this much to clear its last row. */
+export function useTabBarHeight() {
+  const insets = useSafeAreaInsets();
+  return 60 + Math.max(insets.bottom + 8, 30);
+}
+
 export function TabBar({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (

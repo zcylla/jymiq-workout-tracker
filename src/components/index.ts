@@ -14,4 +14,4 @@ export { ScreenHeader } from './screen-header';
 export { Section } from './section';
 export { StatTiles, type Tile } from './tiles';
 export { Toggle } from './toggle';
-export { StartButton, TabBar, TabItem } from './tab-bar';
+export { StartButton, TabBar, TabItem, useTabBarHeight } from './tab-bar';
