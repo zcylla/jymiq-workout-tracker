@@ -5,7 +5,7 @@
 -- matched in from hasaneyldrm/exercises-dataset and yuhonas/free-exercise-db,
 -- both MIT text. No image from either of those repos is used.
 --
--- INSERT OR IGNORE so a re-run is harmless. Do not hand-edit: run `npm run seed:gen`.
+-- INSERT OR IGNORE so a re-run is harmless. Do not hand-edit: run `pnpm seed:gen`.
 --
 -- The header sits INSIDE the first statement's chunk on purpose. Drizzle splits
 -- this file on its breakpoint marker, and a chunk holding only comments prepares

@@ -4,7 +4,7 @@
  *
  * The icons are hand-drawn (ported from claudedocs/design-labs/kit.py) rather
  * than taken from a library, so nothing outside this file enforces that a new
- * one looks like the others. This does: it is wired into `npm run check`, so an
+ * one looks like the others. This does: it is wired into `pnpm check`, so an
  * off-style icon fails the build instead of quietly shipping.
  *
  * The load-bearing rule is the last one. Every icon is authored in its own

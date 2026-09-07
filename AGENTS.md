@@ -42,10 +42,10 @@ next, and the environment facts that break the build if missed (Gradle needs **J
   in a square box in the same idiom (strokes only, round caps and joins, `fill="none"`,
   `stroke="#000000"`, `<path>` only — convert `<circle>`/`<rect>` to path data). Then add it to
   `ICON_SIZE` in `src/components/icon-sizes.ts` with the size it is rendered at, run
-  `npx expo prebuild` **and a native rebuild** — the plugin fingerprints the folder, so a Metro
+  `pnpm expo prebuild` **and a native rebuild** — the plugin fingerprints the folder, so a Metro
   reload is not enough. Skipping the rebuild fails **silently as the wrong glyphs**: codepoints are
   assigned alphabetically, so adding one icon renumbers every later one and the stale font on the
-  device draws a clock where a chart should be. `npm run check` runs `scripts/check-icons.mjs`, which fails on an off-style or undeclared
+  device draws a clock where a chart should be. `pnpm check` runs `scripts/check-icons.mjs`, which fails on an off-style or undeclared
   icon. **The constant is the on-screen stroke width, not the stroke value**: the box is chosen to
   suit the render size, so a 16-box chevron drawn at 13pt carries a 1.7 stroke and a 22-box icon at
   22pt carries 1.6, and both read as the same weight. There is no runtime weight prop —
@@ -58,7 +58,7 @@ next, and the environment facts that break the build if missed (Gradle needs **J
   Two or three plated things per screen is the budget.
 - Every touchable is at least 44pt. Read-only table rows are 34.
 - Changing `babel.config.js`, `metro.config.js` or a config plugin means a native rebuild, and
-  `npx expo start -c` — a stale Metro cache fails as wrong output, not as an error.
+  `pnpm expo start -c` — a stale Metro cache fails as wrong output, not as an error.
 
 ## Tooling that will reject your work
 
@@ -69,19 +69,25 @@ next, and the environment facts that break the build if missed (Gradle needs **J
   React Compiler and Expo rules plus the custom `somethingSV` rule, which Biome cannot express.
   `src/theme/type.ts` has a `lineWidth: 110` override so the type ramp stays a one-line-per-step
   table — that is the point of that file.
-- `pre-commit` runs Biome and `tsc`; `npm run check` runs format, typecheck, lint, the icon style
+- `pre-commit` runs Biome and `tsc`; `pnpm check` runs format, typecheck, lint, the icon style
   check and the tests.
 
 ## Commands
 
+**The package manager is pnpm**, pinned by `packageManager` in `package.json`. Do not run `npm` or
+`yarn` against this repo — `.npmrc`'s `node-linker=hoisted` and `package.json`'s
+`pnpm.onlyBuiltDependencies` are both load-bearing for the native build, and neither has an npm
+equivalent. See `claudedocs/build-log.md` for the three ways the build fails without them.
+
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk   # Gradle needs 21; the machine defaults to 11
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk    # Gradle needs 21; the machine defaults to 11
 export ANDROID_HOME=$HOME/Android/Sdk
 
-npm run check                  # typecheck + lint + unit tests
-npx expo run:android           # full dev build onto a connected phone (no emulator installed)
-npx expo start --dev-client    # then just Metro
-adb reverse tcp:8081 tcp:8081  # phone reaches Metro over USB
-npm run db:gen                 # regenerate migrations after editing src/data/schema.ts
-npx expo customize tsconfig.json   # regenerate typed-route types without starting Metro
+pnpm install                        # also fetches the 36 MB of exercise illustrations
+pnpm check                          # format + typecheck + lint + icon style + unit tests
+pnpm expo run:android               # full dev build onto a connected phone (no emulator installed)
+pnpm expo start --dev-client        # then just Metro
+adb reverse tcp:8081 tcp:8081       # phone reaches Metro over USB
+pnpm db:gen                         # regenerate migrations after editing src/data/schema.ts
+pnpm expo customize tsconfig.json   # regenerate typed-route types without starting Metro
 ```
