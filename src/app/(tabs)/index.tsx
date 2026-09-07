@@ -41,6 +41,11 @@ export default function TodayScreen() {
               <ListRow title="Lab 34 A1" meta="routines, from the primitives" />
             </RowPlate>
           </Link>
+          <Link href="/dev/lab33" asChild>
+            <RowPlate onPress={() => {}}>
+              <ListRow title="Lab 33" meta="live workout inputs" />
+            </RowPlate>
+          </Link>
           <Link href="/dev/fonts" asChild>
             <RowPlate onPress={() => {}}>
               <ListRow title="Type ramp" meta="phase 1's gate" />
