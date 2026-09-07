@@ -125,6 +125,7 @@ Claude Design project **`85c2eefb-a239-4501-83a0-a24a4ccd7cae`** ("Workout Sessi
 | `Lab 41 — What Gets A Plate.dc.html` | The plating rule: containment only for content with no boundary of its own |
 | `Lab 42 — One Plate Per Row.dc.html` | **Current containment rule.** P5 (row plates + one plated hero + plain prose) and P7 (set log with no containment) chosen |
 | `Lab 43 — Today And The Android Chrome.dc.html` | **The last screen, and the platform switch.** Today as designed, on v1 data, and empty; the tab bar as glass vs two opaque plates |
+| `Lab 44 — Today With A Face.dc.html` | **Open.** The champagne card returns: filled accent hero, a week ring against a real target, and the quieter alternative |
 
 **Read these five first.** Lab 22 (palette), Lab 23 (navigation), Lab 33 (live screen), Lab 40 (plate treatment), Lab 42 (containment). Everything before them is the reasoning that got there; those four are the state.
 | `Workout Session A Telemetry / B Ledger / C Focus / D Editorial` | Earlier round. **Superseded** — user found them over-simplified. Keep for reference, don't build on. |
@@ -1158,3 +1159,43 @@ Boards are viewed with `python3 -m http.server` plus a headless screenshot — `
 - Show, don't describe: when offering style options, **build visual samples** rather than asking the user to choose from prose. They asked for this explicitly.
 - Density is the recurring failure mode. When in doubt, add information rather than remove it — the champagne file is the floor, not the ceiling.
 - State findings honestly, including contrast numbers and what was traded away.
+
+---
+
+## 8r. Round twenty-one — the card with a face, and the build's first gate
+
+**The note on Lab 43:** Today is monotone, and the champagne file's high-contrast card had presence
+this one does not. Lab 44 answers it. The move is not new — the tab bar's start button is already an
+accent fill with ink glyphs — it is that, at card size, on the one element that earns it.
+
+Four columns: U1 the control, U2 the card alone, U3 the card plus a week block (ring against the
+weekly session target, volume with its comparison, the week as columns), U4 the quieter version
+where the plate stays and only the action is filled. **Open for the user's pick.**
+
+Three rules that come with an accent fill, and are now part of §0 if U2/U3 lands:
+
+- **The hue inverts on it.** Done-green and live-red are both under 3:1 against `#e4c68c`, so state
+  inside the card is ink plus position, never a second colour. That is why the card carries no PR
+  pill.
+- **Only one fill at card size per screen.** The tab bar's button is the exception that proves it:
+  at 52pt it reads as the same family rather than as competition.
+- **A fill spends the whole attention budget.** Plate count drops with it — U3 is the card, one
+  plate and a rail, and that is the ceiling.
+- The **ring is allowed only because a weekly session target is a real denominator**. Asked to show
+  volume, sets or tonnage it goes back to being decoration and §0 kills it.
+
+### The build, first gate passed
+
+Phase 1 ran on a real device (Nothing Phone, Android 15, gesture navigation — which is the
+configuration the live-screen swipe question needs). Three things that fail silently were checked
+rather than assumed:
+
+- **Geist renders on Android at all seven faces**, weights distinct, Geist Mono tabular. The
+  config-plugin family mapping is correct; PostScript names were read out of the files' name tables
+  rather than guessed.
+- **`boxShadow: inset` works on RN 0.86 / New Architecture Android**, so the M4 lit edge is real on
+  the plate and the row plate. This was the fallback-needed risk; no fallback needed.
+- The em-to-point letter-spacing conversion reads correctly on hardware.
+
+Local blockers worth recording: Gradle needs **JDK 21** (the machine defaults to 11) and
+**`ANDROID_HOME`** must be set for `expo run:android`.
