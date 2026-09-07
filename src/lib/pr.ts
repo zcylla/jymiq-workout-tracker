@@ -66,8 +66,13 @@ export function detectSetPrs(set: PrCandidateSet, base: PrBaseline): PrHit[] {
     hits.push({ category: 'best_e1rm', value: set.e1rmKg, previous: base.bestE1rmKg });
   }
 
+  // Most reps at a weight only means something if you have lifted that weight
+  // before. Without this guard every unfamiliar load fires a record — 90 x 5
+  // would "beat" nothing on the way up to a 100 x 8 you have already done — and
+  // a banner that fires constantly stops being a banner. It also keeps the
+  // "WAS ..." line the design prints from ever being empty.
   const atWeight = base.bestRepsAtWeight.get(weightKey(set.weightKg)) ?? null;
-  if (beats(set.reps, atWeight)) {
+  if (atWeight != null && beats(set.reps, atWeight)) {
     hits.push({
       category: 'most_reps_at_weight',
       value: set.reps,

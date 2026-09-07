@@ -7,7 +7,7 @@ import { DEFAULT_INVENTORY, solvePlates, warmupRamp } from './plates.ts';
 import { LOAD_SCALE, RPE_SCALE, indexOf, valueAt } from './scale.ts';
 import { elapsedSec, formatClock, formatDuration, formatRest, restRemainingSec } from './time.ts';
 import { formatTonnage, setVolume, topSet, totalVolume, type SetLike } from './volume.ts';
-import { fromDisplay, roundToStep, toDisplay, weightKey } from './units.ts';
+import { formatWeight, fromDisplay, roundToStep, toDisplay, weightKey } from './units.ts';
 
 // ---------------------------------------------------------------- e1RM ----
 test('e1RM is the weight itself at one rep', () => {
@@ -88,9 +88,10 @@ test('most-reps-at-weight is bucketed by exact weight', () => {
   const hits = detectSetPrs({ weightKg: 100, reps: 9, e1rmKg: 130, kind: 'working' }, baseline());
   const reps = hits.find((h) => h.category === 'most_reps_at_weight')!;
   assert.equal(reps.previous, 8);
-  // A weight never lifted before has no previous, and still counts.
+  // A weight never lifted before is not a rep record — it is a first attempt.
+  // Otherwise every unfamiliar load on the way up fires a banner.
   const fresh = detectSetPrs({ weightKg: 97.5, reps: 3, e1rmKg: null, kind: 'working' }, baseline());
-  assert.equal(fresh.find((h) => h.category === 'most_reps_at_weight')!.previous, null);
+  assert.equal(fresh.find((h) => h.category === 'most_reps_at_weight'), undefined);
 });
 
 test('warm-ups and drop sets never set records, and a null e1RM only skips its category', () => {
@@ -99,6 +100,17 @@ test('warm-ups and drop sets never set records, and a null e1RM only skips its c
   const hits = detectSetPrs({ weightKg: 105, reps: 15, e1rmKg: null, kind: 'working' }, baseline());
   assert.ok(!hits.some((h) => h.category === 'best_e1rm'));
   assert.ok(hits.some((h) => h.category === 'heaviest'));
+});
+
+test('a set that beats nothing sets nothing', () => {
+  // The suite is otherwise all winners, so an inverted comparison or a `>=`
+  // slipping into beats() — a record on a tie — would pass unnoticed.
+  assert.deepEqual(detectSetPrs({ weightKg: 90, reps: 5, e1rmKg: 100, kind: 'working' }, baseline()), []);
+  // Equalling a record is not beating it, in every category.
+  assert.deepEqual(
+    detectSetPrs({ weightKg: 100, reps: 8, e1rmKg: 128, kind: 'working' }, baseline({ bestSetVolumeKg: 800 })),
+    [],
+  );
 });
 
 test('session volume record is judged once, at the end', () => {
@@ -124,6 +136,13 @@ test('plate maths is not greedy', () => {
   assert.deepEqual(sol.perSide, [15, 10]);
 });
 
+test('a target between loadable steps never overshoots it', () => {
+  // 93 lb is 42.18 kg; the search must land at or below, never above.
+  const sol = solvePlates(42.18, 20);
+  assert.ok(sol.achievedKg <= 42.18, `${sol.achievedKg} overshot`);
+  assert.ok(sol.residualKg >= 0);
+});
+
 test('an unreachable weight reports its residual instead of lying', () => {
   const inv = { plates: [{ kg: 20, count: 2 }] };
   const sol = solvePlates(65, 20, inv);
@@ -144,6 +163,9 @@ test('the warm-up ramp rounds down, skips the bar and never repeats', () => {
   assert.deepEqual(ramp.map((r) => r.reps), [5, 3, 2, 1]);
   // A light work set produces fewer steps rather than sub-bar ones.
   assert.deepEqual(warmupRamp(30).map((r) => r.weightKg), [22.5, 25]);
+  // And when two percentages floor to the same step, the repeat is dropped
+  // rather than shown twice: 75% and 85% of 20 both floor to 15.
+  assert.deepEqual(warmupRamp(20, { barKg: 0 }).map((r) => r.weightKg), [7.5, 10, 15]);
 });
 
 // --------------------------------------------------------------- scale ----
@@ -169,6 +191,13 @@ test('units convert both ways and round to a real increment', () => {
   assert.equal(roundToStep(101.3, 2.5), 102.5);
   assert.equal(roundToStep(101.2, 2.5), 100);
   assert.equal(weightKey(102.5), 10250);
+});
+
+test('a displayed weight never leaks a float artefact', () => {
+  assert.equal(formatWeight(102.5), '102.5');
+  assert.equal(formatWeight(100), '100');
+  assert.equal(formatWeight(42.18, 'lb'), '92.99');
+  assert.equal(formatWeight(0.1 + 0.2), '0.3');
 });
 
 // ----------------------------------------------------------------- time ----

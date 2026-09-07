@@ -112,11 +112,6 @@
       }
     },
     "owner": "zcyllas-team",
-    "backgroundColor": "#0a0908",
-    "androidStatusBar": {
-      "barStyle": "light-content",
-      "backgroundColor": "#00000000",
-      "translucent": true
-    }
+    "backgroundColor": "#0a0908"
   }
 }

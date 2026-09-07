@@ -68,7 +68,9 @@ export function solvePlates(
   if (perSideTarget <= 0) {
     return { perSide: [], achievedKg: barKg, residualKg: targetKg - barKg };
   }
-  const target = Math.round(perSideTarget / UNIT);
+  // Floor, not round: the contract is "at or below the target". Rounding up would
+  // let a converted-from-pounds target load MORE than was asked for.
+  const target = Math.floor(perSideTarget / UNIT + 1e-9);
   const plates = [...inv.plates]
     .filter((p) => p.kg > 0 && p.count > 0)
     .sort((a, b) => b.kg - a.kg)
@@ -77,6 +79,10 @@ export function solvePlates(
   let bestSum = 0;
   let bestPick: number[] = [];
   const pick: number[] = [];
+  // The inventory is user-configurable, so the branching factor is not ours to
+  // trust. Visiting each (plate index, sum) once bounds the search to
+  // types x target instead of the product of the counts.
+  const seen = new Set<number>();
 
   const visit = (i: number, sum: number) => {
     if (sum > bestSum) {
@@ -84,6 +90,9 @@ export function solvePlates(
       bestPick = [...pick];
     }
     if (sum === target || i >= plates.length) return;
+    const key = i * (target + 1) + sum;
+    if (seen.has(key)) return;
+    seen.add(key);
     const p = plates[i];
     const room = Math.min(p.count, Math.floor((target - sum) / p.units));
     // Heaviest-first, most-of-it-first: the first exact hit is the conventional load.

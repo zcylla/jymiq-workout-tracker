@@ -104,8 +104,12 @@ export const containment = {
   none: {},
 } as const;
 
-/** Chrome sits above content: glass on iOS 26, an opaque plate on Android (Lab 43 N2). */
-export const chromeShadow = 'inset 0 1px 0 rgba(255,255,255,0.10), 0 12px 30px rgba(0,0,0,0.62)';
+/**
+ * Chrome sits above content: glass on iOS 26, an opaque plate on Android (Lab 43 N2).
+ * Same lit edge as every other plate — the bar is part of the system, not a special
+ * case — with a heavier drop shadow doing the separating that blur did.
+ */
+export const chromeShadow = `${litEdge}, 0 12px 30px rgba(0,0,0,0.62)`;
 
 export const motion = {
   fast: 140,
