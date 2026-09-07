@@ -3,7 +3,7 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-06, mid Phase 5.
+Last updated 2026-09-06, end of Phase 5.
 
 ---
 
@@ -28,38 +28,47 @@ computed features in v1.
 | **2 — The design system** | `kit.py` translated into `src/components/`. **Verified on device against Lab 34 A1.** |
 | **3 — Data and maths** | `src/lib/**` (23 tests, green) and the drizzle schema; migrations generated and **verified running on device**. |
 | **4 — The navigation shell** | Headless `expo-router/ui` tabs behind the W2 bar. **Verified on device**: tabs switch, a push loses the bar, live takes over, back returns to Today. |
-| **5 — The real screens** | **In progress.** Seed, queries and the Library are on the device; three screens remain. |
+| **5 — The real screens** | **Done.** Mutations, routine detail and the custom-exercise form are on the device and writing. |
+| **5b — Supabase** | **Schema, RLS and the auth flow done.** Sync itself is Phase 8. |
 
-### Where Phase 5 got to
+### What Phase 5 settled
 
-Done and on the device: the seed (1295 exercises), `src/data/queries/{exercises,routines}.ts`,
-`src/lib/id.ts`, the `Chip`/`ChipStrip`/`SearchField`/`Field`/`Toggle`/`ActionBar` primitives, the
-Session hub (`(tabs)/session/`) and the **Library** (Lab 35 B1) reading real rows with live search
-and equipment filters.
+Everything in Phase 5 is on the device and verified there, not by type-check.
 
-**Not done:** routine detail (Lab 34 A2), custom exercise (Lab 35 B3), and
-`src/data/mutations/` — nothing writes to the database yet. Exercise detail
-(`app/exercise/[id].tsx`) renders but is unverified on device.
+**`src/data/mutations/`** exists and is the only thing that writes. `createCustomExercise` and
+`addExerciseToRoutine` / `updateRoutineExercise` / `removeRoutineExercise` are transactional because
+they touch two tables each — the exercise plus its muscle links, the routine line plus the routine's
+`updatedAt`. Foreign keys are on and `exercise_muscles` has a composite primary key, so a partial
+insert is a real failure mode rather than a hypothetical one. `removeRoutineExercise` is a **hard
+delete**: a routine line is a plan, and what was actually done lives in `session_exercises`, which
+snapshots at session start and never points back.
 
-**Two structural findings worth keeping:**
+**Routine detail** (`app/routine/[id].tsx`, Lab 34 A2) and **the custom-exercise form**
+(`app/exercise/new.tsx`, Lab 35 B3) are built and screenshotted. `app/exercise/[id].tsx` was opened
+for the first time and renders — description prose, the muscles plate with prime and assist, and the
+empty YOUR NUMBERS sentence.
 
-1. **The Session tab is a hub, not a screen.** Lab 34 A1 (Routines) and Lab 35 B1 (Library) are
-   both drawn *with the tab bar*, so they are views of the Session tab, not pushed detail screens.
-   That needs a `Stack` nested inside the tab (`(tabs)/session/_layout.tsx`); a sibling of `(tabs)`
-   would lose the bar. A true detail screen — exercise, routine — stays a sibling and gets an
-   `ActionBar` on the plane the tab bar vacates.
-2. **Content scrolls under the tab bar**, so any scroller inside a tab must pad by
-   `useTabBarHeight()` to clear its last row. `Screen` takes a `bottomInset` for this. The Library
-   cannot use `Screen` at all — it is ~1300 rows, and FlashList cannot live inside a ScrollView, so
-   it is the scroller with the header in `ListHeaderComponent`.
+**The tab-bar bottom inset is confirmed on the device**: with the library filtered to CABLE and
+flung to its end, the last row clears the bar by ~143dp, which is `space.between + useTabBarHeight()`.
+The same hole existed on every screen carrying an `ActionBar` — content scrolled under it with no
+padding — so `useActionBarHeight()` now mirrors `useTabBarHeight()` and the three ActionBar screens
+pass it to `Screen`.
 
-**`useLiveQuery`** (`drizzle-orm/expo-sqlite`) is the read path: the query modules export
-*builders*, not results, and the hook re-runs them when the tables change — so a mutation refreshes
-every list without anything invalidating anything.
+**Two departures from Lab 35 B3, both because the board drew a column that does not exist.** Its
+"count toward leg volume" and "warm-up ramp" toggles have no home in `schema.ts`, so they are gone
+rather than faked — a persisted-looking switch that writes nowhere is worse than an absent one. And
+a TYPE field was added, because `kind` is NOT NULL and drives the default rest. The board's three
+fields open pickers; those pickers are chip rows that expand **inside the field's own row plate**,
+which keeps the whole form in the existing vocabulary rather than introducing a sheet.
 
-**Session-derived numbers are absent, not faked.** BEST, TOP SET, e1RM, rep maxes, LAST THREE and
-volume deltas all need session history, which Phase 6 writes. `Rail` and `Chart` are deferred to
-Phase 7 for the same reason: both need a series.
+**Routine creation has no screen yet** — it is Phase 6's. Until then `/dev/db` carries a "make a
+demo routine" action that calls the real mutations, which is also the only exercise the transaction
+path gets before the live session starts writing.
+
+**A `StatTiles` bug that only a board comparison finds.** kit's `tiles(tone=...)` names *the surface
+the tiles sit on* and fills each tile with the other colour. Ours always filled `raised`, so on
+Lab 34 A2's raised plate the four tiles were exactly the plate colour and the block read as one card
+with four numbers in it. The prop is now `surface`, and it inverts.
 
 ### The seeded library
 
@@ -191,11 +200,8 @@ that, and W5's minimise-on-scroll, are still open.
 
 ## Next, in order
 
-1. **Finish Phase 5** — routine detail (Lab 34 A2), custom exercise (Lab 35 B3), and
-   `src/data/mutations/`. Verify `app/exercise/[id].tsx` on the device; it has never been opened.
-   Confirm on device that the tab-bar bottom inset actually clears the last row — the fix is
-   written and typechecked but was not re-verified.
-2. **Phase 6 — the live session.** Test the Android back-gesture conflict *first*, before building
+1. **Phase 6 — the live session**, plus the two screens Phase 5 deferred: routine creation and
+   routine editing (the EDIT button on routine detail is drawn and inert). Test the Android back-gesture conflict *first*, before building
    the rest of the screen. The phone is on gesture navigation, which is the configuration that
    matters.
 3. **Phase 7 — summary, session detail, history, trimmed settings, export.**
@@ -214,13 +220,10 @@ Phase 2 did not build.
   reads or writes it except the dev screen.
 - **Settings storage** is decided (`expo-sqlite/kv-store`) but not written.
 - Still open on the design side and not blocking: the calendar's plate, the body map, the IA.
-- **Supabase is agreed but not started.** Architecture settled: **local-first** — SQLite stays the
-  source of truth so the app works in a basement gym, and Supabase is the sync/backup/multi-device
-  layer. Still needed from the owner: project URL, the anon/publishable key (never the
-  `service_role` key), the auth decision (anonymous / magic link / one account), the project ref,
-  and a personal access token if migrations are to run via the CLI. The Postgres mirror will need
-  two columns SQLite does not: `user_id` for RLS and `deleted_at` for tombstones — sync cannot
-  represent a delete without them, and retrofitting either means a migration on real data.
+- **Supabase: schema, RLS and auth are done; sync is not.** Architecture unchanged and settled:
+  **local-first** — SQLite is the source of truth so the app works in a basement gym, and Supabase is
+  the sync/backup/multi-device layer. What exists now is in "The Supabase mirror" below. What does
+  not exist is any code that pushes or pulls a row; that is Phase 8.
 - **Demonstration media is unresolved.** Researched: the only genuinely shippable free source is
   **`bryllim/workout-guide`** — white-on-transparent SVG line art, 3 motion frames, 302 exercises
   (~23% coverage), CC-BY-SA 4.0. ShareAlike triggers only on *Adapted Material*, so bundling the
@@ -232,9 +235,132 @@ Phase 2 did not build.
 
 ---
 
+## The Supabase mirror
+
+Project `apmzkqejwmhctaldbzgv`, reached through the Supabase MCP. `.env` holds
+`EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` (the publishable key — **never** the
+`service_role` key, which would ship inside the bundle) and is gitignored.
+
+**The schema** is `src/data/schema.ts` mirrored into `public`, applied as four migrations — the
+first pair, then `jymiq_tenant_scoped_keys` / `jymiq_tenant_scoped_rls` rebuilding them after a
+security review found two cross-tenant holes (below). Four deliberate differences from SQLite:
+
+1. **`user_id uuid not null references auth.users(id) on delete cascade`** on all eight tables. It is
+   the RLS subject; SQLite has one user and needs no such column.
+2. **`deleted_at bigint`** on all eight. A row that is gone locally cannot be shown to a peer by its
+   absence, only by a tombstone. Both columns are there now because retrofitting either means a
+   migration against real data.
+3. **Timestamps stay unix milliseconds (`bigint`)**, exactly as SQLite stores them, so a synced row
+   is a copy rather than a conversion with a rounding bug in it. `deleted_at` uses the same clock.
+4. **Every primary key is `(user_id, id)`, and every foreign key carries `user_id`.** SQLite keys on
+   `id` alone, which is right for a database with one user in it and wrong here — see below.
+
+**Built-in exercises are not mirrored.** All 1295 arrive identically from the local seed migration,
+so syncing them would copy the same rows per user and collide on their shared slugs; only `is_custom`
+rows live in Postgres. That is why `routine_exercises.exercise_id` and `session_exercises.exercise_id`
+carry **no foreign key** — they legitimately name a built-in slug this database has never seen. Do
+not "fix" that by adding the constraint.
+
+**Two holes the first cut of this schema had, both fixed while the tables were still empty.** Both
+are primary-key changes, so neither would have been cheap later — this is exactly the retrofit the
+plan said to avoid.
+
+1. **The keys were `id` alone, and `id` is a client-supplied string.** So all users shared one id
+   namespace: whoever claimed an id owned it globally, and everyone else got a duplicate-key error
+   on a row RLS was hiding from them — a denial of service, and an existence oracle for other
+   people's ids. Keys are now `(user_id, id)`, so the namespace is per tenant.
+2. **The foreign keys referenced `id` alone, and FK validation runs with RLS bypassed.** A signed-in
+   user could insert a row they legitimately own whose *parent* id belongs to somebody else: RLS
+   passes (the row is theirs), the FK passes (the parent exists). That is an existence oracle for
+   any guessed id, and it grafts one user's rows into another's object graph, where the victim's
+   delete cascades over them. Every FK now includes `user_id`, so a parent in another tenant simply
+   is not there. Two of them need Postgres 15+'s `on delete set null (column_list)` — a bare
+   `SET NULL` would try to null `user_id` as well, which is NOT NULL, and fail the cascade.
+
+`user_id` also carries `default auth.uid()`, so a sync insert cannot omit it.
+
+**RLS** is on for all eight tables, one policy each:
+
+```sql
+create policy T_owner on public.T for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+```
+
+`for all` covers the four verbs in one policy; `with check` is what stops a signed-in user handing a
+row to somebody else by rewriting `user_id`; `auth.uid()` is wrapped in a `select` so the planner
+evaluates it once per statement rather than once per row. Every `user_id` and every foreign-key
+column is indexed. SQLite's partial unique index for "at most one live session" is per-user here, or
+the second person to start a workout is refused.
+
+`anon` is revoked outright. RLS with no `anon` policy already stopped it reading anything, but
+**TRUNCATE is the one statement RLS cannot gate**, and it was granted by default to the role whose
+key ships inside the APK. `authenticated` loses TRUNCATE for the same reason.
+
+Verified against the live database rather than assumed. With two throwaway users, one holding a
+routine and a session: user A could claim an id B already used (per-tenant namespace, as intended),
+A's attempt to attach its own `session_exercises` row to B's session was **refused by the composite
+foreign key**, reassigning `user_id` was refused by `with check`, A saw one row in `routines` and
+none of B's, deleting B's session affected zero rows, `anon` saw nothing, and the `user_id` default
+resolved to `auth.uid()`. Both probe users were then deleted; cascade took their rows and the project
+is back to zero. `get_advisors --type security` returns **no lints** — the two it did report were
+`public.rls_auto_enable()`, the project's own event-trigger function, published at `/rest/v1/rpc` by
+Postgres's default `EXECUTE to PUBLIC` grant. That grant is revoked; the event trigger fires as its
+owner and never needed it.
+
+**Auth is a real sign-in flow, not anonymous.** Google and email magic link, both on **PKCE** — an
+implicit redirect carries the access and refresh tokens in the URL, and any app registered for
+`jymiq://` would receive them; a PKCE code is worthless without the verifier in this app's storage.
+`src/data/supabase.ts` holds the client (`expo-sqlite/kv-store` for the session, already a
+dependency and AsyncStorage-shaped; `detectSessionInUrl` off, since there is no address bar;
+`startAutoRefresh` driven off `AppState`, because Android suspends the refresh timer in the
+background). `src/app/sign-in.tsx` is the screen, reached from the Today gear until Settings exists.
+**Apple sign-in lands with the iOS build** — it is required once other social providers ship, and
+there is no device to verify it on.
+
+**The client is nullable on purpose.** With no env vars `supabase` is `null` and the screen says so;
+the app must run with no account, no signal and no project, because SQLite is the source of truth.
+
+**PKCE bounds token theft, not interception.** `jymiq://` is a plain custom scheme and a second app
+can register it; it could swallow the redirect and leave the sign-in hanging at exactly the moment
+the user expects a sign-in screen. It could not use the code, but closing that properly needs a
+verified `https://` App Link and a domain to serve `assetlinks.json` from. Open, and not blocking.
+
+### What still needs the owner, in the dashboard
+
+Neither can be done through the MCP, and Google is confirmed missing — tapping Continue with Google
+reaches Supabase and comes back `{"code":400,"error_code":"validation_failed","msg":"Unsupported
+provider: provider is not enabled"}`, which is exactly the right failure for a provider that is not
+switched on yet.
+
+1. **Authentication → Providers → Google**: enable it, and paste in a Google Cloud OAuth **Web**
+   client id and secret whose authorised redirect URI is
+   `https://apmzkqejwmhctaldbzgv.supabase.co/auth/v1/callback`. A Web client is all this needs — the
+   browser hop means no Android client id and no SHA-1 fingerprint, and therefore no new dependency.
+2. **Authentication → URL Configuration → Additional Redirect URLs**: add **`jymiq:///sign-in`**
+   (three slashes — see the deep-link trap below).
+
 ## Things that cost time once, recorded so they cost nothing again
 
 - **Gradle wants JDK 21 and `ANDROID_HOME` set.** Two separate failed builds.
+- **`Linking.createURL()` is not the auth redirect you want.** In a dev client it splices Metro's
+  host into the path and returns `jymiq://localhost:8081/sign-in`, which **expo-router does not
+  match** — verified on the device, the magic link lands on Unmatched Route. A release build returns
+  `jymiq:///sign-in`, which does match, so this only ever breaks where you test it. `authRedirectTo`
+  is built from `Constants.expoConfig.scheme` with an empty authority instead, and
+  `jymiq:///sign-in?code=…` was confirmed to route in the dev client.
+- **A `jymiq://` link cannot cold-start a dev build.** With no bundle loaded, expo-dev-client's
+  launcher takes the intent and shows its server list. Load the app from Metro first, *then* fire
+  the link. Magic links can only be tested warm, or in a release build.
+- **The dev-client bubble sits exactly where the screen headers put their right-hand action**, so
+  `adb shell input tap` on a header icon opens the dev menu instead — and once that sheet is up it
+  ignores synthetic input. Reach the screen by deep link rather than by tapping.
+- **The auth code exchange belongs at the root, not on the sign-in screen.** A redirect arrives more
+  than once (on Android `openAuthSessionAsync` resolves off the same Linking event `useLinkingURL`
+  observes) and `useLinkingURL` keeps handing back the same URL for the life of the process. Since
+  supabase-js deletes the PKCE verifier on its failure path as well as its success path, every later
+  attempt fails with "code verifier could not be found" — printed over a sign-in that worked.
+  `exchangeAuthCode` remembers spent codes; the root layout is where it runs, so a link that lands on
+  a route the app cannot match is still exchanged.
 - **`npx expo customize tsconfig.json`** regenerates typed-route types without starting Metro. New
   routes fail `tsc` until it runs (or Metro regenerates them).
 - **Node's type stripping does not rewrite import specifiers**, so `src/lib/*` imports carry `.ts`
