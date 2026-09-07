@@ -25,6 +25,12 @@ export default function TodayScreen() {
       <Link href="/dev/db">
         <Text style={text.body}>Database →</Text>
       </Link>
+      <Link href="/dev/kitchen-sink">
+        <Text style={text.body}>Kitchen sink →</Text>
+      </Link>
+      <Link href="/dev/lab34-a1">
+        <Text style={text.body}>Lab 34 A1 · Routines →</Text>
+      </Link>
     </View>
   );
 }
