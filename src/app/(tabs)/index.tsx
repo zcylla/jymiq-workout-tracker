@@ -46,6 +46,11 @@ export default function TodayScreen() {
               <ListRow title="Type ramp" meta="phase 1's gate" />
             </RowPlate>
           </Link>
+          <Link href="/dev/gestures" asChild>
+            <RowPlate onPress={() => {}}>
+              <ListRow title="Gestures" meta="phase 6's gate — the back-gesture conflict" />
+            </RowPlate>
+          </Link>
           <Link href="/dev/db" asChild>
             <RowPlate onPress={() => {}}>
               <ListRow title="Database" meta="row counts per table" />
