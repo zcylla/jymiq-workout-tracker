@@ -26,7 +26,9 @@ export default function RootLayout() {
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <StatusBar style="light" />
         {error ? (
-          <View style={{ flex: 1, justifyContent: 'center', padding: space.pad, gap: space.within }}>
+          <View
+            style={{ flex: 1, justifyContent: 'center', padding: space.pad, gap: space.within }}
+          >
             <Text style={text.label}>DATABASE</Text>
             <Text style={text.lead}>The database could not be migrated.</Text>
             <Text style={text.prose}>{error.message}</Text>

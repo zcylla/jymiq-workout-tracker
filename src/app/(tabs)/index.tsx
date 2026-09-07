@@ -14,7 +14,7 @@ export default function TodayScreen() {
     <Screen>
       <ScreenHeader title="Today" kicker="THU 4 SEP" right={<Icon name="gear" />} />
 
-      <Section label="NEXT" >
+      <Section label="NEXT">
         <Text style={text.lead}>Lower B</Text>
         <Text style={text.prose}>5 lifts · ~60 min. Lab 45 W3 lands here.</Text>
       </Section>

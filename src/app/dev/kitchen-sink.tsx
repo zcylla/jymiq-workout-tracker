@@ -25,8 +25,19 @@ import { color, space, text } from '@/theme';
  * device. Dev-only: this is scaffolding for the eye, not a screen.
  */
 const NAMES: IconName[] = [
-  'today', 'session', 'strength', 'load', 'search',
-  'gear', 'back', 'plus', 'cal', 'dots', 'chev', 'up', 'down',
+  'today',
+  'session',
+  'strength',
+  'load',
+  'search',
+  'gear',
+  'back',
+  'plus',
+  'cal',
+  'dots',
+  'chev',
+  'up',
+  'down',
 ];
 
 export default function KitchenSinkScreen() {
@@ -80,9 +91,7 @@ export default function KitchenSinkScreen() {
       </Section>
 
       <Section plated={false}>
-        <Text style={text.prose}>
-          Unlabelled and unplated: prose gets nothing at all, by rule.
-        </Text>
+        <Text style={text.prose}>Unlabelled and unplated: prose gets nothing at all, by rule.</Text>
       </Section>
 
       <Section label="ROW PLATES · 7PT GAP" plated={false}>
@@ -97,7 +106,12 @@ export default function KitchenSinkScreen() {
             <ListRow title="Never trained" valueLabel="LAST" value="never" valueDim />
           </RowPlate>
           <RowPlate>
-            <ListRow quiet title="Quiet title, 15px" meta="2 LIFTS + ACCESSORIES" valueLabel="COPY" />
+            <ListRow
+              quiet
+              title="Quiet title, 15px"
+              meta="2 LIFTS + ACCESSORIES"
+              valueLabel="COPY"
+            />
           </RowPlate>
           <RowPlate>
             <ListRow title="Reorderable" meta="drag me" grip right={<Pill label="TODAY" />} />
@@ -123,7 +137,12 @@ export default function KitchenSinkScreen() {
             { label: 'SESSIONS', value: '3', visual: <Meter value={3 / 4} width={44} /> },
             { label: 'VOLUME', value: '14.2t', below: <Delta value="8%" /> },
             { label: 'PRS', value: '2', tone: 'accent' },
-            { label: 'MISSED', value: '1', tone: 'live', below: <Delta value="1" positive={false} /> },
+            {
+              label: 'MISSED',
+              value: '1',
+              tone: 'live',
+              below: <Delta value="1" positive={false} />,
+            },
             { label: 'ODD ONE OUT', value: '—', tone: 'lo' },
           ]}
         />
@@ -171,7 +190,9 @@ export default function KitchenSinkScreen() {
         <Plate>
           <Text style={text.body}>A grouped plate holding a panel-toned plate.</Text>
           <Plate tone="panel" pad={11}>
-            <Text style={text.prose}>Two levels is already one too many. Budget is two or three plated things a screen.</Text>
+            <Text style={text.prose}>
+              Two levels is already one too many. Budget is two or three plated things a screen.
+            </Text>
           </Plate>
         </Plate>
       </Section>

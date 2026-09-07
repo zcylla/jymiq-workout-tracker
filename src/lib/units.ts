@@ -10,8 +10,7 @@ export const toDisplay = (kg: Kg, unit: Unit): number => (unit === 'kg' ? kg : k
 export const fromDisplay = (value: number, unit: Unit): Kg =>
   unit === 'kg' ? value : value / LB_PER_KG;
 
-export const roundToStep = (value: number, step: number): number =>
-  Math.round(value / step) * step;
+export const roundToStep = (value: number, step: number): number => Math.round(value / step) * step;
 
 export const floorToStep = (value: number, step: number): number =>
   Math.floor(value / step + 1e-9) * step;

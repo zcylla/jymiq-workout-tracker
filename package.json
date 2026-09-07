@@ -39,26 +39,33 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
     "@types/node": "^26.4.1",
     "@types/react": "~19.2.2",
     "babel-plugin-inline-import": "^3.0.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.5",
     "eslint-config-expo": "^57.0.2",
+    "lefthook": "^2.1.12",
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
     "android": "expo run:android",
-    "ios": "expo run:ios",
-    "lint": "expo lint",
-    "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types src/lib/*.test.ts",
-    "check": "npm run typecheck && npm run lint && npm run icons:check && npm test",
+    "check": "npm run format:check && npm run typecheck && npm run lint && npm run icons:check && npm test",
     "db:gen": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "icons:check": "node --experimental-strip-types scripts/check-icons.mjs",
-    "seed:gen": "node scripts/build-seed.mjs"
+    "ios": "expo run:ios",
+    "lint": "expo lint",
+    "prepare": "lefthook install",
+    "seed:gen": "node scripts/build-seed.mjs",
+    "start": "expo start",
+    "test": "node --test --experimental-strip-types src/lib/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "private": true
 }

@@ -17,9 +17,22 @@ import {
  */
 
 export const MUSCLES = [
-  'quads', 'hamstrings', 'glutes', 'calves', 'adductors',
-  'chest', 'back', 'lats', 'traps', 'lower_back',
-  'shoulders', 'biceps', 'triceps', 'forearms', 'abs', 'neck',
+  'quads',
+  'hamstrings',
+  'glutes',
+  'calves',
+  'adductors',
+  'chest',
+  'back',
+  'lats',
+  'traps',
+  'lower_back',
+  'shoulders',
+  'biceps',
+  'triceps',
+  'forearms',
+  'abs',
+  'neck',
 ] as const;
 export type Muscle = (typeof MUSCLES)[number];
 
@@ -64,10 +77,7 @@ export const exerciseMuscles = sqliteTable(
     muscle: text('muscle', { enum: MUSCLES }).notNull(),
     role: text('role', { enum: ['prime', 'assist'] }).notNull(),
   },
-  (t) => [
-    primaryKey({ columns: [t.exerciseId, t.muscle] }),
-    index('idx_em_muscle').on(t.muscle),
-  ],
+  (t) => [primaryKey({ columns: [t.exerciseId, t.muscle] }), index('idx_em_muscle').on(t.muscle)],
 );
 
 // ------------------------------------------------------------- the plan ----
@@ -135,9 +145,7 @@ export const sessions = sqliteTable(
     index('idx_sessions_started').on(t.startedAt),
     index('idx_sessions_status').on(t.status),
     /** At most one live session, enforced by the database rather than by app code. */
-    uniqueIndex('idx_sessions_one_live')
-      .on(t.status)
-      .where(sql`status = 'in_progress'`),
+    uniqueIndex('idx_sessions_one_live').on(t.status).where(sql`status = 'in_progress'`),
   ],
 );
 

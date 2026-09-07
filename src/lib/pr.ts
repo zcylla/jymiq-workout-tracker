@@ -91,10 +91,7 @@ export function detectSetPrs(set: PrCandidateSet, base: PrBaseline): PrHit[] {
 }
 
 /** Judged once per exercise when a session is completed. */
-export function detectSessionVolumePr(
-  exerciseVolumeKg: Kg,
-  base: PrBaseline,
-): PrHit | null {
+export function detectSessionVolumePr(exerciseVolumeKg: Kg, base: PrBaseline): PrHit | null {
   if (exerciseVolumeKg <= 0) return null;
   if (!beats(exerciseVolumeKg, base.bestSessionVolumeKg)) return null;
   return {

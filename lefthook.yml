@@ -1,0 +1,16 @@
+# Hooks are installed by `npx lefthook install`, which the prepare script runs.
+commit-msg:
+  commands:
+    commitlint:
+      run: npx --no -- commitlint --edit {1}
+
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: '*.{ts,tsx,js,jsx,json}'
+      # Biome formats only; ESLint owns the React Native and React Compiler rules.
+      run: npx --no -- biome format --write {staged_files}
+      stage_fixed: true
+    typecheck:
+      run: npx tsc --noEmit

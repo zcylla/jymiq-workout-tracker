@@ -15,8 +15,19 @@ const SANS: (400 | 500 | 600 | 700)[] = [400, 500, 600, 700];
 const MONO: (400 | 500 | 600)[] = [400, 500, 600];
 
 const RAMP: TextVariant[] = [
-  'h1', 'h2', 'rowTitle', 'rowName', 'lead', 'body', 'prose',
-  'label', 'meta', 'num', 'numSm', 'numTile', 'numCore',
+  'h1',
+  'h2',
+  'rowTitle',
+  'rowName',
+  'lead',
+  'body',
+  'prose',
+  'label',
+  'meta',
+  'num',
+  'numSm',
+  'numTile',
+  'numCore',
 ];
 
 export default function FontsScreen() {

@@ -24,31 +24,46 @@ const KEEP = new Set(['strength', 'powerlifting', 'olympic weightlifting', 'stro
 
 /** Their equipment vocabulary onto our six. */
 const EQUIPMENT = {
-  'barbell': 'barbell',
+  barbell: 'barbell',
   'e-z curl bar': 'barbell',
-  'dumbbell': 'dumbbell',
-  'kettlebells': 'dumbbell',   // a free weight held in the hand; loads like one
-  'machine': 'machine',
-  'cable': 'cable',
+  dumbbell: 'dumbbell',
+  kettlebells: 'dumbbell', // a free weight held in the hand; loads like one
+  machine: 'machine',
+  cable: 'cable',
   'body only': 'bodyweight',
-  'bands': 'other',
+  bands: 'other',
   'medicine ball': 'other',
   'exercise ball': 'other',
   'foam roll': 'other',
-  'other': 'other',
+  other: 'other',
 };
 
 /** Their muscle vocabulary onto the sixteen in schema.ts. */
 const MUSCLE = {
-  quadriceps: 'quads', hamstrings: 'hamstrings', glutes: 'glutes', calves: 'calves',
-  adductors: 'adductors', chest: 'chest', 'middle back': 'back', lats: 'lats',
-  traps: 'traps', 'lower back': 'lower_back', shoulders: 'shoulders', biceps: 'biceps',
-  triceps: 'triceps', forearms: 'forearms', abdominals: 'abs', neck: 'neck',
+  quadriceps: 'quads',
+  hamstrings: 'hamstrings',
+  glutes: 'glutes',
+  calves: 'calves',
+  adductors: 'adductors',
+  chest: 'chest',
+  'middle back': 'back',
+  lats: 'lats',
+  traps: 'traps',
+  'lower back': 'lower_back',
+  shoulders: 'shoulders',
+  biceps: 'biceps',
+  triceps: 'triceps',
+  forearms: 'forearms',
+  abdominals: 'abs',
+  neck: 'neck',
   // abductors has no home in our sixteen; dropped rather than inventing a muscle.
 };
 
 const slug = (name) =>
-  name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
 const q = (v) => (v == null ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`);
 
@@ -70,23 +85,38 @@ const seen = new Map();
 const rows = [];
 
 for (const e of raw) {
-  if (!KEEP.has(e.category)) { dropped.category++; continue; }
-  if (!e.instructions?.length) { dropped.noInstructions++; continue; }
+  if (!KEEP.has(e.category)) {
+    dropped.category++;
+    continue;
+  }
+  if (!e.instructions?.length) {
+    dropped.noInstructions++;
+    continue;
+  }
 
   const muscles = [];
   const add = (list, role) => {
     for (const m of list ?? []) {
       const mapped = MUSCLE[m];
-      if (!mapped) { droppedMuscles.set(m, (droppedMuscles.get(m) ?? 0) + 1); continue; }
+      if (!mapped) {
+        droppedMuscles.set(m, (droppedMuscles.get(m) ?? 0) + 1);
+        continue;
+      }
       if (!muscles.some((x) => x.muscle === mapped)) muscles.push({ muscle: mapped, role });
     }
   };
   add(e.primaryMuscles, 'prime');
   add(e.secondaryMuscles, 'assist');
-  if (!muscles.length) { dropped.noMuscle++; continue; }
+  if (!muscles.length) {
+    dropped.noMuscle++;
+    continue;
+  }
 
   const id = slug(e.name);
-  if (seen.has(id)) { dropped.collision++; continue; }
+  if (seen.has(id)) {
+    dropped.collision++;
+    continue;
+  }
   seen.set(id, e.name);
 
   const equipment = EQUIPMENT[e.equipment] ?? 'other';
@@ -96,7 +126,7 @@ for (const e of raw) {
     e.mechanic ??
     (e.category !== 'strength'
       ? 'compound'
-      : (e.primaryMuscles?.length ?? 0) === 1 && !(e.secondaryMuscles?.length)
+      : (e.primaryMuscles?.length ?? 0) === 1 && !e.secondaryMuscles?.length
         ? 'isolation'
         : 'compound');
 
@@ -145,20 +175,29 @@ let sql = `-- The built-in exercise library.
 const statements = [];
 
 for (const group of chunk(rows, 40)) {
-  statements.push('INSERT OR IGNORE INTO `exercises` ' +
-    '(`id`,`name`,`equipment`,`kind`,`is_custom`,`is_favorite`,`bar_weight_kg`,' +
-    '`default_rest_sec`,`track_rpe`,`description`,`created_at`,`updated_at`) VALUES\n' +
-    group.map((r) =>
-      `(${q(r.id)},${q(r.name)},${q(r.equipment)},${q(r.kind)},0,0,` +
-      `${r.barWeightKg ?? 'NULL'},${r.defaultRestSec},0,${q(r.description)},${STAMP},${STAMP})`,
-    ).join(',\n') + ';');
+  statements.push(
+    'INSERT OR IGNORE INTO `exercises` ' +
+      '(`id`,`name`,`equipment`,`kind`,`is_custom`,`is_favorite`,`bar_weight_kg`,' +
+      '`default_rest_sec`,`track_rpe`,`description`,`created_at`,`updated_at`) VALUES\n' +
+      group
+        .map(
+          (r) =>
+            `(${q(r.id)},${q(r.name)},${q(r.equipment)},${q(r.kind)},0,0,` +
+            `${r.barWeightKg ?? 'NULL'},${r.defaultRestSec},0,${q(r.description)},${STAMP},${STAMP})`,
+        )
+        .join(',\n') +
+      ';',
+  );
 }
 
 const links = rows.flatMap((r) => r.muscles.map((m) => ({ id: r.id, ...m })));
 for (const group of chunk(links, 120)) {
-  statements.push('INSERT OR IGNORE INTO `exercise_muscles` ' +
-    '(`exercise_id`,`muscle`,`role`) VALUES\n' +
-    group.map((l) => `(${q(l.id)},${q(l.muscle)},${q(l.role)})`).join(',\n') + ';');
+  statements.push(
+    'INSERT OR IGNORE INTO `exercise_muscles` ' +
+      '(`exercise_id`,`muscle`,`role`) VALUES\n' +
+      group.map((l) => `(${q(l.id)},${q(l.muscle)},${q(l.role)})`).join(',\n') +
+      ';',
+  );
 }
 
 sql += statements.join('\n--> statement-breakpoint\n') + '\n';
@@ -170,6 +209,9 @@ for (const r of rows) hist[r.equipment] = (hist[r.equipment] ?? 0) + 1;
 console.log(`exercises  ${rows.length}`);
 console.log(`muscle rows ${links.length}`);
 console.log('equipment  ', hist);
-console.log('kind       ', rows.reduce((a, r) => ((a[r.kind] = (a[r.kind] ?? 0) + 1), a), {}));
+console.log(
+  'kind       ',
+  rows.reduce((a, r) => ((a[r.kind] = (a[r.kind] ?? 0) + 1), a), {}),
+);
 console.log('dropped    ', dropped);
 console.log('unmapped muscles', Object.fromEntries(droppedMuscles));

@@ -9,7 +9,13 @@ import { color, radius, text, wash } from '@/theme';
  * would do it in a column but pins the pill to the top of a row, which is where
  * it usually sits — beside a chevron, which is centred.
  */
-export function Pill({ label, tone = 'accent' }: { label: string; tone?: 'accent' | 'done' | 'live' }) {
+export function Pill({
+  label,
+  tone = 'accent',
+}: {
+  label: string;
+  tone?: 'accent' | 'done' | 'live';
+}) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
       <View

@@ -32,7 +32,9 @@ const MAX_PT = 1.9;
 const attr = (root, name) => root.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1];
 const fail = [];
 
-const files = readdirSync(dir).filter((f) => f.endsWith('.svg')).sort();
+const files = readdirSync(dir)
+  .filter((f) => f.endsWith('.svg'))
+  .sort();
 const names = files.map((f) => f.replace(/\.svg$/, ''));
 
 for (const missing of Object.keys(DRAWN_AT).filter((n) => !names.includes(n))) {
@@ -54,14 +56,16 @@ for (const name of names) {
   else if (box[1] !== box[2]) say(`viewBox must be square, got ${box[1]}x${box[2]}`);
 
   if (attr(root, 'fill') !== 'none') say('root needs fill="none" — icons are strokes, not shapes');
-  if (attr(root, 'stroke') !== '#000000') say('root needs stroke="#000000" — one layer, recoloured at runtime');
+  if (attr(root, 'stroke') !== '#000000')
+    say('root needs stroke="#000000" — one layer, recoloured at runtime');
   if (attr(root, 'stroke-linecap') !== 'round') say('root needs stroke-linecap="round"');
   if (attr(root, 'stroke-linejoin') !== 'round') say('root needs stroke-linejoin="round"');
 
   const shapes = [...svg.matchAll(/<(\w+)/g)].map((m) => m[1]).filter((t) => t !== 'svg');
   const bad = [...new Set(shapes.filter((t) => t !== 'path'))];
   if (bad.length) say(`only <path> is allowed, found <${bad.join('>, <')}> — convert to path data`);
-  if (/fill="(?!none)/.test(svg.replace(/<svg[^>]*>/, ''))) say('a child carries a fill — icons are strokes');
+  if (/fill="(?!none)/.test(svg.replace(/<svg[^>]*>/, '')))
+    say('a child carries a fill — icons are strokes');
 
   const size = DRAWN_AT[name];
   if (size === undefined) {

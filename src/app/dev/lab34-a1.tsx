@@ -1,12 +1,4 @@
-import {
-  Icon,
-  ListRow,
-  RowPlate,
-  RowPlates,
-  Screen,
-  ScreenHeader,
-  Section,
-} from '@/components';
+import { Icon, ListRow, RowPlate, RowPlates, Screen, ScreenHeader, Section } from '@/components';
 
 /**
  * Lab 34 A1, rebuilt from the primitives alone. This file is the proof that the

@@ -42,7 +42,9 @@ export function StatTiles({ items, columns = 2 }: { items: Tile[]; columns?: num
             >
               <Text style={text.label}>{tile.label}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={[text.numTile, { color: color[tile.tone ?? 'hi'] }]}>{tile.value}</Text>
+                <Text style={[text.numTile, { color: color[tile.tone ?? 'hi'] }]}>
+                  {tile.value}
+                </Text>
                 <View style={{ flex: 1 }} />
                 {tile.visual}
               </View>

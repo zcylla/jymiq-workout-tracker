@@ -49,7 +49,12 @@ export function Section({
           <Text style={text.label}>{label}</Text>
           {rule ? (
             <View
-              style={{ flex: 1, height: 1, marginLeft: space.within, backgroundColor: hairline.ruled }}
+              style={{
+                flex: 1,
+                height: 1,
+                marginLeft: space.within,
+                backgroundColor: hairline.ruled,
+              }}
             />
           ) : (
             <View style={{ flex: 1 }} />

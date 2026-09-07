@@ -90,13 +90,25 @@ test('most-reps-at-weight is bucketed by exact weight', () => {
   assert.equal(reps.previous, 8);
   // A weight never lifted before is not a rep record — it is a first attempt.
   // Otherwise every unfamiliar load on the way up fires a banner.
-  const fresh = detectSetPrs({ weightKg: 97.5, reps: 3, e1rmKg: null, kind: 'working' }, baseline());
-  assert.equal(fresh.find((h) => h.category === 'most_reps_at_weight'), undefined);
+  const fresh = detectSetPrs(
+    { weightKg: 97.5, reps: 3, e1rmKg: null, kind: 'working' },
+    baseline(),
+  );
+  assert.equal(
+    fresh.find((h) => h.category === 'most_reps_at_weight'),
+    undefined,
+  );
 });
 
 test('warm-ups and drop sets never set records, and a null e1RM only skips its category', () => {
-  assert.deepEqual(detectSetPrs({ weightKg: 200, reps: 1, e1rmKg: 200, kind: 'warmup' }, baseline()), []);
-  assert.deepEqual(detectSetPrs({ weightKg: 200, reps: 1, e1rmKg: 200, kind: 'drop' }, baseline()), []);
+  assert.deepEqual(
+    detectSetPrs({ weightKg: 200, reps: 1, e1rmKg: 200, kind: 'warmup' }, baseline()),
+    [],
+  );
+  assert.deepEqual(
+    detectSetPrs({ weightKg: 200, reps: 1, e1rmKg: 200, kind: 'drop' }, baseline()),
+    [],
+  );
   const hits = detectSetPrs({ weightKg: 105, reps: 15, e1rmKg: null, kind: 'working' }, baseline());
   assert.ok(!hits.some((h) => h.category === 'best_e1rm'));
   assert.ok(hits.some((h) => h.category === 'heaviest'));
@@ -105,10 +117,16 @@ test('warm-ups and drop sets never set records, and a null e1RM only skips its c
 test('a set that beats nothing sets nothing', () => {
   // The suite is otherwise all winners, so an inverted comparison or a `>=`
   // slipping into beats() — a record on a tie — would pass unnoticed.
-  assert.deepEqual(detectSetPrs({ weightKg: 90, reps: 5, e1rmKg: 100, kind: 'working' }, baseline()), []);
+  assert.deepEqual(
+    detectSetPrs({ weightKg: 90, reps: 5, e1rmKg: 100, kind: 'working' }, baseline()),
+    [],
+  );
   // Equalling a record is not beating it, in every category.
   assert.deepEqual(
-    detectSetPrs({ weightKg: 100, reps: 8, e1rmKg: 128, kind: 'working' }, baseline({ bestSetVolumeKg: 800 })),
+    detectSetPrs(
+      { weightKg: 100, reps: 8, e1rmKg: 128, kind: 'working' },
+      baseline({ bestSetVolumeKg: 800 }),
+    ),
     [],
   );
 });
@@ -130,7 +148,13 @@ test('102.5 on a 20 kg bar is 25 + 15 + 1.25 a side', () => {
 
 test('plate maths is not greedy', () => {
   // 25 a side from {20, 15, 10}: greedy takes the 20 and strands 5.
-  const inv = { plates: [{ kg: 20, count: 2 }, { kg: 15, count: 2 }, { kg: 10, count: 2 }] };
+  const inv = {
+    plates: [
+      { kg: 20, count: 2 },
+      { kg: 15, count: 2 },
+      { kg: 10, count: 2 },
+    ],
+  };
   const sol = solvePlates(70, 20, inv);
   assert.equal(sol.achievedKg, 70);
   assert.deepEqual(sol.perSide, [15, 10]);
@@ -159,13 +183,25 @@ test('an empty bar loads nothing', () => {
 // -------------------------------------------------------------- warm-up ----
 test('the warm-up ramp rounds down, skips the bar and never repeats', () => {
   const ramp = warmupRamp(100);
-  assert.deepEqual(ramp.map((r) => r.weightKg), [40, 60, 75, 85]);
-  assert.deepEqual(ramp.map((r) => r.reps), [5, 3, 2, 1]);
+  assert.deepEqual(
+    ramp.map((r) => r.weightKg),
+    [40, 60, 75, 85],
+  );
+  assert.deepEqual(
+    ramp.map((r) => r.reps),
+    [5, 3, 2, 1],
+  );
   // A light work set produces fewer steps rather than sub-bar ones.
-  assert.deepEqual(warmupRamp(30).map((r) => r.weightKg), [22.5, 25]);
+  assert.deepEqual(
+    warmupRamp(30).map((r) => r.weightKg),
+    [22.5, 25],
+  );
   // And when two percentages floor to the same step, the repeat is dropped
   // rather than shown twice: 75% and 85% of 20 both floor to 15.
-  assert.deepEqual(warmupRamp(20, { barKg: 0 }).map((r) => r.weightKg), [7.5, 10, 15]);
+  assert.deepEqual(
+    warmupRamp(20, { barKg: 0 }).map((r) => r.weightKg),
+    [7.5, 10, 15],
+  );
 });
 
 // --------------------------------------------------------------- scale ----

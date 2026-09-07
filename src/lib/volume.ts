@@ -19,10 +19,7 @@ export function setVolume(s: SetLike): Kg {
  * Warm-ups are excluded by default: counting them inflates every
  * session-over-session delta the app draws.
  */
-export function totalVolume(
-  sets: readonly SetLike[],
-  opts: { includeWarmup?: boolean } = {},
-): Kg {
+export function totalVolume(sets: readonly SetLike[], opts: { includeWarmup?: boolean } = {}): Kg {
   return sets.reduce(
     (sum, s) => (opts.includeWarmup || s.kind !== 'warmup' ? sum + setVolume(s) : sum),
     0,
