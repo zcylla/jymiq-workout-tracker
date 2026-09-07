@@ -27,7 +27,7 @@ Forty-one boards of exploration have converged. These are settled; build against
 | **Charts** | `kit.chart()` is the one column chart — never bare. Minimum: y min/max anchored to the chart, first and last x labels, latest mark in the accent with the rest de-emphasised, its value printed, and a title that states the takeaway. **Text never wears the series colour** — labels and values stay in the text ramp. A bare chart is acceptable only as a preview of a labelled one. |
 | **Calendar** | Three intensity steps, no more. Adjacent-month days **dimmed, not omitted**. **Rest and missed must look different** — rest is a plate, missed carries a ring under the number. The numeral never wears the accent on a filled cell; it flips to dark ink only at the top step. Month summary is one line of text, not a second chart. |
 | **Spacing law** | **Between-section space ≥ 3× within-section space.** Currently 46pt vs 7pt. Rail events get 56pt of clear air beneath. Put this in the tokens; it is the whole structure. |
-| **Navigation** | **W2** (Lab 23) — four labelled tabs, inset circular start button, one continuous plane. Plus **W5** minimised-on-scroll and **W6** live-session takeover. **The plane is glass on iOS and an opaque raised plate on Android** (Lab 43 N2) — `expo-glass-effect` is iOS 26 only and degrades to a plain view, so the material is a platform switch, not a fallback. |
+| **Navigation** | **W2** (Lab 23) — four labelled tabs, inset circular start button, one continuous plane. Plus **W5** minimised-on-scroll and **W6** live-session takeover. **The plane is glass on iOS and an opaque raised plate on Android** (Lab 43 N2). Blur on Android was researched and **ruled out** — see §8s. It is a platform switch, not a fallback. |
 | **Live screen** | Gesture-navigated. Horizontal = sets, vertical = exercises. |
 | **Set indicator** | **Written**: `SET 4 OF 5` between two hairlines. Lab 29's set strip was proposed and **rejected** — the sets live behind the SETS button and nowhere else. |
 | **Sets view** | The **SETS sheet is the only global view of the sets**, and the secondary way to navigate between them. Rows carry a reorder grip on the left and a chevron on the right, 38pt hit area. **No Edit-set button** — tapping a row goes to that set and you edit it with the ring. |
@@ -40,7 +40,8 @@ Forty-one boards of exploration have converged. These are settled; build against
 | **Rail pattern** | Reserved for anything chronological — exercise history, session list, PR timeline. Dots cut free of the line (segments stop short). A rail always means "events in order" and nothing else. |
 | **Plate colours** | Default **A** (competition coding: 25 red, 15 yellow, 1.25 chrome), user-configurable in Settings. Geometry is real — height is diameter, width is thickness. |
 | **Instruments** | Nothing that needs teaching. See the three-tier rule in §8b. |
-| **Today** | One plated hero, two confirmations (Lab 43). The hero answers *what am I doing today*: a scheduled session once programs exist, the least-recently-run routine before that. Under it the week block (strip + two tiles) and the recent-sessions rail. **No separate records section** — the rail's PR pill already says it, and the timeline lives on Strength. The week strip shows **dots, not routine names**. |
+| **Today** | **Settled at Lab 45 W3.** A quiet raised card carrying the next routine, its first three lifts and a full-width accent **Start** button; under it the week block; under that the recent-sessions rail. **No separate records section** — the rail's PR pill already says it, and the timeline lives on Strength. |
+| **The week strip** | A **horizontally scrollable row of day cells, bounded to two weeks back**, bleeding past the 22pt margin so a cut cell reads as scrollable. Each cell is weekday letter · date · **a bar as tall as that day's volume** — the calendar and the graph are one element. Scrolling is what forces the date onto the cell: letters cannot say *which* Tuesday. A cell is a 46 × 44pt target that opens that day's session; **rest and future days are not targets at all** rather than targets that do nothing. Rest, missed and ahead stay three different things (missed keeps the ring under its number). The fill is a *relative* scale — tallest bar is the best day in view — so the tonnage stays printed underneath. |
 | **Empty states** | A component that will fill in stays visible and dim rather than hidden, so the layout a new user learns is the layout they keep. The empty state is a short sentence plus a set of actions — never an apology, never an illustration. |
 | **Information architecture** | Four tabs carry sixteen screens (Lab 34). **Today** home/next/readiness · **Session** routines, programs, library · **Strength** exercise history, PRs, standards, body map · **Load** volume, deload, bodyweight, calendar. **Settings is not a tab** — a gear in the Today header. Detail screens push on top of their tab, lose the tab bar, and the primary action takes that plane. |
 | **List row** | 44pt, no fill, **inset separators between rows inside a plate** (they start at the text margin — a full-bleed rule inside a plate makes it a table). Name 15–17px, mono meta line 11px under it, value right, chevron if it navigates, grip if it reorders. **A read-only table row is 34pt** — the hit-area floor is for targets. |
@@ -1119,8 +1120,7 @@ bar's glass plane needed an answer rather than an accident. **N2 chosen: the rai
 (`#221f19`) with the same M4 lit edge as every other plate and a heavier drop shadow doing the
 separating that blur did. It reads as part of the system rather than as a special case; N3 (the
 darker panel) sits so close to the ground that the fade above it has nothing to resolve against.
-`kit.nav(active, surface)` now carries the switch. `expo-blur`'s Dimezis backend is the fallback
-experiment if the flat bar reads dead on a real device — at a real frame cost, so only then.
+`kit.nav(active, surface)` now carries the switch.
 
 The difference on the screen itself turned out to be small: the bar was already 92% opaque and the
 fade was doing most of the work. What is lost is the saturation lift where the bloom passes behind
@@ -1199,3 +1199,57 @@ rather than assumed:
 
 Local blockers worth recording: Gradle needs **JDK 21** (the machine defaults to 11) and
 **`ANDROID_HOME`** must be set for `expo run:android`.
+
+---
+
+## 8s. Round twenty-two — Today settles, and Android glass is ruled out
+
+### Today, settled
+
+**Lab 45 W3.** The user's pick from Lab 44 was U4 — the quiet raised card with a full-width accent
+action rather than a fully filled card — keeping the calendar-style strip. Lab 45 took that and
+answered the two things the strip had never had to do.
+
+**Scrolling forces the date onto the cell.** A row of weekday letters stops identifying a day the
+moment there is more than one Tuesday in range. M/T/W keeps the rhythm; the number carries the
+identity.
+
+**The fill is the graph.** Each cell's mark is a bar as tall as that day's volume, so the strip is
+the calendar *and* the thing to look at — one element doing both jobs, rather than a chart section
+added to a screen that was already full. It reads as shape first and resolves into a chart on the
+second look, which is the right order for something seen daily.
+
+Bounded to **two weeks back** — further is the calendar's job, and a strip that scrolls forever is a
+calendar with worse ergonomics. A cut cell at the margin says "more that way", the same affordance
+the library chip strip uses. **Rest and future days are not targets**: a dead press is worse than an
+obvious non-target.
+
+### Android glass: ruled out, with numbers
+
+The question was whether iOS 26's glass chrome can be replicated on Android at all. It can be, and
+it should not be.
+
+- **`expo-blur`'s `blurMethod: 'dimezisBlurView'`** (renamed from `experimentalBlurMethod` in SDK 57)
+  wraps Dimezis BlurView, which on API 31+ re-captures the target's RenderNode and applies
+  `RenderEffect.createBlurEffect` **every time that node invalidates** — i.e. every frame of a
+  scroll. It is not a live framebuffer sample like `UIVisualEffectView`.
+- **The cost is continuous and large.** The closest published benchmark (Haze, same technique,
+  measured on a Pixel 6) is **+29%** frame duration for a static blurred surface, **+45%** for
+  multiple sources, and **+98% for moving content behind the surface** — 6.6ms to 13.1ms. That is
+  inside a 60Hz budget and *over* it at 90 or 120Hz, on a flagship, before any mid-range GPU.
+  Nobody publishes numbers for the budget Adreno/Mali tier, which is its own answer.
+- **Two known breakages in exactly our stack.** `BlurTargetView` cannot cross a `Modal` boundary, so
+  bottom-sheet blur is broken unless sheets are rendered in-tree; and there is an unresolved
+  Android + expo-router + Reanimated + dimezisBlurView bug causing transparency glitches and
+  freezes.
+- **Skia cannot substitute.** `BackdropFilter` blurs content drawn earlier *inside the same Canvas*,
+  not native views underneath it — confirmed by the maintainers. Snapshot-and-blur is a one-shot
+  technique, not a scroll-safe one.
+- **Android's own answer is not blur.** Material 3 specifies a flat tonal elevated surface for
+  navigation chrome, and Google's system-level blur in Android 16 shipped with a switch to turn it
+  off.
+
+**Verdict: the opaque raised plate is not a compromise, it is the platform's design.** What would
+reopen it: sheets rendered in-tree, a validated Reanimated-compatible library, and a backdrop with
+genuinely dynamic high-contrast content — none of which is true here, since the ground is near-black
+with already-soft blooms behind it.
