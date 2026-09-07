@@ -33,7 +33,16 @@ export default function KitchenSinkScreen() {
     <Screen>
       <ScreenHeader title="Kitchen sink" kicker="DEV" right={<Icon name="gear" />} />
 
-      <Section label="ICONS · 22PT · WEIGHT 1.6" plated={false}>
+      <Section label="SCREEN HEADER · PUSHED VARIANT" plated={false}>
+        <ScreenHeader
+          title="Barbell Squat"
+          kicker="EXERCISE"
+          onBack={() => {}}
+          right={<Icon name="dots" />}
+        />
+      </Section>
+
+      <Section label="ICONS · 22PT" plated={false}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 18 }}>
           {NAMES.map((n) => (
             <View key={n} style={{ alignItems: 'center', gap: 6, width: 62 }}>
