@@ -7,6 +7,12 @@ Android first (there is no iOS device to verify against); iOS paths stay isolate
 an Expo API.** This SDK moved several things (Reanimated 4 worklets, headless router tabs, the
 font config plugin) and general knowledge is wrong about them.
 
+## Where the build is
+
+Read `claudedocs/build-log.md` first — it holds build state, what runs on the device today, what is
+next, and the environment facts that break the build if missed (Gradle needs **JDK 21**, and
+**`ANDROID_HOME`** must be set).
+
 ## Where the design lives
 
 - `claudedocs/design-exploration.md` **§0** is the locked decision table. It wins every argument.
@@ -39,8 +45,14 @@ font config plugin) and general knowledge is wrong about them.
 
 ## Commands
 
-```
-npm run check       # typecheck + lint + unit tests
-npm run android     # dev build on a connected device
-npm run db:gen      # regenerate drizzle migrations after editing src/data/schema.ts
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk   # Gradle needs 21; the machine defaults to 11
+export ANDROID_HOME=$HOME/Android/Sdk
+
+npm run check                  # typecheck + lint + unit tests
+npx expo run:android           # full dev build onto a connected phone (no emulator installed)
+npx expo start --dev-client    # then just Metro
+adb reverse tcp:8081 tcp:8081  # phone reaches Metro over USB
+npm run db:gen                 # regenerate migrations after editing src/data/schema.ts
+npx expo customize tsconfig.json   # regenerate typed-route types without starting Metro
 ```
