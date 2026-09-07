@@ -21,6 +21,7 @@ next, and the environment facts that break the build if missed (Gradle needs **J
 - The boards (`lab*.py`, published to the Claude Design project) are the reference renders.
   Earlier labs are reasoning, not state; do not build from them.
 - The implementation plan is at `~/.claude/plans/start-by-making-a-rippling-fog.md`.
+- `claudedocs/body-map.md` is the spec for the Strength tab's muscle figure — unscheduled, built later.
 
 ## Conventions that are not obvious
 
