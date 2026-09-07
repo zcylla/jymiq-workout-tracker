@@ -1,5 +1,5 @@
 export { mono, sans, type MonoWeight, type SansWeight } from './fonts';
-export { text, type TextVariant } from './type';
+export { lh, ls, text, type TextVariant } from './type';
 export {
   chromeShadow,
   color,

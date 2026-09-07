@@ -13,7 +13,7 @@ import { color } from './tokens';
  * makes every mono label in the app subtly too tight in a way that survives
  * review.
  */
-const ls = (em: number, px: number) => Math.round(em * px * 100) / 100;
+export const ls = (em: number, px: number) => Math.round(em * px * 100) / 100;
 
 /**
  * Line height, matched to the boards.
@@ -25,7 +25,7 @@ const ls = (em: number, px: number) => Math.round(em * px * 100) / 100;
  * rhythm sits on a moving base, so every step that gets laid out in a row states
  * its line height. Prose steps keep their own looser values on purpose.
  */
-const lh = (px: number) => Math.round(px * 1.286);
+export const lh = (px: number) => Math.round(px * 1.286);
 
 export const text = {
   h1: { ...sans(600), fontSize: 30, letterSpacing: ls(-0.03, 30), lineHeight: 33, color: color.hi },
