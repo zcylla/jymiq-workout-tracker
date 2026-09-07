@@ -215,7 +215,8 @@ Phase 2 did not build.
 
 - **Branching: settled.** Trunk commits on `main` are accepted for this solo app. Do not reach for
   branch-based tooling (`/review` and friends diff a branch against a base and will refuse); review
-  the working diff or the last N commits instead. There is still no git remote.
+  the working diff or the last N commits instead. `origin` is now
+  `git@github.com:zcylla/jymiq-workout-tracker.git`.
 - **`src/data/queries/` and `src/data/mutations/` do not exist yet.** The schema is written; nothing
   reads or writes it except the dev screen.
 - **Settings storage** is decided (`expo-sqlite/kv-store`) but not written.
