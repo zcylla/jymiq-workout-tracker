@@ -3,7 +3,7 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-07, Phase 6's gesture gate.
+Last updated 2026-09-07, Phase 6's gesture gate and session data layer.
 
 ---
 
@@ -30,6 +30,7 @@ computed features in v1.
 | **4 — The navigation shell** | Headless `expo-router/ui` tabs behind the W2 bar. **Verified on device**: tabs switch, a push loses the bar, live takes over, back returns to Today. |
 | **5 — The real screens** | **Done.** Mutations, routine detail and the custom-exercise form are on the device and writing. |
 | **5b — Supabase** | **Schema, RLS and the auth flow done.** Sync itself is Phase 8. |
+| **6 — The live session** | **Gate passed and the data layer is on the device.** The screen itself is next. |
 
 ### What Phase 5 settled
 
@@ -277,6 +278,61 @@ that, and W5's minimise-on-scroll, are still open.
 
 ---
 
+### What the session data layer settled
+
+`src/data/queries/sessions.ts` and `src/data/mutations/sessions.ts` exist, and **the whole loop was
+run on the device**, not type-checked: `/dev/db` grew a "run a demo session" action that snapshots
+the demo routine, logs all fourteen of its planned sets and closes the session.
+
+**The first run named eleven set records and four session records; an identical second run named
+none.** That second result is the one worth having — it is the baseline read working. Three details
+of it are worth recording because they are the behaviours that are easy to get wrong and hard to
+notice:
+
+- **The 40 x 14 exercise set a HEAVIEST but no BEST ESTIMATED 1RM.** `estimate1RM` returns null past
+  twelve reps, and `detectSetPrs` skips that one category rather than failing the set. Visible in
+  the output, which is the only way anyone would ever check it.
+- **`most_reps_at_weight` fired zero times, on both runs.** No weight had been lifted before, so its
+  guard held. Without that guard every unfamiliar load fires a record on the way up.
+- **Each exercise fired its records once, on set one, not once per set.** Sets two to five of an
+  identical prescription beat nothing, because the baseline is re-read inside the transaction and
+  already contains set one.
+
+**The baseline is read from the sets, not from `personal_records`.** It has to be:
+`bestRepsAtWeight` decides whether a weight has *ever* been lifted, and the records table only knows
+weights that once won something — reading it from there would fire a most-reps record on every new
+load, which is exactly what the guard above exists to prevent. `heaviest`, `best_e1rm` and
+`best_set_volume` count working and failure sets only, matching `detectSetPrs`; session volume
+follows `totalVolume` and excludes warm-ups alone. Session volume's baseline excludes the session
+being judged, or it beats itself; a *set's* baseline does not exclude its own session, because
+105 after 100 is a heaviest-ever either way.
+
+**Three decisions inside the mutations that are not obvious from the schema:**
+
+1. **The set rows are created at session start, with the plan already dialled into
+   `weightKg`/`reps`.** That is what makes the row the draft the schema comment describes — the tape
+   writes to a row that already exists, so a force-stop mid-set loses nothing and needs no recovery
+   code.
+2. **Sets dialled but never logged survive `finishSession`.** They contribute nothing to either
+   total (`totalVolume` and `countWorkingSets` both ignore a null `completedAt`), and deleting them
+   would erase the difference between what was planned and what got done — the same fact
+   `removedAt` keeps for a skipped exercise.
+3. **`uncompleteSet` deletes the records that set set.** They were claims about a lift that is no
+   longer logged. Because the table is append-only, whatever it beat simply becomes the newest
+   surviving row again — no recomputation.
+
+**Rest resolves routine → exercise → kind default** through `resolveRestSec` in `src/lib/rest.ts`,
+which is where it can be tested and where Settings will take it over. `DEFAULT_REST_SEC` is
+180 / 90. The test covers the case that would otherwise rot: **zero is a choice, not an absent
+value**, so a routine resting 0s must not fall through to 180.
+
+**What is deliberately not built:** pause/resume. `sessions.pausedMs` accumulates, but there is no
+`pausedAt` column to accumulate *from*, and Lab 33's four states have no pause control. Either the
+design wants one and the schema needs a column, or it does not — that is a design question, not an
+oversight.
+
+---
+
 ## Phase 6's gate — the back-gesture conflict, measured
 
 **Answered on the device, and the live screen's two axes both survive.** `/dev/gestures` is the
@@ -326,9 +382,11 @@ claim would mean writing a native module. On these numbers it is not needed.
 
 ## Next, in order
 
-1. **Phase 6 — the live session.** The gesture gate above is passed, so the screen can be built:
-   the session mutations and queries first (`sessions`, `session_exercises`, `sets` and
-   `personal_records` are all written and nothing touches them yet), then Lab 33's four states.
+1. **Phase 6 — the live screen itself.** The gate is passed and the data layer is on the device, so
+   what is left is Lab 33's four states: the ring as the load readout, the shared tape for all three
+   parameters, the SETS and exercise sheets, the K3 ladder. Build against the two rules the gesture
+   measurements set — a cancelled swipe snaps back, and nothing horizontally draggable comes within
+   40dp of an edge.
    Plus the two screens Phase 5 deferred: routine creation and routine editing (the EDIT button on
    routine detail is drawn and inert). Live needs a real routine to run, so creation lands with it.
 3. **Phase 7 — summary, session detail, history, trimmed settings, export.**
@@ -344,9 +402,9 @@ Phase 2 did not build.
   branch-based tooling (`/review` and friends diff a branch against a base and will refuse); review
   the working diff or the last N commits instead. `origin` is now
   `git@github.com:zcylla/jymiq-workout-tracker.git`.
-- **`src/data/queries/` and `src/data/mutations/` cover exercises and routines only.** Nothing reads
-  or writes `sessions`, `session_exercises`, `sets` or `personal_records` yet — that is Phase 6's
-  first job.
+- **The session data layer is done; only the screen is missing.** `src/data/queries/sessions.ts` and
+  `src/data/mutations/sessions.ts` cover start, dial, log, undo, add/remove set, add/skip exercise,
+  reorder, cursor, finish and abandon. Pause is not built — see above.
 - **Settings storage** is decided (`expo-sqlite/kv-store`) but not written.
 - Still open on the design side and not blocking: the calendar's plate, the body map, the IA.
 - **Supabase: schema, RLS and auth are done; sync is not.** Architecture unchanged and settled:
