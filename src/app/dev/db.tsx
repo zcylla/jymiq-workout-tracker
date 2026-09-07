@@ -1,11 +1,21 @@
+import { eq } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListRow, RowPlate, RowPlates } from '@/components';
 import { db } from '@/data/db';
 import { addExerciseToRoutine, createRoutine } from '@/data/mutations/routines';
+import {
+  abandonSession,
+  completeSet,
+  finishSession,
+  startSession,
+} from '@/data/mutations/sessions';
+import { activeSessionQuery, sessionSetsQuery } from '@/data/queries/sessions';
+import { PR_LABELS } from '@/lib/pr';
+import { formatTonnage } from '@/lib/volume';
 import { exercises, personalRecords, routines, sessions, sets } from '@/data/schema';
 import { color, containment, space, text } from '@/theme';
 
@@ -28,6 +38,39 @@ function makeDemoRoutine() {
     }),
   );
   router.push(`/routine/${id}`);
+}
+
+/**
+ * The whole session path in one press: snapshot a routine, log every set it
+ * planned, close it. The interesting part is what comes back — the records are
+ * detected against real history, so pressing this twice should name fewer the
+ * second time, and pressing it on a heavier routine should name more.
+ */
+function runDemoSession(): void {
+  const [routine] = db.select({ id: routines.id }).from(routines).limit(1).all();
+  if (!routine) {
+    Alert.alert('No routine', 'Make a demo routine first.');
+    return;
+  }
+
+  const [live] = activeSessionQuery().all();
+  if (live) abandonSession(live.id);
+
+  const sessionId = startSession({ routineId: routine.id });
+  const planned = sessionSetsQuery(sessionId).all();
+  const hits = planned.flatMap((s) => completeSet(s.id));
+  const closing = finishSession(sessionId);
+
+  const [done] = db.select().from(sessions).where(eq(sessions.id, sessionId)).limit(1).all();
+  const named = [...hits, ...closing].map((h) => `${PR_LABELS[h.category]} ${h.value}`);
+
+  Alert.alert(
+    `${planned.length} sets logged`,
+    [
+      `${formatTonnage(done?.totalVolumeKg ?? 0)} · ${done?.totalSets ?? 0} working sets`,
+      named.length ? named.join('\n') : 'No records.',
+    ].join('\n\n'),
+  );
 }
 
 /** Row counts, so "did the migration run" has an answer on the device. */
@@ -72,6 +115,12 @@ export default function DbScreen() {
         <RowPlates>
           <RowPlate onPress={makeDemoRoutine}>
             <ListRow title="Make a demo routine" meta="createRoutine + addExerciseToRoutine" />
+          </RowPlate>
+          <RowPlate onPress={runDemoSession}>
+            <ListRow
+              title="Run a demo session"
+              meta="start + log every set + finish, with records"
+            />
           </RowPlate>
           <RowPlate onPress={() => router.push('/exercise/new')}>
             <ListRow title="New custom exercise" meta="lab 35 b3" />
