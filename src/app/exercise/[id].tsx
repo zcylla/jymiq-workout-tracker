@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import { ActionBar, Screen, ScreenHeader, Section } from '@/components';
+import { ActionBar, Screen, ScreenHeader, Section, useActionBarHeight } from '@/components';
 import { exerciseMusclesQuery, exerciseQuery } from '@/data/queries/exercises';
 import { space, text } from '@/theme';
 
@@ -15,6 +15,7 @@ import { space, text } from '@/theme';
  * Phase 7 once there is history to draw.
  */
 export default function ExerciseScreen() {
+  const actionBar = useActionBarHeight();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: found } = useLiveQuery(
     useMemo(() => exerciseQuery(id), [id]),
@@ -32,7 +33,7 @@ export default function ExerciseScreen() {
 
   return (
     <>
-      <Screen>
+      <Screen bottomInset={actionBar}>
         <ScreenHeader
           title={exercise?.name ?? ''}
           kicker={

@@ -2,12 +2,13 @@ import { FlashList } from '@shopify/flash-list';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   Chip,
   ChipStrip,
+  Icon,
   ListRow,
   RowPlate,
   ScreenHeader,
@@ -58,7 +59,16 @@ export default function LibraryScreen() {
       style={{ backgroundColor: color.ground }}
       ListHeaderComponent={
         <View style={{ gap: space.within, paddingBottom: space.within }}>
-          <ScreenHeader title="Library" kicker="EXERCISES" onBack={() => router.back()} />
+          <ScreenHeader
+            title="Library"
+            kicker="EXERCISES"
+            onBack={() => router.back()}
+            right={
+              <Pressable onPress={() => router.push('/exercise/new')} hitSlop={12}>
+                <Icon name="plus" />
+              </Pressable>
+            }
+          />
           <SearchField
             placeholder={`Search ${rows?.length ?? 0} exercises`}
             value={search}

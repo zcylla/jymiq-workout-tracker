@@ -1,10 +1,34 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ListRow, RowPlate, RowPlates } from '@/components';
 import { db } from '@/data/db';
+import { addExerciseToRoutine, createRoutine } from '@/data/mutations/routines';
 import { exercises, personalRecords, routines, sessions, sets } from '@/data/schema';
 import { color, containment, space, text } from '@/theme';
+
+/**
+ * Routine creation is Phase 6's screen, so until it exists this is what puts a
+ * routine on the device to open. It uses the real mutations, which is also the
+ * only exercise the transaction path gets before the live session writes.
+ */
+function makeDemoRoutine() {
+  const picks = db.select({ id: exercises.id }).from(exercises).limit(4).all();
+  const id = createRoutine({ name: 'Lower A', note: 'demo' });
+  picks.forEach((ex, i) =>
+    addExerciseToRoutine({
+      routineId: id,
+      exerciseId: ex.id,
+      targetSets: 5 - i,
+      targetReps: 8 + i * 2,
+      targetWeightKg: 100 - i * 20,
+      restSec: 180 - i * 30,
+    }),
+  );
+  router.push(`/routine/${id}`);
+}
 
 /** Row counts, so "did the migration run" has an answer on the device. */
 export default function DbScreen() {
@@ -42,6 +66,17 @@ export default function DbScreen() {
             <Text style={text.num}>{n ?? '—'}</Text>
           </View>
         ))}
+      </View>
+
+      <View style={{ paddingTop: space.between }}>
+        <RowPlates>
+          <RowPlate onPress={makeDemoRoutine}>
+            <ListRow title="Make a demo routine" meta="createRoutine + addExerciseToRoutine" />
+          </RowPlate>
+          <RowPlate onPress={() => router.push('/exercise/new')}>
+            <ListRow title="New custom exercise" meta="lab 35 b3" />
+          </RowPlate>
+        </RowPlates>
       </View>
     </ScrollView>
   );

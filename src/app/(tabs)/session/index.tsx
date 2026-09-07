@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useMemo } from 'react';
 import { Text } from 'react-native';
 
@@ -39,7 +39,7 @@ export default function RoutinesScreen() {
         {routines?.length ? (
           <RowPlates>
             {routines.map((r) => (
-              <RowPlate key={r.id}>
+              <RowPlate key={r.id} onPress={() => router.push(`/routine/${r.id}`)}>
                 <ListRow title={r.name} meta={r.note ?? undefined} />
               </RowPlate>
             ))}
