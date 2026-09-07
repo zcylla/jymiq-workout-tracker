@@ -31,7 +31,7 @@ const NAMES: IconName[] = [
 export default function KitchenSinkScreen() {
   return (
     <Screen>
-      <ScreenHeader title="Kitchen sink" kicker="DEV" right={<Icon name="gear" weight={1.7} />} />
+      <ScreenHeader title="Kitchen sink" kicker="DEV" right={<Icon name="gear" />} />
 
       <Section label="ICONS · 22PT · WEIGHT 1.6" plated={false}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 18 }}>
@@ -50,7 +50,7 @@ export default function KitchenSinkScreen() {
           <Icon name="today" tone={color.accent} />
           <Icon name="today" tone={color.done} />
           <Icon name="today" tone={color.live} />
-          <Icon name="today" tone={color.hi} weight={2.4} />
+          <Icon name="today" tone={color.hi} size={30} />
         </View>
       </Section>
 

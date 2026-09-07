@@ -34,7 +34,7 @@ export function ScreenHeader({ title, kicker, right, onBack }: Props) {
       <View style={{ paddingTop: 6, paddingBottom: 2, gap: 9 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: size.hit }}>
           <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back">
-            <Icon name="back" tone={color.mid} weight={1.8} />
+            <Icon name="back" tone={color.mid} />
           </Pressable>
           <View style={{ flex: 1 }} />
           {right}

@@ -32,7 +32,7 @@ const TEMPLATES = [
 export default function Lab34A1Screen() {
   return (
     <Screen>
-      <ScreenHeader title="Routines" kicker="PLAN" right={<Icon name="search" weight={1.7} />} />
+      <ScreenHeader title="Routines" kicker="PLAN" right={<Icon name="search" />} />
 
       <Section label="IN PROGRAM · PPL 6-DAY" plated={false}>
         <RowPlates>

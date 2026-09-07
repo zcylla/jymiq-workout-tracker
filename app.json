@@ -99,6 +99,17 @@
           "color": "#e4c68c",
           "defaultChannel": "rest"
         }
+      ],
+      [
+        "react-native-nano-icons",
+        {
+          "iconSets": [
+            {
+              "inputDir": "./assets/icons/ui",
+              "fontFamily": "WorkoutIcons"
+            }
+          ]
+        }
       ]
     ],
     "experiments": {
