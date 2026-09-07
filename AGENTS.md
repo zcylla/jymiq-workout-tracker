@@ -34,6 +34,18 @@ next, and the environment facts that break the build if missed (Gradle needs **J
   `.value` is a mutable read React Compiler cannot see, so it caches a stale frame. An ESLint rule
   enforces the suffix convention.
 - `runOnJS` is `scheduleOnRN` from `react-native-worklets` in Reanimated 4.
+- **Icons are hand-drawn, not a library.** `assets/icons/ui/*.svg` is the source; the paths come
+  from `kit.py`'s `ICONS`. `react-native-nano-icons` compiles the folder into a subsetted font at
+  prebuild, so a glyph is one native text draw — never a Skia canvas or an SVG subtree per row.
+  To add one: draw it in a square box in the same idiom (strokes only, round caps and joins,
+  `fill="none"`, `stroke="#000000"`, `<path>` only), list it in `DRAWN_AT` in
+  `scripts/check-icons.mjs` with the size it is rendered at, then run `npx expo prebuild` and
+  rebuild — the plugin fingerprints the folder. `npm run check` runs the style checker and fails on
+  an off-style icon, including one that is not declared. **The constant is the on-screen stroke
+  width, not the stroke value**: the box is chosen to suit the render size, so a 16-box chevron
+  drawn at 13pt carries a 1.7 stroke and a 22-box icon at 22pt carries 1.6, and both read as the
+  same weight. There is no runtime weight prop.
+
 - **Weights are stored in kilograms, always.** lb is a display transform in `src/lib/units.ts`.
 - **`src/lib/**` is pure**: no React, no SQLite, no Expo imports. It is the only tested layer.
 - **Containment has three levels** (Lab 42): a row plate for anything you touch, one grouped plate
