@@ -41,3 +41,9 @@ example
 # generated native folders
 /ios
 /android
+
+# agent tooling artefacts
+.codegraph/
+.playwright-mcp/
+claudedocs/design-labs/__pycache__/
+claudedocs/design-labs/*.html

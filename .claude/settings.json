@@ -1,5 +1,29 @@
 {
   "enabledPlugins": {
-    "expo@claude-plugins-official": true
+    "expo@claude-plugins-official": true,
+    "impeccable@impeccable": false,
+    "voltagent-core-dev@voltagent-subagents": false,
+    "voltagent-dev-exp@voltagent-subagents": false,
+    "voltagent-lang@voltagent-subagents": false,
+    "voltagent-meta@voltagent-subagents": false,
+    "voltagent-qa-sec@voltagent-subagents": false,
+    "voltagent-research@voltagent-subagents": false
+  },
+  "skillOverrides": {
+    "baseline-ui": "on",
+    "create-design-md": "on",
+    "fixing-motion-performance": "on",
+    "improve-animations": "on",
+    "improve-ui": "on",
+    "mobile-app-design-standards": "on",
+    "mobile-app-ui-design": "on",
+    "vercel-composition-patterns": "on",
+    "vercel-react-best-practices": "on",
+    "vercel-react-native-skills": "on",
+    "web-design-guidelines": "on",
+    "ui-ux-pro-max:banner-design": "off",
+    "ui-ux-pro-max:brand": "off",
+    "ui-ux-pro-max:design": "off",
+    "ui-ux-pro-max:slides": "off"
   }
 }
