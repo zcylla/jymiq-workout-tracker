@@ -9,3 +9,4 @@ export { Screen } from './screen';
 export { ScreenHeader } from './screen-header';
 export { Section } from './section';
 export { StatTiles, type Tile } from './tiles';
+export { StartButton, TabBar, TabItem } from './tab-bar';

@@ -46,6 +46,9 @@ export const text = {
   /** kit .pill — one notch looser than meta, and never bold. */
   pill: { ...mono(400), fontSize: 11, letterSpacing: ls(0.1, 11), lineHeight: lh(11), color: color.accent },
 
+  /** kit .tabl — the tab bar's label, tighter than every other mono caption. */
+  tab: { ...mono(400), fontSize: 11, letterSpacing: ls(0.05, 11), lineHeight: lh(11), color: color.lo },
+
   /** kit .num — Geist Mono is tabular by construction, so no fontVariant needed. */
   num: { ...mono(500), fontSize: 15, letterSpacing: ls(-0.02, 15), lineHeight: lh(15), color: color.hi },
   numSm: { ...mono(400), fontSize: 13, lineHeight: lh(13), color: color.mid },

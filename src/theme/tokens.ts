@@ -111,6 +111,10 @@ export const containment = {
  */
 export const chromeShadow = `${litEdge}, 0 12px 30px rgba(0,0,0,0.62)`;
 
+/** kit .fab — the start button. A brighter lit edge than a plate, on an accent fill. */
+export const fabShadow =
+  'inset 0 1px 0 rgba(255,255,255,0.55), 0 10px 26px rgba(0,0,0,0.50)';
+
 export const motion = {
   fast: 140,
   base: 240,

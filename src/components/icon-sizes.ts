@@ -20,6 +20,9 @@ export const ICON_SIZE = {
   plus: 22,
   cal: 22,
   dots: 22,
+  /** Inside the tab bar's start button, on the accent fill. */
+  start: 22,
+
   /** In a list row and beside a field. */
   chev: 13,
   /** Inside a Delta, beside 13px mono. */

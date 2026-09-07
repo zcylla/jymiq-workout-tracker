@@ -4,6 +4,7 @@ export {
   chromeShadow,
   color,
   containment,
+  fabShadow,
   hairline,
   type Ink,
   litEdge,
