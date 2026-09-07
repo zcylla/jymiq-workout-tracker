@@ -31,7 +31,11 @@ yarn-error.*
 *.pem
 
 # local env files
+# `.env*.local` does not match a bare `.env`, and that is where the Supabase
+# credentials live. Ignore the file itself, and keep `.env.example` tracked.
+.env
 .env*.local
+!.env.example
 
 # typescript
 *.tsbuildinfo
