@@ -116,3 +116,22 @@ export const motion = {
   base: 240,
   slow: 380,
 } as const;
+
+/**
+ * Washes — a hue at low alpha used as a fill *behind* something, never as a step
+ * in the text ramp. The alphas are the ones the boards use (kit.meter's track,
+ * kit.pill's default tint), not derived from the palette.
+ */
+export const wash = {
+  track: 'rgba(255,255,255,0.08)',
+  accent: 'rgba(228,198,140,0.13)',
+  done: 'rgba(159,174,58,0.16)',
+  live: 'rgba(223,84,65,0.14)',
+} as const;
+
+/**
+ * Any colour a component may be handed. Typing a prop as `Ink` rather than
+ * `string` is what stops a screen from passing a hex — tsc rejects it, so the
+ * one-file rule is enforced by the compiler rather than by review.
+ */
+export type Ink = (typeof color)[keyof typeof color];

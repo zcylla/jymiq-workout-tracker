@@ -5,9 +5,11 @@ export {
   color,
   containment,
   hairline,
+  type Ink,
   litEdge,
   motion,
   radius,
   size,
   space,
+  wash,
 } from './tokens';
