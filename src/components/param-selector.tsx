@@ -10,6 +10,10 @@ type Props = {
   /** Appended only to the active RPE unit, e.g. `RPE · RIR 2`. */
   gloss?: string;
   onSelect: (parameter: WorkoutParameter) => void;
+  /** Long press opens the numeric route for the same parameter. */
+  onLongPress?: (parameter: WorkoutParameter) => void;
+  /** RPE is absent unless the exercise opts into tracking it. */
+  parameters?: readonly WorkoutParameter[];
 };
 
 const PARAMETERS: { key: WorkoutParameter; unit: string }[] = [
@@ -19,10 +23,17 @@ const PARAMETERS: { key: WorkoutParameter; unit: string }[] = [
 ];
 
 /** The active input parameter below a live-session dial. */
-export function ParamSelector({ active, values, gloss, onSelect }: Props) {
+export function ParamSelector({
+  active,
+  values,
+  gloss,
+  onSelect,
+  onLongPress,
+  parameters = PARAMETERS.map((parameter) => parameter.key),
+}: Props) {
   return (
     <View style={{ width: '100%', flexDirection: 'row', gap: 6, paddingHorizontal: 4 }}>
-      {PARAMETERS.map(({ key, unit }) => {
+      {PARAMETERS.filter(({ key }) => parameters.includes(key)).map(({ key, unit }) => {
         const selected = key === active;
         const label = selected && gloss ? `${unit} · ${gloss}` : unit;
 
@@ -30,6 +41,7 @@ export function ParamSelector({ active, values, gloss, onSelect }: Props) {
           <Pressable
             key={key}
             onPress={() => onSelect(key)}
+            onLongPress={() => onLongPress?.(key)}
             hitSlop={{ top: 4, bottom: 4 }}
             accessibilityRole="button"
             accessibilityState={{ selected }}

@@ -89,6 +89,30 @@ export function recentSessionsQuery(limit = 20) {
     .limit(limit);
 }
 
+/** The most recently logged set for an exercise before the current session. */
+export function lastCompletedExerciseSetQuery(exerciseId: string, currentSessionId: string) {
+  return db
+    .select({
+      weightKg: sets.weightKg,
+      reps: sets.reps,
+      rpe: sets.rpe,
+      e1rmKg: sets.e1rmKg,
+      startedAt: sessions.startedAt,
+    })
+    .from(sets)
+    .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+    .innerJoin(sessions, eq(sessions.id, sessionExercises.sessionId))
+    .where(
+      and(
+        eq(sessionExercises.exerciseId, exerciseId),
+        ne(sessionExercises.sessionId, currentSessionId),
+        isNotNull(sets.completedAt),
+      ),
+    )
+    .orderBy(desc(sessions.startedAt), desc(sets.position))
+    .limit(1);
+}
+
 /**
  * Everything `detectSetPrs` needs to judge one exercise, read from the sets
  * themselves rather than from `personal_records`.
