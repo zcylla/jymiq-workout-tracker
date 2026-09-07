@@ -1,5 +1,5 @@
-import { Link } from 'expo-router';
-import { Text } from 'react-native';
+import { Link, router } from 'expo-router';
+import { Pressable, Text } from 'react-native';
 
 import { Icon, ListRow, RowPlate, RowPlates, Screen, ScreenHeader, Section } from '@/components';
 import { text } from '@/theme';
@@ -12,7 +12,17 @@ import { text } from '@/theme';
 export default function TodayScreen() {
   return (
     <Screen>
-      <ScreenHeader title="Today" kicker="THU 4 SEP" right={<Icon name="gear" />} />
+      {/* Settings is not a tab (§0) — it is this gear. Until that screen exists
+          the gear opens the one thing behind it that does: the account. */}
+      <ScreenHeader
+        title="Today"
+        kicker="THU 4 SEP"
+        right={
+          <Pressable onPress={() => router.push('/sign-in')} hitSlop={12}>
+            <Icon name="gear" />
+          </Pressable>
+        }
+      />
 
       <Section label="NEXT">
         <Text style={text.lead}>Lower B</Text>
