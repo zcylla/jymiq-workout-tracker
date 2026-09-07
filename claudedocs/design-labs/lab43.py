@@ -69,7 +69,7 @@ LIFTS = [('01', 'Barbell Squat', '5 &times; 8 @ 102.5'),
 TILES_FULL = K.tiles([('SESSIONS', '3', K.meter(3 / 4.0, w=44), K.HI),
                       ('VOLUME', '18.4 T', K.delta('+9%'), K.HI)], tone='raised')
 
-RAIL = K.rail([
+RAIL_EVENTS = [
     (K.ACCENT, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px">'
                'Tue 2 Sep</span>' + K.pill('PR') + '<span class="sp"></span>'
                '<span class="mono" style="font-size:13px;color:var(--mid)">8.6 T</span></div>'
@@ -85,7 +85,9 @@ RAIL = K.rail([
               '<span class="mono" style="font-size:13px;color:var(--mid)">8.1 T</span></div>'
               '<span class="mono" style="font-size:11px;color:var(--lo)">LOWER B &middot; '
               '61 MIN &middot; 20 SETS</span>'),
-], air=22)
+]
+
+RAIL = K.rail(RAIL_EVENTS, air=22)
 
 
 def pr_row(name, kind, value, when):
