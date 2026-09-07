@@ -21,6 +21,7 @@ export function Field({
   onChangeText,
   prompt,
   autoFocus,
+  keyboard = 'text',
 }: {
   label: string;
   value: string;
@@ -32,6 +33,8 @@ export function Field({
   /** Placeholder text for the editable form. */
   prompt?: string;
   autoFocus?: boolean;
+  /** An email must not be title-cased, and wants the keyboard with the @ on it. */
+  keyboard?: 'text' | 'email';
 }) {
   const body = (
     <View style={{ gap: 6, paddingVertical: 7 }}>
@@ -44,7 +47,9 @@ export function Field({
             placeholder={prompt}
             placeholderTextColor={color.dim}
             autoFocus={autoFocus}
-            autoCapitalize="words"
+            autoCapitalize={keyboard === 'email' ? 'none' : 'words'}
+            autoCorrect={keyboard !== 'email'}
+            keyboardType={keyboard === 'email' ? 'email-address' : 'default'}
             style={[text.field, { flex: 1, padding: 0 }]}
           />
         ) : (
