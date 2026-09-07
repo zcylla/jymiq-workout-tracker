@@ -69,5 +69,13 @@
     "test": "node --test --experimental-strip-types src/lib/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
-  "private": true
+  "private": true,
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@shopify/react-native-skia",
+      "esbuild",
+      "lefthook",
+      "unrs-resolver"
+    ]
+  }
 }
