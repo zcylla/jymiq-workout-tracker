@@ -45,7 +45,6 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.5",
     "eslint-config-expo": "^57.0.2",
-    "lucide-static": "^1.41.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -55,9 +54,10 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types src/lib/*.test.ts",
-    "check": "npm run typecheck && npm run lint && npm test",
+    "check": "npm run typecheck && npm run lint && npm run icons:check && npm test",
     "db:gen": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "icons:check": "node scripts/check-icons.mjs"
   },
   "private": true
 }
