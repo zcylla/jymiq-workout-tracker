@@ -15,7 +15,9 @@ export function Meter({
   height?: number;
   tone?: Ink;
 }) {
-  const filled = Math.min(1, Math.max(0, value));
+  // NaN survives Math.min/max, and a `NaN%` width renders wrong rather than
+  // throwing. An empty state divides by zero often enough to matter.
+  const filled = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
   return (
     <View
       style={[
@@ -25,7 +27,10 @@ export function Meter({
           backgroundColor: wash.track,
           overflow: 'hidden',
         },
-        width === 'full' ? { alignSelf: 'stretch' } : { width, flexShrink: 0 },
+        // kit emits width:100%, which is axis-independent. alignSelf:'stretch'
+        // is not — in a row parent it stretches the wrong way and the meter
+        // collapses, which is where StatTiles puts it.
+        width === 'full' ? { width: '100%' } : { width, flexShrink: 0 },
       ]}
     >
       <View
