@@ -1,3 +1,4 @@
+import type { TabTriggerSlotProps } from 'expo-router/ui';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,20 +54,21 @@ export function TabBar({ children }: { children: ReactNode }) {
 export function TabItem({
   icon,
   label,
-  active = false,
-  onPress,
-}: {
-  icon: IconName;
-  label: string;
-  active?: boolean;
-  onPress?: () => void;
-}) {
-  const tone = active ? color.accent : color.lo;
+  isFocused = false,
+  // Dropped on purpose: `href` is web-only and Pressable ignores it, and `style`
+  // is the library's own row style, which is not the one we want.
+  href: _href,
+  style: _style,
+  ...rest
+}: TabTriggerSlotProps & { icon: IconName; label: string }) {
+  const tone = isFocused ? color.accent : color.lo;
   return (
     <Pressable
-      onPress={onPress}
+      {...rest}
       accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
+      accessibilityState={{ selected: isFocused }}
+      // Set here rather than on the JSX element: TabTrigger's asChild slot merges
+      // style by object spread, so an array passed in from outside is silently lost.
       style={{ flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', gap: 3 }}
     >
       <Icon name={icon} tone={tone} />

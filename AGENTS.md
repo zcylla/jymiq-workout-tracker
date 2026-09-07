@@ -41,8 +41,10 @@ next, and the environment facts that break the build if missed (Gradle needs **J
   in a square box in the same idiom (strokes only, round caps and joins, `fill="none"`,
   `stroke="#000000"`, `<path>` only — convert `<circle>`/`<rect>` to path data). Then add it to
   `ICON_SIZE` in `src/components/icon-sizes.ts` with the size it is rendered at, run
-  `npx expo prebuild` and rebuild — the plugin fingerprints the folder, so a Metro reload is not
-  enough. `npm run check` runs `scripts/check-icons.mjs`, which fails on an off-style or undeclared
+  `npx expo prebuild` **and a native rebuild** — the plugin fingerprints the folder, so a Metro
+  reload is not enough. Skipping the rebuild fails **silently as the wrong glyphs**: codepoints are
+  assigned alphabetically, so adding one icon renumbers every later one and the stale font on the
+  device draws a clock where a chart should be. `npm run check` runs `scripts/check-icons.mjs`, which fails on an off-style or undeclared
   icon. **The constant is the on-screen stroke width, not the stroke value**: the box is chosen to
   suit the render size, so a 16-box chevron drawn at 13pt carries a 1.7 stroke and a 22-box icon at
   22pt carries 1.6, and both read as the same weight. There is no runtime weight prop —
