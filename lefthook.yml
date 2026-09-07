@@ -9,6 +9,8 @@ pre-commit:
   commands:
     format:
       glob: '*.{ts,tsx,js,jsx,json}'
+      # Biome ignores these (biome.json) and exits 1 when every staged file is ignored.
+      exclude: ['assets/**', 'drizzle/**', 'claudedocs/**']
       # Biome formats only; ESLint owns the React Native and React Compiler rules.
       run: npx --no -- biome format --write {staged_files}
       stage_fixed: true
