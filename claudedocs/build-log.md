@@ -3,7 +3,7 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-07, Phase 6's gesture gate and session data layer.
+Last updated 2026-09-07, Phase 6's gesture gate, session data layer and live-screen core loop.
 
 ---
 
@@ -30,7 +30,7 @@ computed features in v1.
 | **4 — The navigation shell** | Headless `expo-router/ui` tabs behind the W2 bar. **Verified on device**: tabs switch, a push loses the bar, live takes over, back returns to Today. |
 | **5 — The real screens** | **Done.** Mutations, routine detail and the custom-exercise form are on the device and writing. |
 | **5b — Supabase** | **Schema, RLS and the auth flow done.** Sync itself is Phase 8. |
-| **6 — The live session** | **Gate passed and the data layer is on the device.** The screen itself is next. |
+| **6 — The live session** | **Gate passed, data layer done, and the core loop runs on the device.** The two sheets and the keypad are what is left. |
 
 ### What Phase 5 settled
 
@@ -330,6 +330,63 @@ value**, so a routine resting 0s must not fall through to 180.
 `pausedAt` column to accumulate *from*, and Lab 33's four states have no pause control. Either the
 design wants one and the schema needs a column, or it does not — that is a design question, not an
 oversight.
+
+---
+
+## The live screen — the core loop, on the device
+
+`src/app/live.tsx` reads the live session, drives Lab 33's instrument, writes every detent, logs a
+set with its records named, advances and starts the rest clock. Verified by driving it on the phone,
+not by type-check: tapping the ring opened the tape, a two-detent drag moved 100.0 → **105.0
+exactly**, and logging it named **HEAVIEST 105 (was 100)**, **BEST ESTIMATED 1RM 133 (was 126.67)**
+and **BEST SET VOLUME 840 (was 800)**, then advanced to SET 2 OF 5 with REST 2:57 running.
+
+### The instruments
+
+`src/components/load-ring.tsx`, `tape.tsx` and `param-selector.tsx`, with `src/app/dev/lab33.tsx`
+rendering all four states for board comparison.
+
+**The ring is Lab 32's `dial`, not Lab 31's.** Lab 31 still draws a gold arc and a drag knob; F3
+killed both, and Lab 33 composes Lab 32. Reading the chain top-down ports the wrong one. Its
+geometry: 300° sweep from −240° to +60° open at the bottom, `r = size/2 − (numerals ? 45 : 26)`,
+tick length carrying the fill, a Gaussian swell over ±6 ticks for the cursor, and the core's type
+scaled by `s = (r − 22) / 123` so it stays inside where the old arc sat.
+
+**It draws with rotated Views, not Skia.** ~49 ticks, and the value moves per detent rather than per
+frame, so a native view per tick is affordable and avoids a canvas. If a future perimeter drag makes
+it stutter, the renderer swaps behind the same props.
+
+**`ls()` and `lh()` are exported now.** They were module-private in `type.ts`, so no component could
+obey AGENTS.md's "always go through `ls()`" rule and the first cut hand-computed `0.66`, `1.32` and a
+bare `1.286`. These components size type off the ring radius, so they need both at runtime.
+
+### Three device-only bugs, none of which any gate catches
+
+1. **`useLiveQuery`'s second argument is a dependency list, and it defaults to `[]`.** A query built
+   from a value that arrives after mount subscribes once with the value it had then and never
+   re-runs. Every session-scoped query here starts with an empty id, so omitting the deps rendered
+   *"This session has no exercises in it yet"* forever — **it fails as plausible data, not as an
+   error**, which is the worst way for it to fail. Pass `[sessionId]`.
+2. **The tape ran away.** Each detent writes through `onDetent`, so `value` comes back changed while
+   the finger is still down; a `useEffect` re-seeded the drag origin from it, and the same
+   `translationY` was then measured against a moved start. One detent of travel, two of movement,
+   compounding for the length of the drag. The origin is captured once in `onBegin` and the resync
+   is gated behind a `draggingSV` flag.
+3. **The ring's chips were built as columns.** The board's `.par` is
+   `display:flex; align-items:baseline; gap:5px; padding:2px 7px` — a *row*. As columns the resting
+   state read `8 8` over `REPS RPE`, one garbled string. Only a screenshot finds this.
+
+`src/lib/scale.ts` already carried `'worklet'` directives, so calling `indexOf`/`clampIndex`/
+`valueAt` from the tape's gesture worklets is safe — Phase 2 anticipated it.
+
+### What is deliberately not built yet
+
+- **The two sheets** (SETS and EXERCISES) and **the numeric keypad**. `ParamSelector` already takes
+  the `onLongPress` the keypad will hang off.
+- **The horizontal set swipe.** The selector and the ladder already reach every value, and a
+  half-built swipe in the contested edge band is worse than none — see the gesture gate above.
+- **The ring's chips are not individually tappable.** At rest the whole dial is one target that
+  opens the tape on load; the selector then reaches reps and RPE.
 
 ---
 
