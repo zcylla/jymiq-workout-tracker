@@ -40,6 +40,19 @@ function makeDemoRoutine() {
   router.push(`/routine/${id}`);
 }
 
+/** Leaves a session open on the device so `/live` has something to render. */
+function startLiveSession(): void {
+  const [routine] = db.select({ id: routines.id }).from(routines).limit(1).all();
+  if (!routine) {
+    Alert.alert('No routine', 'Make a demo routine first.');
+    return;
+  }
+  const [live] = activeSessionQuery().all();
+  if (live) abandonSession(live.id);
+  startSession({ routineId: routine.id });
+  router.push('/live');
+}
+
 /**
  * The whole session path in one press: snapshot a routine, log every set it
  * planned, close it. The interesting part is what comes back — the records are
@@ -115,6 +128,9 @@ export default function DbScreen() {
         <RowPlates>
           <RowPlate onPress={makeDemoRoutine}>
             <ListRow title="Make a demo routine" meta="createRoutine + addExerciseToRoutine" />
+          </RowPlate>
+          <RowPlate onPress={startLiveSession}>
+            <ListRow title="Start a live session" meta="leaves it in progress and opens /live" />
           </RowPlate>
           <RowPlate onPress={runDemoSession}>
             <ListRow
