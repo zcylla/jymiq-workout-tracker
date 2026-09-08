@@ -446,7 +446,10 @@ claim would mean writing a native module. On these numbers it is not needed.
    40dp of an edge.
    Plus the two screens Phase 5 deferred: routine creation and routine editing (the EDIT button on
    routine detail is drawn and inert). Live needs a real routine to run, so creation lands with it.
-3. **Phase 7 — summary, session detail, history, trimmed settings, export.**
+2. **Phase 7 — summary, session detail, history, trimmed settings, export.** Settings is where the
+   account row belongs; the Today gear points straight at `/sign-in` until it exists.
+3. **Phase 8 — sync.** The Postgres mirror, its RLS and the auth flow are all in place and verified;
+   nothing pushes or pulls a row yet. Start from "The Supabase mirror" below.
 
 Today (Lab 45 W3) can be built any time now — it needs the week strip and the rail, which
 Phase 2 did not build.
@@ -468,14 +471,16 @@ Phase 2 did not build.
   **local-first** — SQLite is the source of truth so the app works in a basement gym, and Supabase is
   the sync/backup/multi-device layer. What exists now is in "The Supabase mirror" below. What does
   not exist is any code that pushes or pulls a row; that is Phase 8.
-- **Demonstration media is unresolved.** Researched: the only genuinely shippable free source is
-  **`bryllim/workout-guide`** — white-on-transparent SVG line art, 3 motion frames, 302 exercises
-  (~23% coverage), CC-BY-SA 4.0. ShareAlike triggers only on *Adapted Material*, so bundling the
-  SVGs unmodified is attribution-only and never touches the app's own licence; tint at render time
-  rather than editing files. Skia can render SVG, so it may need no new dependency.
+- **Demonstration media: settled, and it reshaped the library.** `@bryllim/workout-guide` is now the
+  *spine* of the seed rather than art matched onto someone else's list, so coverage is 100% of 302
+  rather than the ~23% this thread used to predict — see "The seeded library" for the trade that
+  bought (1295 rows down to 302, and cues on 38% of them). Its PNGs are required out of
+  `node_modules`, not vendored, and drawn with `expo-image` — no Skia, no SVG at runtime. **The
+  CC BY-SA obligation is live and load-bearing: tint at render time, never resize, recolour or
+  re-encode**, or the files become Adapted Material and ShareAlike reaches our own source.
   **Do not use free-exercise-db's images** — the maintainer disclaims knowing their origin and
-  upstream admits scraping. Gym visual's media (in the dataset we seed from) is licensed per use
-  and was ruled too expensive.
+  upstream admits scraping; its *text* is fine and is used for cues. Gym visual's media (in the
+  dataset the cues come from) is licensed per use and was ruled too expensive.
 
 ---
 
@@ -572,19 +577,35 @@ can register it; it could swallow the redirect and leave the sign-in hanging at 
 the user expects a sign-in screen. It could not use the code, but closing that properly needs a
 verified `https://` App Link and a domain to serve `assetlinks.json` from. Open, and not blocking.
 
-### What still needs the owner, in the dashboard
+### The dashboard side: done, and how it was checked
 
-Neither can be done through the MCP, and Google is confirmed missing — tapping Continue with Google
-reaches Supabase and comes back `{"code":400,"error_code":"validation_failed","msg":"Unsupported
-provider: provider is not enabled"}`, which is exactly the right failure for a provider that is not
-switched on yet.
+Neither step could be done through the MCP, and both are now configured by the owner:
 
-1. **Authentication → Providers → Google**: enable it, and paste in a Google Cloud OAuth **Web**
-   client id and secret whose authorised redirect URI is
-   `https://apmzkqejwmhctaldbzgv.supabase.co/auth/v1/callback`. A Web client is all this needs — the
-   browser hop means no Android client id and no SHA-1 fingerprint, and therefore no new dependency.
-2. **Authentication → URL Configuration → Additional Redirect URLs**: add **`jymiq:///sign-in`**
-   (three slashes — see the deep-link trap below).
+1. **Authentication → Providers → Google** — a Google Cloud OAuth **Web** client whose authorised
+   redirect URI is `https://apmzkqejwmhctaldbzgv.supabase.co/auth/v1/callback`. A Web client is all
+   this needs: the browser hop means no Android client id and no SHA-1 fingerprint, and so no new
+   dependency.
+2. **Authentication → URL Configuration → Additional Redirect URLs** — `jymiq:///sign-in` (three
+   slashes; see the deep-link trap below).
+
+Verified without a device, which is as far as this can be taken without one:
+
+```bash
+curl -sS -o /dev/null -D - \
+  "$EXPO_PUBLIC_SUPABASE_URL/auth/v1/authorize?provider=google&redirect_to=jymiq%3A%2F%2F%2Fsign-in"
+```
+
+now answers **302 to `accounts.google.com`** carrying `redirect_to=jymiq:///sign-in` intact, where
+before it answered `{"code":400,…"Unsupported provider: provider is not enabled"}`. That proves the
+provider is on *and* that the redirect passed the allow-list — a URL that is not on the list is
+rejected at this step, so one call covers both.
+
+**Still unverified, and it needs the phone: the return leg.** Nobody has completed a real Google
+sign-in on the device, so the browser hop back into `jymiq:///sign-in`, the PKCE exchange in
+`exchangeAuthCode`, and the signed-in state of the account screen are all untested against a live
+code. The magic-link leg is in the same position. The pieces around them were checked — the deep
+link routes, the root handler runs on an unmatched route, and a spent code is swallowed without an
+error banner — but a real code has never been through them.
 
 ## Things that cost time once, recorded so they cost nothing again
 
