@@ -30,7 +30,7 @@ computed features in v1.
 | **4 — The navigation shell** | Headless `expo-router/ui` tabs behind the W2 bar. **Verified on device**: tabs switch, a push loses the bar, live takes over, back returns to Today. |
 | **5 — The real screens** | **Done.** Mutations, routine detail and the custom-exercise form are on the device and writing. |
 | **5b — Supabase** | **Schema, RLS and the auth flow done.** Sync itself is Phase 8. |
-| **6 — The live session** | **Gate passed, data layer done, and the core loop runs on the device.** The two sheets and the keypad are what is left. |
+| **6 — The live session** | **Done bar reordering.** Gate, data layer, core loop, both sheets and the keypad all run on the device. |
 
 ### What Phase 5 settled
 
@@ -182,7 +182,10 @@ yarn, these are the failures to recognise:
   CMake is handed a `PrebuiltDir` with an unexpanded `react-native-0*` glob in it and the build dies
   in `configureCMakeDebug`. `react-native-worklets` fails the same way one step earlier, with
   Gradle refusing a `projectDirectory` that does not exist.
-- **`pnpm.onlyBuiltDependencies` in `package.json` is what lets Skia install its binaries.** pnpm 10
+- **`onlyBuiltDependencies` in `pnpm-workspace.yaml` is what lets Skia install its binaries.**
+  pnpm 10 moved its settings out of `package.json`'s `pnpm` field and warns — quietly, in a line
+  that scrolls past — that the old key is *ignored*. It sat ignored here for two days, which meant a
+  fresh clone would have hit the Skia CMake failure below despite the trap being "fixed". pnpm 10
   blocks lifecycle scripts by default; Skia's `postinstall` is what copies `libskia.a` into
   `libs/android/`, and without it CMake fails with *"Skia prebuilt binaries not found"*. The
   allowlist covers `@shopify/react-native-skia`, `esbuild`, `lefthook` and `unrs-resolver`.
@@ -330,6 +333,46 @@ value**, so a routine resting 0s must not fall through to 180.
 `pausedAt` column to accumulate *from*, and Lab 33's four states have no pause control. Either the
 design wants one and the schema needs a column, or it does not — that is a design question, not an
 oversight.
+
+---
+
+## The two sheets and the keypad
+
+`src/components/sheet.tsx` is the shared shell; `sets-sheet.tsx`, `exercises-sheet.tsx` and
+`keypad-sheet.tsx` sit on it, and `src/lib/keypad.ts` holds the one piece of pure logic
+(`resolveKeypadValue`, tested). Driven on the device: a set row moved the cursor to SET 3 OF 5,
+the exercises sheet opened from the title, and the keypad typed 110 through to the ring, the tape,
+the selector and the e1RM notch.
+
+### `@expo/ui`'s BottomSheet was tried and rejected — on the device, not on principle
+
+It is a real dependency already, and it renders and lays out. But **no touch reaches any React
+Native child inside it**: every set row and both footer buttons were completely inert. It also
+measures its children against an unbounded width, so a row of fixed columns plus a flex spacer
+collapsed ~100dp short of the right edge, and `width: '100%'` could not fix that — only an explicit
+pixel width did.
+
+None of that shows up in a type-check, a lint, or a screenshot of a closed sheet. The shell is now
+a plain absolutely-positioned panel with our own scrim (`wash.scrim`), which is also one less
+experimental native surface in the app.
+
+**Android back is handled by the screen, not the sheet.** It has to close an open sheet *before* it
+reaches the session-discard confirm, and one handler in `live.tsx` that knows about both beats two
+that race on registration order.
+
+### The grips are deliberately absent
+
+The design gives every sheet row a drag-grip that reorders, and `reorderSets` /
+`reorderSessionExercises` are written and unused. Drag-to-reorder was out of scope, so **no grip is
+drawn at all** rather than drawn and inert — the same rule that removed two toggles from Lab 35 B3.
+That is the one part of the sheets' grammar still missing.
+
+### `Add exercise` is missing on purpose
+
+The exercise sheet's foot button has nowhere to send its result: the library
+(`src/app/(tabs)/session/library.tsx`) navigates to `/exercise/[id]` and has no selection mode that
+can return a choice to a caller. `addExerciseToSession` exists and is unused. Building the picker is
+what unblocks it.
 
 ---
 
