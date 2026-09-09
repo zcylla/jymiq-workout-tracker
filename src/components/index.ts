@@ -1,6 +1,8 @@
 export { ActionBar, useActionBarHeight } from './action-bar';
 export { Chip, ChipStrip } from './chip';
 export { Delta } from './delta';
+export { ExercisesSheet } from './exercises-sheet';
+export { KeypadSheet } from './keypad-sheet';
 export { Field } from './field';
 export { Chevron, Grip, Icon, type IconName } from './icon';
 export { ListRow } from './list-row';
@@ -14,6 +16,8 @@ export { Screen } from './screen';
 export { SearchField } from './search-field';
 export { ScreenHeader } from './screen-header';
 export { Section } from './section';
+export { Sheet } from './sheet';
+export { SetsSheet } from './sets-sheet';
 export { StatTiles, type Tile } from './tiles';
 export { Tape } from './tape';
 export { Toggle } from './toggle';
