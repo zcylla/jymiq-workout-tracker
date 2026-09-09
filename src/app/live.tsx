@@ -5,11 +5,14 @@ import { Alert, BackHandler, Pressable, Text, View } from 'react-native';
 
 import {
   ActionBar,
+  ExercisesSheet,
+  KeypadSheet,
   LoadRing,
   ParamSelector,
   Screen,
   ScreenHeader,
   Section,
+  SetsSheet,
   Tape,
   useActionBarHeight,
 } from '@/components';
@@ -19,7 +22,6 @@ import {
   clearRest,
   completeSet,
   finishSession,
-  setSessionCursor,
   updateSet,
 } from '@/data/mutations/sessions';
 import {
@@ -61,6 +63,8 @@ function announce(hits: PrHit[], title: string) {
 
 export default function LiveScreen() {
   const [editing, setEditing] = useState<WorkoutParameter | null>(null);
+  const [sheet, setSheet] = useState<'sets' | 'exercises' | null>(null);
+  const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const barHeight = useActionBarHeight();
 
@@ -112,6 +116,14 @@ export default function LiveScreen() {
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (keypadParam !== null) {
+        setKeypadParam(null);
+        return true;
+      }
+      if (sheet !== null) {
+        setSheet(null);
+        return true;
+      }
       if (!session) return false;
       // Back never leaves a live session silently — the confirm is the whole
       // reason the handler exists, and it must claim the event to show one.
@@ -150,6 +162,15 @@ export default function LiveScreen() {
   const exerciseIndex = exercises.findIndex((e) => e.id === exercise.id);
   const setIndex = sets.findIndex((s) => s.id === set.id);
   const params: WorkoutParameter[] = exercise.trackRpe ? ['load', 'reps', 'rpe'] : ['load', 'reps'];
+  const exerciseRows = exercises.map((e) => {
+    const exSets = allSets.filter((s) => s.sessionExerciseId === e.id);
+    return {
+      id: e.id,
+      name: e.name,
+      setsTotal: exSets.length,
+      setsDone: exSets.filter((s) => s.completedAt != null).length,
+    };
+  });
 
   // The ring is the load gauge in every state and never re-scales — what you
   // are editing is said by the selector, not by the middle of the dial.
@@ -195,20 +216,32 @@ export default function LiveScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
       <Screen bottomInset={barHeight}>
-        <ScreenHeader
-          title={exercise.name}
-          kicker={`EXERCISE ${exerciseIndex + 1} OF ${exercises.length}`}
-          onBack={discard}
-        />
+        <Pressable
+          onPress={() => setSheet('exercises')}
+          accessibilityRole="button"
+          accessibilityLabel="Exercises"
+        >
+          <ScreenHeader
+            title={exercise.name}
+            kicker={`EXERCISE ${exerciseIndex + 1} OF ${exercises.length}`}
+            onBack={discard}
+          />
+        </Pressable>
 
         {/* Written, between two hairlines. A set strip was proposed and rejected. */}
-        <View style={{ marginTop: space.within }}>
-          <View style={{ height: 1, backgroundColor: hairline.onGround }} />
-          <Text style={[text.label, { paddingVertical: 9, textAlign: 'center' }]}>
-            SET {setIndex + 1} OF {sets.length}
-          </Text>
-          <View style={{ height: 1, backgroundColor: hairline.onGround }} />
-        </View>
+        <Pressable
+          onPress={() => setSheet('sets')}
+          accessibilityRole="button"
+          accessibilityLabel="Sets"
+        >
+          <View style={{ marginTop: space.within }}>
+            <View style={{ height: 1, backgroundColor: hairline.onGround }} />
+            <Text style={[text.label, { paddingVertical: 9, textAlign: 'center' }]}>
+              SET {setIndex + 1} OF {sets.length}
+            </Text>
+            <View style={{ height: 1, backgroundColor: hairline.onGround }} />
+          </View>
+        </Pressable>
 
         <View style={{ paddingTop: space.between, gap: 8 }}>
           <View style={{ paddingRight: editing ? TAPE_GUTTER : 0, alignItems: 'center' }}>
@@ -251,6 +284,7 @@ export default function LiveScreen() {
               }}
               gloss={editing === 'rpe' && set.rpe != null ? `RIR ${10 - set.rpe}` : undefined}
               onSelect={(p) => setEditing((current) => (current === p ? null : p))}
+              onLongPress={(p) => setKeypadParam(p)}
             />
           ) : null}
         </View>
@@ -310,10 +344,7 @@ export default function LiveScreen() {
             <Pressable
               key={e.id}
               hitSlop={{ left: 10, right: 14, top: 4, bottom: 4 }}
-              onPress={() => {
-                setSessionCursor(session.id, { sessionExerciseId: e.id, setId: null });
-                setEditing(null);
-              }}
+              onPress={() => setSheet('exercises')}
             >
               <Text
                 style={[
@@ -329,6 +360,34 @@ export default function LiveScreen() {
       </View>
 
       <ActionBar primary="Log set" onPrimary={log} />
+
+      <SetsSheet
+        open={sheet === 'sets'}
+        onClose={() => setSheet(null)}
+        exerciseName={exercise.name}
+        sessionId={session.id}
+        sessionExerciseId={exercise.id}
+        sets={sets}
+        currentSetId={set.id}
+      />
+      <ExercisesSheet
+        open={sheet === 'exercises'}
+        onClose={() => setSheet(null)}
+        sessionName={session.name}
+        sessionId={session.id}
+        exercises={exerciseRows}
+        currentSessionExerciseId={exercise.id}
+      />
+      <KeypadSheet
+        key={`${keypadParam}-${keypadParam !== null}`}
+        open={keypadParam !== null}
+        onClose={() => setKeypadParam(null)}
+        parameter={keypadParam ?? 'load'}
+        setId={set.id}
+        currentValue={
+          keypadParam === 'load' ? load : keypadParam === 'reps' ? reps : (set.rpe ?? null)
+        }
+      />
     </View>
   );
 }
