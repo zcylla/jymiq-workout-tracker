@@ -1,0 +1,10 @@
+# pnpm 10 moved its settings out of package.json's "pnpm" field and into this
+# file. Skia's postinstall is what copies libskia.a into libs/android — without
+# it the Gradle build dies in configureCMakeDebug with "Skia prebuilt binaries
+# not found", which is a failure that looks nothing like a blocked lifecycle
+# script. See claudedocs/build-log.md.
+onlyBuiltDependencies:
+  - '@shopify/react-native-skia'
+  - esbuild
+  - lefthook
+  - unrs-resolver
