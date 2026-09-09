@@ -135,6 +135,8 @@ export const wash = {
   accent: 'rgba(228,198,140,0.13)',
   done: 'rgba(159,174,58,0.16)',
   live: 'rgba(223,84,65,0.14)',
+  /** Behind a sheet. Dark enough to kill the plate edges underneath it. */
+  scrim: 'rgba(10,9,8,0.62)',
 } as const;
 
 /**
