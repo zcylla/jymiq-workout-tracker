@@ -1,6 +1,6 @@
 import { Link, router } from 'expo-router';
 import { useMemo } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 
@@ -29,9 +29,14 @@ export default function RoutinesScreen() {
         title="Routines"
         kicker="PLAN"
         right={
-          <Link href="/session/library">
-            <Icon name="search" />
-          </Link>
+          <View style={{ flexDirection: 'row', gap: 18 }}>
+            <Link href="/routine/new">
+              <Icon name="plus" />
+            </Link>
+            <Link href="/session/library">
+              <Icon name="search" />
+            </Link>
+          </View>
         }
       />
 

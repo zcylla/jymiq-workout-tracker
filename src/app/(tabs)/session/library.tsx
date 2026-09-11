@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import {
   useTabBarHeight,
 } from '@/components';
 import { exerciseStill } from '@/data/exercise-art';
+import { addExerciseToRoutine } from '@/data/mutations/routines';
 import { exerciseListQuery } from '@/data/queries/exercises';
 import type { Equipment } from '@/data/schema';
 import { color, space, text } from '@/theme';
@@ -39,6 +40,7 @@ const FILTERS: { label: string; value: Equipment | null }[] = [
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const tabBar = useTabBarHeight();
+  const { routineId } = useLocalSearchParams<{ routineId?: string }>();
   const [search, setSearch] = useState('');
   const [equipment, setEquipment] = useState<Equipment | null>(null);
 
@@ -61,8 +63,8 @@ export default function LibraryScreen() {
       ListHeaderComponent={
         <View style={{ gap: space.within, paddingBottom: space.within }}>
           <ScreenHeader
-            title="Library"
-            kicker="EXERCISES"
+            title={routineId ? 'Add exercise' : 'Library'}
+            kicker={routineId ? 'ROUTINE' : 'EXERCISES'}
             onBack={() => router.back()}
             right={
               <Pressable onPress={() => router.push('/exercise/new')} hitSlop={12}>
@@ -93,7 +95,16 @@ export default function LibraryScreen() {
         </Text>
       }
       renderItem={({ item }) => (
-        <RowPlate onPress={() => router.push(`/exercise/${item.id}`)}>
+        <RowPlate
+          onPress={() => {
+            if (routineId) {
+              addExerciseToRoutine({ routineId, exerciseId: item.id });
+              router.back();
+              return;
+            }
+            router.push(`/exercise/${item.id}`);
+          }}
+        >
           <ListRow
             quiet
             art={exerciseStill(item.id)}

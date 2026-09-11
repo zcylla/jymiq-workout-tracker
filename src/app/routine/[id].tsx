@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Text } from 'react-native';
+import { Alert, Text } from 'react-native';
 
 import {
   ActionBar,
@@ -17,6 +17,7 @@ import {
   useActionBarHeight,
 } from '@/components';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
+import { startSession } from '@/data/mutations/sessions';
 import { formatRest } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
 import { text } from '@/theme';
@@ -41,6 +42,22 @@ export default function RoutineScreen() {
   );
   const routine = found?.[0];
   const rows = lifts ?? [];
+
+  const start = () => {
+    if (!routine || rows.length === 0) {
+      Alert.alert(
+        'Add an exercise first',
+        'A routine needs at least one lift before it can start.',
+      );
+      return;
+    }
+    try {
+      startSession({ routineId: routine.id });
+      router.replace('/live');
+    } catch {
+      Alert.alert('A session is already running', 'Finish or discard it before starting another.');
+    }
+  };
 
   const sets = rows.reduce((n, l) => n + l.targetSets, 0);
   const tiles: Tile[] = [
@@ -96,7 +113,8 @@ export default function RoutineScreen() {
       <ActionBar
         primary={routine ? `Start ${routine.name}` : 'Start'}
         secondary="EDIT"
-        onPrimary={() => router.push('/live')}
+        onPrimary={start}
+        onSecondary={() => router.push(`/routine/${id}/edit`)}
       />
     </>
   );

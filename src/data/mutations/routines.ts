@@ -20,6 +20,17 @@ export function createRoutine(input: { name: string; note?: string | null }): st
   return id;
 }
 
+export function updateRoutine(id: string, input: { name: string; note?: string | null }): void {
+  db.update(routines)
+    .set({
+      name: input.name.trim(),
+      note: input.note?.trim() || null,
+      updatedAt: Date.now(),
+    })
+    .where(eq(routines.id, id))
+    .run();
+}
+
 export type NewRoutineExercise = {
   routineId: string;
   exerciseId: string;
