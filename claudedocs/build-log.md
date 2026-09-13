@@ -3,8 +3,9 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-12, Phase 7 item 1 replanned through a four-voice review that found two
-live bugs in shipped code and one trap that would have shipped a third.
+Last updated 2026-09-12. Phase 7 item 1 replanned through a four-voice review, then built:
+the Rail, routine detail's LAST THREE, and session detail (C3). The history *list* was dropped —
+the IA never had one. See "What the review of Phase 7 item 1 found" and "There is no history list".
 
 ---
 
@@ -33,7 +34,7 @@ computed features in v1.
 | **5b — Supabase** | **Schema, RLS and the auth flow done.** Sync itself is Phase 8. |
 | **6 — The live session** | **Done bar reordering.** Gate, data layer, core loop, both sheets and the keypad all run on the device. |
 | **6b — Routines you can make** | **Done.** Creation, editing, the library as a picker, and START actually starting a session. |
-| **7 — Closing the loop** | **The summary (C2) is done and verified on the device.** History, session detail, settings and export are not. |
+| **7 — Closing the loop** | **Summary (C2), the Rail, routine detail's LAST THREE and session detail (C3) are done and verified on the device.** Settings, export and the Maestro flow are not. |
 
 ### What Phase 5 settled
 
@@ -561,10 +562,10 @@ screenshot. That is now three sessions in a row where that has been true.
 
 **Phase 6 is closed.** Everything below is Phase 7 and after.
 
-1. **History and session detail (C3) — replanned; see "What the review of Phase 7 item 1 found"
-   below.** The order inside it is now: two shared predicates and the history reads, then the two
-   shipped bugs, then the Rail, then `routine/[id]`'s LAST THREE, then C3, then the `lab46` board,
-   then the `/history` list against it.
+1. **A screen index board, then a design/UX refinement pass.** The index is described under
+   "There is no history list" above. Phase 7 item 1 is otherwise **done**: the predicates, the
+   history reads, the Rail, `routine/[id]`'s LAST THREE and session detail (C3) are all built and
+   device-verified. The `/history` list is **dropped**, not deferred — the IA has no room for it.
 2. **Today, Lab 45 W3.** The landing tab is still a placeholder with a hardcoded NEXT card and a DEV
    links section. It needs the week strip and the recent-sessions rail. The rail arrives in step 1,
    so what is left here is the week strip — the largest unbuilt component after the ring, and
@@ -658,6 +659,48 @@ design and engineering phases both showed the boards carry **two registers on pu
 `lab36.py:22` and `:78` draw `1H 04`, the rail meta lines draw `64 MIN`, so a second formatter is
 needed and the existing test is correct. The design phase then specified `data === undefined` as the
 loading branch; the engineering phase read the installed hook and showed it never fires.
+
+---
+
+## There is no history list, and that is the design's answer
+
+Worth stating plainly, because a plan was written to build one and four independent reviewers
+rejected it before the IA was consulted at all.
+
+`lab34.py:204-217` is the only place the information architecture was ever settled: *"One thing had
+to be decided before anything could be drawn, and it had never been settled: where these screens
+live. The navigation locked at four tabs, and sixteen screens do not divide into four by accident."*
+Today is home/next/readiness/the week; **Session is everything you plan or start from** — routines,
+programs, the library; Strength is per-*exercise* history, PRs, standards, the body map; Load is
+volume, deload, bodyweight, calendar.
+
+**A flat list of every past session is not among the sixteen.** It was never drawn and never given a
+tab. The design's answer to "show me my past workouts" is five surfaces at different zoom levels,
+all of which open the same session detail:
+
+| Surface | Board | Answers | Where |
+|---|---|---|---|
+| Calendar | C1 | take me to a date | Load |
+| Week strip | Lab 45 W3 | how was this week | Today |
+| RECENT rail | Lab 45 W3 | the last few | Today |
+| LAST THREE | Lab 34 A2 | the last few for *this routine* | pushed, **built** |
+| PR timeline | C4 | records over time | Strength |
+
+So the calendar is the index and history is the recent list. `Lab 46` was drawn anyway (the gate
+ruling at the time was "keep it, but board it first") and settled on **H2** — month-ruled, no month
+summary, because monthly tonnage only restates the session count beside it. It stands as the answer
+*if* a list is ever wanted; nothing needs it today.
+
+**Do not put review inside the Session tab.** That tab is forward-looking by definition. An earlier
+plan proposed reaching history from it and it was wrong twice over — by §0's IA and by the design
+review, independently.
+
+### The gap this exposed
+
+There is no single page anywhere saying *these are the screens, this is where each lives, this is
+what is built*. Forty-five experiment labs and no index, so the IA has to be read out of a paragraph
+buried in one board's intro — which is exactly how the drift above happened. **Building that index
+is the next design task.**
 
 ---
 
