@@ -10,6 +10,7 @@ import {
   Meter,
   Pill,
   Plate,
+  Rail,
   RowPlate,
   RowPlates,
   Screen,
@@ -180,6 +181,33 @@ export default function KitchenSinkScreen() {
           <Pill label="MISSED" tone="live" />
           <Pill label="WEEK 3 / 8" />
         </View>
+      </Section>
+
+      <Section label="RAIL · CHRONOLOGICAL ONLY" plated={false}>
+        <Rail
+          air={22}
+          items={[
+            { tone: 'accent', body: <Text style={text.body}>Today · 62 min</Text> },
+            {
+              tone: 'tick3',
+              body: <Text style={text.body}>Mon 1 Sep · 58 min</Text>,
+              onPress: () => {},
+            },
+            { tone: 'tick2', body: <Text style={text.body}>Thu 28 Aug · 61 min</Text> },
+            { tone: 'tick1', body: <Text style={text.body}>Fri 22 Aug · 47 min</Text> },
+          ]}
+        />
+      </Section>
+
+      <Section label="RAIL · ON A PLATE">
+        <Rail
+          onPlate
+          air={22}
+          items={[
+            { tone: 'accent', body: <Text style={text.body}>Tue 2 Sep · 55 min</Text> },
+            { tone: 'tick2', body: <Text style={text.body}>Thu 28 Aug · 61 min</Text> },
+          ]}
+        />
       </Section>
 
       <Section label="PLATE, BARE">
