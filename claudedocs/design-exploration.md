@@ -127,6 +127,9 @@ Claude Design project **`85c2eefb-a239-4501-83a0-a24a4ccd7cae`** ("Workout Sessi
 | `Lab 42 — One Plate Per Row.dc.html` | **Current containment rule.** P5 (row plates + one plated hero + plain prose) and P7 (set log with no containment) chosen |
 | `Lab 43 — Today And The Android Chrome.dc.html` | **The last screen, and the platform switch.** Today as designed, on v1 data, and empty; the tab bar as glass vs two opaque plates |
 | `Lab 44 — Today With A Face.dc.html` | **Open.** The champagne card returns: filled accent hero, a week ring against a real target, and the quieter alternative |
+| `Lab 45 — The Week You Can Scroll.dc.html` | **Today, settled at W3.** The strip scrolls, so the date arrives; the fill is the graph |
+| `Lab 46 — History.dc.html` | **H2, and then not built.** A flat archive, ruled by month. The IA has no history list — kept as the answer if one is ever wanted |
+| `Lab 47 — The Screens.dc.html` | **The index.** Every screen, the board that settled it, its tab, its route and whether it is on the phone. Generated from one table in `lab47.py` |
 
 **Read these five first.** Lab 22 (palette), Lab 23 (navigation), Lab 33 (live screen), Lab 40 (plate treatment), Lab 42 (containment). Everything before them is the reasoning that got there; those four are the state.
 | `Workout Session A Telemetry / B Ledger / C Focus / D Editorial` | Earlier round. **Superseded** — user found them over-simplified. Keep for reference, don't build on. |

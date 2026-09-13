@@ -3,9 +3,10 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-12. Phase 7 item 1 replanned through a four-voice review, then built:
-the Rail, routine detail's LAST THREE, and session detail (C3). The history *list* was dropped —
-the IA never had one. See "What the review of Phase 7 item 1 found" and "There is no history list".
+Last updated 2026-09-13. `Lab 47 — The Screens` is published: the screen index that Phase 7 named
+as the next design task. Before it, Phase 7 item 1 was replanned through a four-voice review, then
+built: the Rail, routine detail's LAST THREE, and session detail (C3). The history *list* was dropped —
+the IA never had one. See "The gap this exposed — closed by Lab 47" and "There is no history list".
 
 ---
 
@@ -695,12 +696,23 @@ summary, because monthly tonnage only restates the session count beside it. It s
 plan proposed reaching history from it and it was wrong twice over — by §0's IA and by the design
 review, independently.
 
-### The gap this exposed
+### The gap this exposed — closed by Lab 47
 
-There is no single page anywhere saying *these are the screens, this is where each lives, this is
-what is built*. Forty-five experiment labs and no index, so the IA has to be read out of a paragraph
-buried in one board's intro — which is exactly how the drift above happened. **Building that index
-is the next design task.**
+There was no single page anywhere saying *these are the screens, this is where each lives, this is
+what is built*. Forty-six experiment labs and no index, so the IA had to be read out of a paragraph
+buried in one board's intro — which is exactly how the drift above happened.
+
+**`Lab 47 — The Screens` is that page**, and it is published. Twenty-four screens as cards, grouped
+by tab, each carrying the board that settled it, its expo-router route, and one of four states:
+**BUILT** (11, on the phone), **SHELL** (3 — Today, Strength and Load, where a placeholder stands
+in), **DRAWN** (9, boarded and unbuilt) and **RULED OUT** (1 — Lab 46's history list). Every count
+on the board, including each group's tally, is computed from one table at the top of
+`claudedocs/design-labs/lab47.py`, so a screen changing state is one tuple edited and a regenerate;
+the summary cannot drift from the cards.
+
+**It found a real gap while being written: three tab roots have no board.** Today has Lab 45 W3, but
+nothing anywhere draws what Strength or Load open on — both tabs exist only as their *contents*
+(C4, B4 and D1, D2, C1). That has to be answered before either tab can be built.
 
 ---
 
