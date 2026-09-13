@@ -3,8 +3,8 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-13. `Lab 47 — The Screens` is published: the screen index that Phase 7 named
-as the next design task. A board-versus-device refinement pass followed it and shipped seven fixes,
+Last updated 2026-09-13. `Lab 47 — The Design System` is published: the reference sheet the IA gap
+asked for. A board-versus-device refinement pass followed it and shipped seven fixes,
 two of them criticals a screenshot alone could not catch — see "The refinement pass". Before both,
 Phase 7 item 1 was replanned through a four-voice review, then built: the Rail, routine detail's
 LAST THREE, and session detail (C3). The history *list* was dropped — the IA never had one.
@@ -703,17 +703,29 @@ There was no single page anywhere saying *these are the screens, this is where e
 what is built*. Forty-six experiment labs and no index, so the IA had to be read out of a paragraph
 buried in one board's intro — which is exactly how the drift above happened.
 
-**`Lab 47 — The Screens` is that page**, and it is published. Twenty-four screens as cards, grouped
-by tab, each carrying the board that settled it, its expo-router route, and one of four states:
-**BUILT** (11, on the phone), **SHELL** (3 — Today, Strength and Load, where a placeholder stands
-in), **DRAWN** (9, boarded and unbuilt) and **RULED OUT** (1 — Lab 46's history list). Every count
-on the board, including each group's tally, is computed from one table at the top of
-`claudedocs/design-labs/lab47.py`, so a screen changing state is one tuple edited and a regenerate;
-the summary cannot drift from the cards.
+**`Lab 47 — The Design System` is that page**, and it is published. Not a build ledger — a
+reference sheet, the thing you open to see what the app is made of before building a screen out of
+it: the tokens as swatches (surfaces, state hues, both ramps, washes, hairlines), the full type ramp
+at real sizes, the spacing law and radii drawn, every primitive in every state, the composition
+rules drawn rather than written (the three containment levels, when a number earns a visual, a guess
+against a measurement, empty states, the two vocabularies), and the interaction model (the live
+screen's gesture map, the two routes into every value, the sheets, motion). It closes with **what is
+deliberately absent** — the set strip, the ring's arc, bullet graphs, glass on Android, a history
+list — so nothing cut gets re-added by accident.
 
-**It found a real gap while being written: three tab roots have no board.** Today has Lab 45 W3, but
-nothing anywhere draws what Strength or Load open on — both tabs exist only as their *contents*
-(C4, B4 and D1, D2, C1). That has to be answered before either tab can be built.
+It is generated from `kit.py` and from the real values in `src/theme/tokens.ts` and `type.ts`, so it
+cannot drift from either. It holds **no screens**; those are Labs 33–37 and 43–46.
+
+**A first cut of Lab 47 was a screen index** — every screen as a card with its board, tab, route and
+build status. That was built, published, and then replaced: useful, but it answered "what is built"
+when the gap was "what are the decisions". If the index is ever wanted back it is in the git history
+at `e7ddc0a`.
+
+**Two things it surfaced.** Three tab roots have no board: Today has Lab 45 W3, but nothing draws
+what Strength or Load *open on* — both exist only as their contents (C4, B4 and D1, D2, C1), and
+that has to be answered before either tab can be built. And `space.railAir` is still in
+`tokens.ts` at 56 although §0 retired it and `Rail` takes `air` as a required prop; the token is
+dead and should go.
 
 ---
 
