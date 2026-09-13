@@ -1,4 +1,17 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  ne,
+  or,
+  sql,
+} from 'drizzle-orm';
 
 import type { PrBaseline } from '@/lib/pr';
 import { weightKey } from '@/lib/units';
@@ -45,6 +58,50 @@ export function sessionExercisesQuery(sessionId: string) {
     .from(sessionExercises)
     .innerJoin(exercises, eq(exercises.id, sessionExercises.exerciseId))
     .where(and(eq(sessionExercises.sessionId, sessionId), isNull(sessionExercises.removedAt)))
+    .orderBy(asc(sessionExercises.position));
+}
+
+/**
+ * The session's exercises for reading a finished session back: same shape as
+ * `sessionExercisesQuery`, but a skipped exercise stays in if it has at least
+ * one completed set — it was still logged, even though it was also skipped.
+ */
+export function sessionLogExercisesQuery(sessionId: string) {
+  return db
+    .select({
+      id: sessionExercises.id,
+      position: sessionExercises.position,
+      plannedSets: sessionExercises.plannedSets,
+      plannedReps: sessionExercises.plannedReps,
+      plannedWeightKg: sessionExercises.plannedWeightKg,
+      restSec: sessionExercises.restSec,
+      addedMidSession: sessionExercises.addedMidSession,
+      note: sessionExercises.note,
+      exerciseId: exercises.id,
+      name: exercises.name,
+      kind: exercises.kind,
+      equipment: exercises.equipment,
+      barWeightKg: exercises.barWeightKg,
+      trackRpe: exercises.trackRpe,
+    })
+    .from(sessionExercises)
+    .innerJoin(exercises, eq(exercises.id, sessionExercises.exerciseId))
+    .where(
+      and(
+        eq(sessionExercises.sessionId, sessionId),
+        or(
+          isNull(sessionExercises.removedAt),
+          exists(
+            db
+              .select({ one: sql`1` })
+              .from(sets)
+              .where(
+                and(eq(sets.sessionExerciseId, sessionExercises.id), isNotNull(sets.completedAt)),
+              ),
+          ),
+        ),
+      ),
+    )
     .orderBy(asc(sessionExercises.position));
 }
 
@@ -97,7 +154,7 @@ export function previousSessionVolumeQuery(routineId: string, startedAt: number)
     .where(
       and(
         eq(sessions.routineId, routineId),
-        eq(sessions.status, 'completed'),
+        eq(sessions.status, 'completed'), // isComparableSession: only a finished session is a fair baseline
         lt(sessions.startedAt, startedAt),
       ),
     )
@@ -118,7 +175,7 @@ export function recentSessionsQuery(limit = 20) {
   return db
     .select()
     .from(sessions)
-    .where(ne(sessions.status, 'in_progress'))
+    .where(ne(sessions.status, 'in_progress')) // isLoggedSession: an ended session is history, however it ended
     .orderBy(desc(sessions.startedAt))
     .limit(limit);
 }
