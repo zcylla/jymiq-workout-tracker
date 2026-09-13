@@ -3,7 +3,8 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-07, Phase 6's gesture gate, session data layer and live-screen core loop.
+Last updated 2026-09-12, routine creation and editing — which closes Phase 6 and leaves Phase 7
+(summary, session detail, history, settings, export) as the whole of what is left before v1.
 
 ---
 
@@ -31,6 +32,7 @@ computed features in v1.
 | **5 — The real screens** | **Done.** Mutations, routine detail and the custom-exercise form are on the device and writing. |
 | **5b — Supabase** | **Schema, RLS and the auth flow done.** Sync itself is Phase 8. |
 | **6 — The live session** | **Done bar reordering.** Gate, data layer, core loop, both sheets and the keypad all run on the device. |
+| **6b — Routines you can make** | **Done.** Creation, editing, the library as a picker, and START actually starting a session. |
 
 ### What Phase 5 settled
 
@@ -367,12 +369,14 @@ The design gives every sheet row a drag-grip that reorders, and `reorderSets` /
 drawn at all** rather than drawn and inert — the same rule that removed two toggles from Lab 35 B3.
 That is the one part of the sheets' grammar still missing.
 
-### `Add exercise` is missing on purpose
+### `Add exercise` is still missing from the sheet — but the picker now exists
 
-The exercise sheet's foot button has nowhere to send its result: the library
-(`src/app/(tabs)/session/library.tsx`) navigates to `/exercise/[id]` and has no selection mode that
-can return a choice to a caller. `addExerciseToSession` exists and is unused. Building the picker is
-what unblocks it.
+This was blocked on the library having no selection mode. It has one now: `/session/library` takes
+an optional `routineId`, and with it set the screen retitles to **ADD EXERCISE**, and a row calls
+`addExerciseToRoutine` and pops instead of pushing the detail screen. Routine editing uses it.
+
+The session half is the same pattern with a different verb — a `sessionId` param calling
+`addExerciseToSession`, which is written and still unused. One param and one branch, not a screen.
 
 ---
 
@@ -424,12 +428,16 @@ bare `1.286`. These components size type off the ring radius, so they need both 
 
 ### What is deliberately not built yet
 
-- **The two sheets** (SETS and EXERCISES) and **the numeric keypad**. `ParamSelector` already takes
-  the `onLongPress` the keypad will hang off.
+The sheets and the keypad were on this list and have since shipped — see above. What remains:
+
 - **The horizontal set swipe.** The selector and the ladder already reach every value, and a
   half-built swipe in the contested edge band is worse than none — see the gesture gate above.
 - **The ring's chips are not individually tappable.** At rest the whole dial is one target that
   opens the tape on load; the selector then reaches reps and RPE.
+- **Pause.** Every other session verb is in the mutations layer; this one was never specified.
+- **Where `Finish` goes.** `finishSession` runs and then `router.back()` — the summary screen it
+  should land on is Phase 7, and until it exists a finished workout leaves no trace you can look
+  at. This is the one place the core loop does not close.
 
 ---
 
@@ -480,22 +488,54 @@ claim would mean writing a native module. On these numbers it is not needed.
 
 ---
 
+## Routines you can actually make
+
+`app/routine/new.tsx` is two fields and a button: it creates the row and **replaces** straight into
+`/routine/[id]/edit`, because a routine with no lifts is not a thing anyone wants to be left holding.
+`app/routine/[id]/edit.tsx` renames, re-notes, adds through the library picker and removes with a
+confirm. `updateRoutine` was the one mutation missing and is now written.
+
+**START now starts.** Routine detail's primary action called `router.push('/live')` and left the
+live screen to find a session that was never created. It calls `startSession({ routineId })` and
+`replace`s, and it handles the two failures the mutations layer can throw at it: an empty routine
+gets *"Add an exercise first"*, and a session already in progress gets *"Finish or discard it
+before starting another"* rather than an unhandled throw.
+
+**A lift's targets are still not editable.** Tapping a row in the edit screen removes it; there is
+no way to change sets, reps, target load or rest from the app, so `updateRoutineExercise` is written
+and unused — the same shape of hole as `reorderSets`. The seeded defaults are what every routine
+runs with until that lands. It wants the sheet grammar rather than another screen.
+
+`pnpm check` is green on all of it (27 tests). **It has not been driven on the device**, which by
+this log's own standard means it is not verified — the three device-only bugs in the live screen
+were all invisible to the same gate. Run the loop end to end on the phone before trusting it.
+
+---
+
 ## Next, in order
 
-1. **Phase 6 — the live screen itself.** The gate is passed and the data layer is on the device, so
-   what is left is Lab 33's four states: the ring as the load readout, the shared tape for all three
-   parameters, the SETS and exercise sheets, the K3 ladder. Build against the two rules the gesture
-   measurements set — a cancelled swipe snaps back, and nothing horizontally draggable comes within
-   40dp of an edge.
-   Plus the two screens Phase 5 deferred: routine creation and routine editing (the EDIT button on
-   routine detail is drawn and inert). Live needs a real routine to run, so creation lands with it.
-2. **Phase 7 — summary, session detail, history, trimmed settings, export.** Settings is where the
-   account row belongs; the Today gear points straight at `/sign-in` until it exists.
-3. **Phase 8 — sync.** The Postgres mirror, its RLS and the auth flow are all in place and verified;
+**Phase 6 is closed.** Everything below is Phase 7 and after.
+
+1. **The session summary (C2).** This is the next thing to build and it is not a preference: the
+   loop is open without it. `finishSession` already returns the finished session and `src/lib/pr.ts`
+   already names records, so the screen is a read of work that exists.
+2. **History, then session detail (C3).** A list of finished sessions off the Session tab, and the
+   read-only mono-column view of one. Session detail is where C3's "no plate, read-only rows are
+   34pt" rule gets its first real use.
+3. **Today, Lab 45 W3.** The landing tab is still a placeholder with a hardcoded NEXT card and a DEV
+   links section. It needs the week strip and the recent-sessions rail, neither of which Phase 2
+   built — and the rail reads exactly the rows step 2 puts on screen, so it is cheaper after.
+4. **Settings.** Units, default rest, plate colours, export. Storage is decided
+   (`expo-sqlite/kv-store`) and unwritten; the account row moves here and the Today gear stops
+   pointing straight at `/sign-in`.
+5. **The rest of Phase 7's shipping list.** Empty states, an error boundary, JSON export/import
+   through the share sheet, and the Maestro flow over routine → session → summary.
+6. **Phase 8 — sync.** The Postgres mirror, its RLS and the auth flow are all in place and verified;
    nothing pushes or pulls a row yet. Start from "The Supabase mirror" below.
 
-Today (Lab 45 W3) can be built any time now — it needs the week strip and the rail, which
-Phase 2 did not build.
+**Load and Strength are still 16-line placeholders** and are not on this list, because neither has a
+locked design — Load wants D1 and Strength wants the body map (`body-map.md`), both after-v1 in the
+plan. They stay stubs through v1 on purpose.
 
 ---
 
@@ -505,10 +545,12 @@ Phase 2 did not build.
   branch-based tooling (`/review` and friends diff a branch against a base and will refuse); review
   the working diff or the last N commits instead. `origin` is now
   `git@github.com:zcylla/jymiq-workout-tracker.git`.
-- **The session data layer is done; only the screen is missing.** `src/data/queries/sessions.ts` and
-  `src/data/mutations/sessions.ts` cover start, dial, log, undo, add/remove set, add/skip exercise,
-  reorder, cursor, finish and abandon. Pause is not built — see above.
-- **Settings storage** is decided (`expo-sqlite/kv-store`) but not written.
+- **The session data layer is done, and the live screen now uses most of it.** Three verbs are
+  still written and unused: `addExerciseToSession` (wants the library's `sessionId` picker mode),
+  `reorderSets` / `reorderSessionExercises` (want the sheet grips), and `updateRoutineExercise`
+  (wants target editing in the routine editor). Pause is not built — see above.
+- **Settings storage** is decided (`expo-sqlite/kv-store`) but not written. Everything the app
+  needs from it today is hardcoded: kg, the seeded rest defaults, the plate palette.
 - Still open on the design side and not blocking: the calendar's plate, the body map, the IA.
 - **Supabase: schema, RLS and auth are done; sync is not.** Architecture unchanged and settled:
   **local-first** — SQLite is the source of truth so the app works in a basement gym, and Supabase is
