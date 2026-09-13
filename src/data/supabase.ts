@@ -10,8 +10,10 @@ const key = process.env.EXPO_PUBLIC_SUPABASE_KEY;
 /**
  * The sync client. Null when the project is not configured, which is a state
  * the app has to survive: SQLite is the source of truth and every screen works
- * with no account and no signal. Supabase is backup and multi-device, not the
- * database.
+ * with no account and no signal. Supabase is *intended* as backup and
+ * multi-device, not as the database — but no code pushes or pulls a row yet
+ * (Phase 8). Until it does, signing in backs nothing up, and the sign-in screen
+ * must not say otherwise.
  *
  * `expo-sqlite/kv-store` is the session store — already a dependency, and
  * AsyncStorage-shaped, so it needs no adapter.

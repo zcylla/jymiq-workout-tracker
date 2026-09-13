@@ -149,8 +149,10 @@ export default function SignInScreen() {
 
         <Section label="WHY" plated={false}>
           <Text style={text.prose}>
+            {/* Sync is not built (Phase 8), so this must not promise backup —
+                the phone is still the only copy of every session. */}
             {status ??
-              'Signing in only adds backup and a second device. Everything works without it.'}
+              'Signing in claims the account that sync will use. It does not back anything up yet — this phone is still the only copy. Everything works without it.'}
           </Text>
         </Section>
       </Screen>
