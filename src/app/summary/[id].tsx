@@ -17,7 +17,7 @@ import {
 } from '@/components';
 import {
   previousSessionVolumeQuery,
-  sessionExercisesQuery,
+  sessionLogExercisesQuery,
   sessionQuery,
   sessionRecordsQuery,
   sessionSetsQuery,
@@ -46,7 +46,7 @@ export default function SummaryScreen() {
   const records = recordRows ?? [];
 
   const { data: exerciseRows } = useLiveQuery(
-    useMemo(() => sessionExercisesQuery(id), [id]),
+    useMemo(() => sessionLogExercisesQuery(id), [id]),
     [id],
   );
   const exercises = exerciseRows ?? [];
@@ -95,14 +95,14 @@ export default function SummaryScreen() {
   // An exercise nobody touched was not lifted, and this section says what was.
   const lifted = exercises.flatMap((ex) => {
     const exSets = setsByExercise.get(ex.id) ?? [];
-    const top = topSet(exSets);
-    if (!top) return [];
+    const count = countWorkingSets(exSets);
+    if (count === 0) return [];
     return [
       {
         id: ex.id,
         name: ex.name,
-        count: countWorkingSets(exSets),
-        top,
+        count,
+        top: topSet(exSets),
         volumeKg: totalVolume(exSets),
       },
     ];
@@ -154,7 +154,7 @@ export default function SummaryScreen() {
               chevron={false}
               lead={String(i + 1).padStart(2, '0')}
               title={ex.name}
-              meta={`${ex.count} SETS · TOP ${formatWeight(ex.top.weightKg ?? 0)} × ${ex.top.reps} · ${formatTonnage(ex.volumeKg)}`}
+              meta={`${ex.count} SETS${ex.top ? ` · TOP ${formatWeight(ex.top.weightKg ?? 0)} × ${ex.top.reps}` : ''} · ${formatTonnage(ex.volumeKg)}`}
             />
           ))}
         </Section>
