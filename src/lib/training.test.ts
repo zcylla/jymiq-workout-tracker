@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { estimate1RM, loadForReps, percentOf1RM } from './e1rm.ts';
-import { detectSessionVolumePr, detectSetPrs, type PrBaseline } from './pr.ts';
+import { detectSessionVolumePr, detectSetPrs, formatPrValue, type PrBaseline } from './pr.ts';
 import { DEFAULT_INVENTORY, solvePlates, warmupRamp } from './plates.ts';
 import { DEFAULT_REST_SEC, resolveRestSec } from './rest.ts';
 import { LOAD_SCALE, RPE_SCALE, indexOf, valueAt } from './scale.ts';
@@ -228,6 +228,14 @@ test('units convert both ways and round to a real increment', () => {
   assert.equal(roundToStep(101.3, 2.5), 102.5);
   assert.equal(roundToStep(101.2, 2.5), 100);
   assert.equal(weightKey(102.5), 10250);
+});
+
+test('a record prints bare, and an estimated 1RM never prints a false decimal', () => {
+  assert.equal(formatPrValue('best_e1rm', 126.66666666666667), '127');
+  assert.equal(formatPrValue('heaviest', 102.5), '102.5');
+  assert.equal(formatPrValue('best_set_volume', 840), '840');
+  assert.equal(formatPrValue('best_session_volume', 10480), '10480');
+  assert.equal(formatPrValue('most_reps_at_weight', 11), '11');
 });
 
 test('a displayed weight never leaks a float artefact', () => {
