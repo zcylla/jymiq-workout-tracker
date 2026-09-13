@@ -96,11 +96,11 @@ COLS = [
   H1),
  ('H2', 'Ruled by month', 'The label that already does this job',
   'The same rail, broken at the month boundary, each run under the ruled section label the rest of the app already uses for wayfinding.',
-  'The fix was already in the kit. A ruled label is how every other screen says <em>this is a different kind of thing</em>, and a month is exactly that &mdash; so history stops being one long list and becomes a short rail per month, which is the length the pattern was drawn for. <b style="color:#c9c3b6;font-weight:500">Each run is now three to five events</b>, the same order as LAST&nbsp;THREE and RECENT. The spine gets its context back: within September the line means &ldquo;these are consecutive sessions&rdquo;, and the break between months means the gap is real.',
+  '<b style="color:#c9c3b6;font-weight:500">Chosen.</b> The fix was already in the kit. A ruled label is how every other screen says <em>this is a different kind of thing</em>, and a month is exactly that &mdash; so history stops being one long list and becomes a short rail per month, which is the length the pattern was drawn for. <b style="color:#c9c3b6;font-weight:500">Each run is now three to five events</b>, the same order as LAST&nbsp;THREE and RECENT. The spine gets its context back: within September the line means &ldquo;these are consecutive sessions&rdquo;, and the break between months means the gap is real &mdash; and nothing is added to the label to pay for it.',
   H2),
  ('H3', 'Ruled by month, summed', 'One line of text, not a second chart',
   'H2 with the month&rsquo;s totals on the label line, using <code>psec</code>&rsquo;s existing right slot.',
-  '<b style="color:#c9c3b6;font-weight:500">My pick.</b> &sect;0 already ruled on this shape for the calendar &mdash; &ldquo;month summary is one line of text, not a second chart&rdquo; &mdash; and the same sentence answers the same question here, so this is a rule being applied rather than a new one being invented. It also gives the screen the thing H1 and H2 both lack: a reason to scroll <em>past</em> a month rather than through it. The totals sit in the label&rsquo;s right slot at 11pt mono, which is where every other section puts its secondary figure, so it costs no new component and no vertical space at all. Note the 20&nbsp;Aug row: an abandoned session keeps its tonnage and says <span style="color:#c9c3b6">ENDED EARLY</span> in words rather than being greyed &mdash; the weight was really lifted, and fading it would be the app disowning work you did.',
+  '<b style="color:#c9c3b6;font-weight:500">Proposed and rejected.</b> The argument for it was that &sect;0 already ruled this shape in for the calendar &mdash; &ldquo;month summary is one line of text, not a second chart&rdquo; &mdash; so the same sentence would answer the same question here, at no new component and no vertical space. <b style="color:#c9c3b6;font-weight:500">The argument against it is better: monthly tonnage is not information most people act on.</b> Session tonnage earns its place because it is one workout you can still remember; summed over a month it is a number that goes up when you train more and down when you train less, which the count of sessions beside it already says. A figure that restates its neighbour is noise on a label that exists to help you skip. Note the 20&nbsp;Aug row, which survives into H2: an abandoned session keeps its tonnage and says <span style="color:#c9c3b6">ENDED EARLY</span> in words rather than being greyed &mdash; the weight was really lifted, and fading it would be the app disowning work you did.',
   H3),
 ]
 
@@ -119,8 +119,8 @@ INTRO = (
 CLOSING = (
   '<div class="sect"><h2 style="margin:0;font-size:20px;font-weight:600;letter-spacing:-0.02em;'
   'color:#f0efec">What this settles</h2>'
-  + K.para('<b style="color:#c9c3b6;font-weight:500">The month is the container, and the ruled '
-           'label is how it is drawn.</b> That keeps every rail in the app between two and five '
+  + K.para('<b style="color:#c9c3b6;font-weight:500">H2. The month is the container, the ruled '
+           'label is how it is drawn, and the label carries nothing but the month.</b> That keeps every rail in the app between two and five '
            'events, which is the only length the pattern has ever been drawn at, and it means '
            'history needs no new primitive &mdash; <code>psec</code> and <code>rail</code> compose '
            'into it.')
