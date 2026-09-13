@@ -92,6 +92,22 @@ export default function SummaryScreen() {
     setsByExercise.set(s.sessionExerciseId, list);
   }
 
+  // An exercise nobody touched was not lifted, and this section says what was.
+  const lifted = exercises.flatMap((ex) => {
+    const exSets = setsByExercise.get(ex.id) ?? [];
+    const top = topSet(exSets);
+    if (!top) return [];
+    return [
+      {
+        id: ex.id,
+        name: ex.name,
+        count: countWorkingSets(exSets),
+        top,
+        volumeKg: totalVolume(exSets),
+      },
+    ];
+  });
+
   return (
     <>
       <Screen bottomInset={actionBar}>
@@ -132,24 +148,15 @@ export default function SummaryScreen() {
         ) : null}
 
         <Section label="WHAT YOU LIFTED" plated={false}>
-          {exercises.map((ex, i) => {
-            const exSets = setsByExercise.get(ex.id) ?? [];
-            const count = countWorkingSets(exSets);
-            const top = topSet(exSets);
-            const caption =
-              count > 0 && top
-                ? `${count} SETS · TOP ${formatWeight(top.weightKg ?? 0)} × ${top.reps} · ${formatTonnage(totalVolume(exSets))}`
-                : `${count} SETS`;
-            return (
-              <ListRow
-                key={ex.id}
-                chevron={false}
-                lead={String(i + 1).padStart(2, '0')}
-                title={ex.name}
-                meta={caption}
-              />
-            );
-          })}
+          {lifted.map((ex, i) => (
+            <ListRow
+              key={ex.id}
+              chevron={false}
+              lead={String(i + 1).padStart(2, '0')}
+              title={ex.name}
+              meta={`${ex.count} SETS · TOP ${formatWeight(ex.top.weightKg ?? 0)} × ${ex.top.reps} · ${formatTonnage(ex.volumeKg)}`}
+            />
+          ))}
         </Section>
       </Screen>
       <ActionBar primary="Done" onPrimary={() => router.dismissTo('/')} />
