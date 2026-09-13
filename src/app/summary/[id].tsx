@@ -23,7 +23,7 @@ import {
   sessionSetsQuery,
 } from '@/data/queries/sessions';
 import { formatPrValue, PR_LABELS } from '@/lib/pr';
-import { formatDuration } from '@/lib/time';
+import { formatSessionDuration, sessionDateLabel } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
 import { countWorkingSets, formatTonnage, topSet, totalVolume } from '@/lib/volume';
 import { color, text } from '@/theme';
@@ -71,8 +71,9 @@ export default function SummaryScreen() {
       ? volumeDeltaOf(session.totalVolumeKg, previousVolumeKg)
       : null;
 
+  const durationLabel = formatSessionDuration(session?.durationSec ?? null);
   const tiles: Tile[] = [
-    { label: 'TIME', value: formatDuration(session?.durationSec ?? 0), tone: 'hi' },
+    { label: 'TIME', value: durationLabel, tone: durationLabel === '—' ? 'lo' : 'hi' },
     {
       label: 'VOLUME',
       value: formatTonnage(session?.totalVolumeKg ?? 0),
@@ -115,7 +116,7 @@ export default function SummaryScreen() {
           title={session?.name ?? ''}
           kicker={
             session
-              ? `SESSION COMPLETE · ${sessionDateLabel(session.endedAt ?? session.startedAt)}`
+              ? `SESSION COMPLETE · ${sessionDateLabel(session.endedAt ?? session.startedAt, { upper: true })}`
               : undefined
           }
           onBack={() => router.back()}
@@ -162,20 +163,6 @@ export default function SummaryScreen() {
       <ActionBar primary="Done" onPrimary={() => router.dismissTo('/')} />
     </>
   );
-}
-
-/** "TODAY", or "TUE 2 SEP" for anything else. */
-function sessionDateLabel(atMs: number): string {
-  const end = new Date(atMs);
-  const now = new Date();
-  const sameDay =
-    end.getFullYear() === now.getFullYear() &&
-    end.getMonth() === now.getMonth() &&
-    end.getDate() === now.getDate();
-  if (sameDay) return 'TODAY';
-  const weekday = end.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-  const month = end.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-  return `${weekday} ${end.getDate()} ${month}`;
 }
 
 function volumeDeltaOf(
