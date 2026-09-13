@@ -65,7 +65,7 @@
     "ios": "expo run:ios",
     "lint": "expo lint",
     "prepare": "lefthook install",
-    "seed:gen": "node scripts/build-seed.mjs",
+    "seed:gen": "node --experimental-strip-types scripts/build-seed.mjs",
     "start": "expo start",
     "test": "node --test --experimental-strip-types src/lib/*.test.ts",
     "typecheck": "tsc --noEmit"

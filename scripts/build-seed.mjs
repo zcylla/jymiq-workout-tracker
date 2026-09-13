@@ -28,6 +28,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { sameProse } from '../src/lib/prose.ts';
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const offline = process.argv.includes('--offline');
 
@@ -309,7 +311,12 @@ for (const art of manifest) {
   const steps = fromDataset?.instruction_steps?.en?.length
     ? fromDataset.instruction_steps.en
     : (fromFedb?.instructions ?? []);
-  const description = fromDataset?.instructions?.en || null;
+  // exercises-dataset's `instructions` is its `instruction_steps` joined back
+  // up, so taking both stores one text twice and leaves the orientation prose
+  // the board asks for nowhere. Keep the steps; drop the paragraph that only
+  // restates them. `src/lib/prose.ts` guards the rows already on a device.
+  const prose = fromDataset?.instructions?.en || null;
+  const description = prose && sameProse(prose, steps) ? null : prose;
 
   // free-exercise-db is the only source with a real `mechanic`; otherwise the
   // usual split on the prime mover, which is a judgement rather than a fact.
