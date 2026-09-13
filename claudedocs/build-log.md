@@ -4,9 +4,10 @@ Companion to `design-exploration.md`, which holds the design state. **This file 
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
 Last updated 2026-09-13. `Lab 47 — The Screens` is published: the screen index that Phase 7 named
-as the next design task. Before it, Phase 7 item 1 was replanned through a four-voice review, then
-built: the Rail, routine detail's LAST THREE, and session detail (C3). The history *list* was dropped —
-the IA never had one. See "The gap this exposed — closed by Lab 47" and "There is no history list".
+as the next design task. A board-versus-device refinement pass followed it and shipped seven fixes,
+two of them criticals a screenshot alone could not catch — see "The refinement pass". Before both,
+Phase 7 item 1 was replanned through a four-voice review, then built: the Rail, routine detail's
+LAST THREE, and session detail (C3). The history *list* was dropped — the IA never had one.
 
 ---
 
@@ -713,6 +714,86 @@ the summary cannot drift from the cards.
 **It found a real gap while being written: three tab roots have no board.** Today has Lab 45 W3, but
 nothing anywhere draws what Strength or Load open on — both tabs exist only as their *contents*
 (C4, B4 and D1, D2, C1). That has to be answered before either tab can be built.
+
+---
+
+## The refinement pass — what a board-versus-device audit found
+
+2026-09-13. Every built screen captured on the phone and compared against its board, then the
+findings put through CEO, design and engineering review (two independent voices each). Seven fixes
+shipped. **Two of the seven were criticals the screenshot audit missed**, which is the lesson: a
+screenshot proves what a screen looks like, never what it does.
+
+- **The exercise screen shipped two dead buttons.** `<ActionBar primary="Add to routine"
+  secondary="LOG" />` with no handlers — both props are optional, so the Pressables took
+  `onPress={undefined}`, animated on press, and did nothing. Nobody had tapped them. Removed rather
+  than wired: the screen only ever receives an exercise `id`, no routine context reaches it, and
+  `LOG` had no destination at all. Same rule as Lab 35 B3's two toggles.
+- **The sign-in screen promised a backup that does not exist.** It read *"Signing in only adds
+  backup and a second device."* There is no sync code — `supabase.ts` is imported by three files and
+  every `.from()` in `src/data/` is Drizzle against local SQLite. The copy now says what signing in
+  actually does. `supabase.ts`'s own docstring made the same overclaim and was corrected too.
+- **Routine detail's headline was wrong by 6×.** `EST. TIME` and `VOLUME` were read from
+  `sessions[0]` while `EXERCISES` and `SETS` described the plan, so the block showed `1.6 T` — an
+  abandoned two-set session — for a routine whose plan is 10.5 T. The tiles are now `LAST TIME` and
+  `LAST VOLUME`. **Computing the plan figures was considered and rejected**: planned tonnage is
+  undefined for bodyweight, assisted and unilateral lifts and the schema cannot express the
+  difference, and `sets × (work + rest)` is a guess. The labels were the bug; the data was fine.
+- **94 of 302 exercises printed the same text twice.** exercises-dataset publishes `instructions.en`
+  (a paragraph) and `instruction_steps.en` (that paragraph split on sentences) and the seed stored
+  both, so the exercise screen showed the procedure as prose and again as a numbered HOW TO. Every
+  row with both was verbatim identical — 94/94, not an edge case. `src/lib/prose.ts` compares on
+  letters and digits alone and drops the paragraph when it only restates the cues;
+  `build-seed.mjs` stops emitting it.
+- **An absent tile value was bright on one screen and dim on another.** The summary already dimmed
+  its em dash; routine detail did not, on one of two branches. `StatTiles` now decides, and the
+  summary's ternary is gone — one place instead of three.
+- Custom-exercise field values were upper-cased (`BARBELL`), which flattens the mono-caps-label over
+  sentence-case-value contrast that is the whole Field component. Now `Barbell`.
+- Session detail gave every un-lifted exercise a full 46pt section saying "No sets logged." three
+  times over. One `NOT LIFTED` section names them instead.
+
+### A migration that would have silently done nothing
+
+The duplicate prose was first going to be fixed with a corrective `drizzle/0002` emitted by
+`build-seed.mjs`. **That would have failed silently.** Drizzle decides whether a migration has run
+by comparing the journal's `when` against the maximum `created_at` in `__drizzle_migrations`
+(`sqlite-core/dialect.js:696`, `expo-sqlite/migrator.js:16` — `folderMillis` *is* `when`). The
+journal's timestamps are **already out of order**: `0000` is `1788757349078` and `0001` is
+`1788745400000`. `build-seed.mjs` pins `STAMP = 1788745400000`, so a 0002 reusing it would compare
+`1788757349078 < 1788745400000` → false, write nothing, and throw nothing.
+
+**If a data migration is ever needed, its `when` must be a fresh constant greater than every
+existing entry, hard-coded and never re-derived from `STAMP`** — and it must be registered in both
+`drizzle/meta/_journal.json` *and* `drizzle/migrations.js` (an `import m0002` plus the map key), or
+startup fails with "Missing migration".
+
+### Findings investigated and rejected
+
+Recorded so they are not raised again. C3's first section has no air above it — **matches the
+board**, measured 29 dp app against 34 dp board. C2's `-84.4%` delta has one decimal — the boards
+use both `+4%` and `+4.9%`, so there is no convention to violate. B3's field plates look too tall —
+63 dp app against the board's 76 dp. B2's bottom clearance looks generous — that is
+`space.between + useActionBarHeight()` working, confirmed by scrolling to the CC BY-SA line.
+
+One claim from review was checked and **found wrong**: that the summary screen also showed a bright
+em dash. It did not; `summary/[id].tsx` already dimmed it. Only routine detail was affected.
+
+### Left open by this pass
+
+- **Export still does not exist, and all four review voices ranked it above this entire pass.** The
+  phone is the only copy of every session. The sign-in copy no longer claims otherwise, which closes
+  the false-safety half of the problem and none of the real one.
+- **The orientation prose the board asks for exists in no data source.** Dropping the duplicate makes
+  the exercise screen self-consistent; it does not write the "what this lift is and why" paragraph
+  Lab 39 Q1 draws.
+- **What "completed" means is unsettled.** An abandoned two-set session still drives a `-84.4%`
+  delta on the summary and a LAST THREE row. Which metrics include partial work, and what a delta
+  compares against, will compound as the Strength and Load tabs get built.
+- **Summary's empty path**: an abandoned session renders `WHAT YOU LIFTED` as a label and a hairline
+  over nothing.
+- **Assisted Chin-up still types as ISOLATION.** One voice argued for reopening it, since `kind`
+  drives default rest and whether e1RM means anything. Held for a data pass, not a screen pass.
 
 ---
 
