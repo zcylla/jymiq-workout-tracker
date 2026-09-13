@@ -1,11 +1,11 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
 
 import type { PrBaseline } from '@/lib/pr';
 import { weightKey } from '@/lib/units';
 
 import type { Db } from '../db';
 import { db } from '../db';
-import { exercises, sessionExercises, sessions, sets } from '../schema';
+import { exercises, personalRecords, sessionExercises, sessions, sets } from '../schema';
 
 /** A transaction reads exactly like the database does, and the baseline needs both. */
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
@@ -69,6 +69,40 @@ export function sessionSetsQuery(sessionId: string) {
     .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
     .where(eq(sessionExercises.sessionId, sessionId))
     .orderBy(asc(sessionExercises.position), asc(sets.position));
+}
+
+/** The NEW RECORDS section on the summary screen, in the order they landed. */
+export function sessionRecordsQuery(sessionId: string) {
+  return db
+    .select({
+      id: personalRecords.id,
+      category: personalRecords.category,
+      value: personalRecords.value,
+      previousValue: personalRecords.previousValue,
+      weightKg: personalRecords.weightKg,
+      reps: personalRecords.reps,
+      name: exercises.name,
+    })
+    .from(personalRecords)
+    .innerJoin(exercises, eq(exercises.id, personalRecords.exerciseId))
+    .where(eq(personalRecords.sessionId, sessionId))
+    .orderBy(asc(personalRecords.achievedAt));
+}
+
+/** The summary screen's VOLUME delta baseline: this routine's last completed session. */
+export function previousSessionVolumeQuery(routineId: string, startedAt: number) {
+  return db
+    .select({ totalVolumeKg: sessions.totalVolumeKg })
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.routineId, routineId),
+        eq(sessions.status, 'completed'),
+        lt(sessions.startedAt, startedAt),
+      ),
+    )
+    .orderBy(desc(sessions.startedAt))
+    .limit(1);
 }
 
 export function setsForExerciseQuery(sessionExerciseId: string) {
