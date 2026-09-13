@@ -4,9 +4,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { ActionBar, Screen, ScreenHeader, Section, useActionBarHeight } from '@/components';
+import { Screen, ScreenHeader, Section } from '@/components';
 import { exerciseArt } from '@/data/exercise-art';
 import { exerciseMusclesQuery, exerciseQuery } from '@/data/queries/exercises';
+import { sameProse } from '@/lib/prose';
 import { color, motion, space, text } from '@/theme';
 
 /**
@@ -17,7 +18,6 @@ import { color, motion, space, text } from '@/theme';
  * Phase 7 once there is history to draw.
  */
 export default function ExerciseScreen() {
-  const actionBar = useActionBarHeight();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: found } = useLiveQuery(
     useMemo(() => exerciseQuery(id), [id]),
@@ -35,67 +35,67 @@ export default function ExerciseScreen() {
   const assist = muscles?.filter((m) => m.role === 'assist').map((m) => m.muscle) ?? [];
 
   return (
-    <>
-      <Screen bottomInset={actionBar}>
-        <ScreenHeader
-          title={exercise?.name ?? ''}
-          kicker={
-            exercise ? `${exercise.equipment.toUpperCase()} · ${exercise.kind.toUpperCase()}` : ''
-          }
-          onBack={() => router.back()}
-        />
+    <Screen>
+      <ScreenHeader
+        title={exercise?.name ?? ''}
+        kicker={
+          exercise ? `${exercise.equipment.toUpperCase()} · ${exercise.kind.toUpperCase()}` : ''
+        }
+        onBack={() => router.back()}
+      />
 
-        {/* Lab 39 Q1: demonstration and instruction above statistics, which is
+      {/* Lab 39 Q1: demonstration and instruction above statistics, which is
             the order every reference app uses. §0 plates it — the demo is one of
             this screen's two main components. */}
-        {frames ? (
-          <Section first>
-            <Demo frames={frames} />
-          </Section>
-        ) : null}
-
-        {exercise?.description ? (
-          <Section plated={false}>
-            <Text style={text.body}>{exercise.description}</Text>
-          </Section>
-        ) : null}
-
-        {prime.length ? (
-          <Section label="MUSCLES">
-            <Text style={text.body}>{prime.join(' · ').toUpperCase()}</Text>
-            {assist.length ? <Text style={text.prose}>{assist.join(' · ')}</Text> : null}
-          </Section>
-        ) : null}
-
-        {cues.length ? (
-          <Section label="HOW TO" plated={false}>
-            <View style={{ gap: space.within }}>
-              {cues.map((cue, i) => (
-                <View key={cue} style={{ flexDirection: 'row', gap: 11 }}>
-                  <Text style={[text.meta, { width: 18 }]}>{String(i + 1).padStart(2, '0')}</Text>
-                  <Text style={[text.body, { flex: 1 }]}>{cue}</Text>
-                </View>
-              ))}
-            </View>
-          </Section>
-        ) : null}
-
-        <Section label="YOUR NUMBERS" plated={false}>
-          <Text style={text.prose}>
-            Nothing logged yet. Your best set and estimated 1RM appear here after the first session.
-          </Text>
+      {frames ? (
+        <Section first>
+          <Demo frames={frames} />
         </Section>
+      ) : null}
 
-        {/* CC BY-SA asks for credit wherever the work is distributed, and the
+      {/* The description is dropped when HOW TO below is the same text in a
+            better shape — see `sameProse`. It is not dropped when the two
+            genuinely differ, nor when there are no cues to fall back on. */}
+      {exercise?.description && !sameProse(exercise.description, cues) ? (
+        <Section plated={false}>
+          <Text style={text.body}>{exercise.description}</Text>
+        </Section>
+      ) : null}
+
+      {prime.length ? (
+        <Section label="MUSCLES">
+          <Text style={text.body}>{prime.join(' · ').toUpperCase()}</Text>
+          {assist.length ? <Text style={text.prose}>{assist.join(' · ')}</Text> : null}
+        </Section>
+      ) : null}
+
+      {cues.length ? (
+        <Section label="HOW TO" plated={false}>
+          <View style={{ gap: space.within }}>
+            {cues.map((cue, i) => (
+              <View key={cue} style={{ flexDirection: 'row', gap: 11 }}>
+                <Text style={[text.meta, { width: 18 }]}>{String(i + 1).padStart(2, '0')}</Text>
+                <Text style={[text.body, { flex: 1 }]}>{cue}</Text>
+              </View>
+            ))}
+          </View>
+        </Section>
+      ) : null}
+
+      <Section label="YOUR NUMBERS" plated={false}>
+        <Text style={text.prose}>
+          Nothing logged yet. Your best set and estimated 1RM appear here after the first session.
+        </Text>
+      </Section>
+
+      {/* CC BY-SA asks for credit wherever the work is distributed, and the
             app is where this app distributes it. */}
-        {frames ? (
-          <Section plated={false}>
-            <Text style={text.meta}>ILLUSTRATION BY BRYL LIM · CC BY-SA 4.0</Text>
-          </Section>
-        ) : null}
-      </Screen>
-      <ActionBar primary="Add to routine" secondary="LOG" />
-    </>
+      {frames ? (
+        <Section plated={false}>
+          <Text style={text.meta}>ILLUSTRATION BY BRYL LIM · CC BY-SA 4.0</Text>
+        </Section>
+      ) : null}
+    </Screen>
   );
 }
 
