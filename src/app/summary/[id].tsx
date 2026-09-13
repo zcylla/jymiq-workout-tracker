@@ -73,7 +73,7 @@ export default function SummaryScreen() {
 
   const durationLabel = formatSessionDuration(session?.durationSec ?? null);
   const tiles: Tile[] = [
-    { label: 'TIME', value: durationLabel, tone: durationLabel === '—' ? 'lo' : 'hi' },
+    { label: 'TIME', value: durationLabel },
     {
       label: 'VOLUME',
       value: formatTonnage(session?.totalVolumeKg ?? 0),

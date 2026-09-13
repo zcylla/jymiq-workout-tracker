@@ -14,6 +14,19 @@ export type Tile = {
   below?: ReactNode;
 };
 
+/** The one absent value in the app, and §0 draws an absent value dim. */
+const DASH = '—';
+
+/**
+ * An em dash is the empty state whoever produced it, so the tile decides rather
+ * than every caller — two of them had already disagreed about the same value.
+ * An explicit `tone` still wins, for a dash that means something else.
+ */
+function toneOf(tile: Tile): NonNullable<Tile['tone']> {
+  if (tile.tone) return tile.tone;
+  return tile.value === DASH ? 'lo' : 'hi';
+}
+
 /**
  * Stat tiles, two per row, never four. Order inside a tile is label → number →
  * visual; a comparison attaches to the number it describes, never its own tile.
@@ -58,9 +71,7 @@ export function StatTiles({
             >
               <Text style={text.label}>{tile.label}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={[text.numTile, { color: color[tile.tone ?? 'hi'] }]}>
-                  {tile.value}
-                </Text>
+                <Text style={[text.numTile, { color: color[toneOf(tile)] }]}>{tile.value}</Text>
                 <View style={{ flex: 1 }} />
                 {tile.visual}
               </View>
