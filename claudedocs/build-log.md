@@ -590,14 +590,19 @@ independent voices each (a Claude subagent with no prior context, and Codex). Si
 nineteen dimensions, all confirmed. It is recorded here because most of what it found was **not**
 about the plan.
 
-### Two bugs already on the device
+### One bug on the device, one latent
 
-1. **`finishSession`'s totals and the summary's exercise list disagree.** The totals query
+1. **Latent: `finishSession`'s totals and the summary's exercise list disagree.** The totals query
    (`mutations/sessions.ts:421-424`) has no `removedAt` filter; `sessionExercisesQuery` does. So a
-   skipped exercise that had sets logged before the skip **counts toward `totalVolumeKg` and is
-   missing from WHAT YOU LIFTED**. `skipSessionExercise` keeps those sets deliberately — "a hard
-   delete would throw it away along with any sets that were logged before the skip" — so this is a
-   read-side inconsistency, not a data problem.
+   skipped exercise that had sets logged before the skip would **count toward `totalVolumeKg` and be
+   missing from WHAT YOU LIFTED**.
+   **It is not reachable today, and the review overstated it as live.** `skipSessionExercise` and
+   `unskipSessionExercise` are the only writers of `removedAt` and **neither has a UI caller** — the
+   mutation is written and unused, so the column is always null in practice. The disagreement is
+   real in the code and would have fired the instant skip was wired to the exercises sheet. Fixed
+   before the trigger exists: `sessionLogExercisesQuery` keeps a skipped exercise that has at least
+   one completed set, and the summary reads it. Checking reachability before believing a severity
+   claim is the lesson.
 2. **`routine/[id]`'s LAST THREE is a hardcoded lie.** The section renders the string "Nothing
    logged yet. Every session you run from this routine appears here." with **no query behind it**,
    unconditionally. Sessions have been run from that routine. Its EST. TIME and VOLUME tiles are
