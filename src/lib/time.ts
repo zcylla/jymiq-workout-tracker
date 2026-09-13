@@ -28,3 +28,55 @@ export function restRemainingSec(restUntil: number | null, now = Date.now()): nu
   if (restUntil == null) return 0;
   return Math.max(0, Math.ceil((restUntil - now) / 1000));
 }
+
+/** Eight hours is far past any real strength session, so a stored duration
+ * above this means the session was left open, not that it was trained. */
+export const SESSION_DURATION_CEILING_SEC = 8 * 3600;
+
+/**
+ * The duration to persist for a finished/abandoned session. The wall clock is
+ * the truth when it is plausible; otherwise it falls back to the span up to
+ * the last completed set, and failing that gives up rather than inventing one.
+ */
+export function resolveSessionDurationSec(
+  startedAt: number,
+  pausedMs: number,
+  endedAt: number,
+  lastCompletedAt: number | null,
+): number | null {
+  const wallClock = elapsedSec(startedAt, pausedMs, endedAt);
+  if (wallClock <= SESSION_DURATION_CEILING_SEC) return wallClock;
+  if (lastCompletedAt == null) return null;
+  const toLastSet = elapsedSec(startedAt, pausedMs, lastCompletedAt);
+  return toLastSet <= SESSION_DURATION_CEILING_SEC ? toLastSet : null;
+}
+
+/** `'—'` for a missing or poisoned duration, otherwise `formatDuration`. */
+export function formatSessionDuration(sec: number | null): string {
+  if (sec == null || sec > SESSION_DURATION_CEILING_SEC) return '—';
+  return formatDuration(sec);
+}
+
+/** Always the minutes form, e.g. `64 MIN` — used by rail meta lines, which
+ * never switch to the hour form `formatDuration` uses past 60 minutes. */
+export function formatMinutes(sec: number): string {
+  return `${Math.max(0, Math.round(sec / 60))} MIN`;
+}
+
+/** "Today"/"TODAY", or "Tue 2 Sep"/"TUE 2 SEP" for anything else. */
+export function sessionDateLabel(
+  atMs: number,
+  opts: { upper?: boolean; now?: number } = {},
+): string {
+  const end = new Date(atMs);
+  const now = new Date(opts.now ?? Date.now());
+  const sameDay =
+    end.getFullYear() === now.getFullYear() &&
+    end.getMonth() === now.getMonth() &&
+    end.getDate() === now.getDate();
+  if (sameDay) return opts.upper ? 'TODAY' : 'Today';
+  const weekday = end.toLocaleDateString('en-US', { weekday: 'short' });
+  const month = end.toLocaleDateString('en-US', { month: 'short' });
+  const label = `${weekday} ${end.getDate()} ${month}`;
+  return opts.upper ? label.toUpperCase() : label;
+}

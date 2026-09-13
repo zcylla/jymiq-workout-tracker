@@ -6,7 +6,18 @@ import { detectSessionVolumePr, detectSetPrs, formatPrValue, type PrBaseline } f
 import { DEFAULT_INVENTORY, solvePlates, warmupRamp } from './plates.ts';
 import { DEFAULT_REST_SEC, resolveRestSec } from './rest.ts';
 import { LOAD_SCALE, RPE_SCALE, indexOf, valueAt } from './scale.ts';
-import { elapsedSec, formatClock, formatDuration, formatRest, restRemainingSec } from './time.ts';
+import {
+  elapsedSec,
+  formatClock,
+  formatDuration,
+  formatMinutes,
+  formatSessionDuration,
+  restRemainingSec,
+  formatRest,
+  resolveSessionDurationSec,
+  sessionDateLabel,
+  SESSION_DURATION_CEILING_SEC,
+} from './time.ts';
 import {
   countWorkingSets,
   formatTonnage,
@@ -298,6 +309,58 @@ test('clocks format and rest is derived from wall clock', () => {
   assert.equal(restRemainingSec(91_000, 1_000), 90);
   assert.equal(restRemainingSec(null), 0);
   assert.equal(elapsedSec(0, 0, 65_000), 65);
+});
+
+test('a normal session duration passes through exactly', () => {
+  const startedAt = 0;
+  const endedAt = 64 * 60 * 1000;
+  assert.equal(resolveSessionDurationSec(startedAt, 0, endedAt, endedAt), 64 * 60);
+});
+
+test('a five-day wall clock with a last completed set an hour in resolves to that hour', () => {
+  const startedAt = 0;
+  const fiveDaysLater = 5 * 24 * 3600 * 1000;
+  const lastCompletedAt = 3600 * 1000;
+  assert.equal(resolveSessionDurationSec(startedAt, 0, fiveDaysLater, lastCompletedAt), 3600);
+});
+
+test('a five-day wall clock with no completed sets resolves to null', () => {
+  const startedAt = 0;
+  const fiveDaysLater = 5 * 24 * 3600 * 1000;
+  assert.equal(resolveSessionDurationSec(startedAt, 0, fiveDaysLater, null), null);
+});
+
+test('a five-day wall clock whose last completed set is also days in resolves to null', () => {
+  const startedAt = 0;
+  const fiveDaysLater = 5 * 24 * 3600 * 1000;
+  const twoDaysIn = 2 * 24 * 3600 * 1000;
+  assert.equal(resolveSessionDurationSec(startedAt, 0, fiveDaysLater, twoDaysIn), null);
+});
+
+test('formatSessionDuration is an em dash for a null duration', () => {
+  assert.equal(formatSessionDuration(null), '—');
+});
+
+test('formatSessionDuration is an em dash for an already-poisoned row above the ceiling', () => {
+  assert.equal(formatSessionDuration(SESSION_DURATION_CEILING_SEC + 1), '—');
+});
+
+test('formatSessionDuration matches formatDuration for a normal value', () => {
+  assert.equal(formatSessionDuration(64 * 60), formatDuration(64 * 60));
+});
+
+test('formatMinutes always stays in minutes form, never the hour form', () => {
+  assert.equal(formatMinutes(64 * 60), '64 MIN');
+});
+
+test('sessionDateLabel names today and titlecases another day, given an explicit now', () => {
+  const now = new Date(2026, 8, 2, 9, 0, 0).getTime();
+  const sameDay = new Date(2026, 8, 2, 7, 30, 0).getTime();
+  const otherDay = new Date(2026, 7, 26, 7, 30, 0).getTime();
+  assert.equal(sessionDateLabel(sameDay, { now }), 'Today');
+  assert.equal(sessionDateLabel(sameDay, { now, upper: true }), 'TODAY');
+  assert.equal(sessionDateLabel(otherDay, { now }), 'Wed 26 Aug');
+  assert.equal(sessionDateLabel(otherDay, { now, upper: true }), 'WED 26 AUG');
 });
 
 // ---------------------------------------------------------------- rest ----
