@@ -31,7 +31,7 @@ import {
   sessionSetsQuery,
 } from '@/data/queries/sessions';
 import { estimate1RM, percentOf1RM } from '@/lib/e1rm';
-import { type PrHit, PR_LABELS } from '@/lib/pr';
+import { formatPrValue, type PrHit, PR_LABELS } from '@/lib/pr';
 import { LOAD_SCALE, REPS_SCALE, RPE_SCALE } from '@/lib/scale';
 import { elapsedSec, formatClock, formatRest, restRemainingSec } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
@@ -54,8 +54,8 @@ function announce(hits: PrHit[], title: string) {
     title,
     hits
       .map((h) => {
-        const line = `${PR_LABELS[h.category]} ${Math.round(h.value * 100) / 100}`;
-        return h.previous == null ? line : `${line}\nWAS ${Math.round(h.previous * 100) / 100}`;
+        const line = `${PR_LABELS[h.category]} ${formatPrValue(h.category, h.value)}`;
+        return h.previous == null ? line : `${line}\nWAS ${formatPrValue(h.category, h.previous)}`;
       })
       .join('\n\n'),
   );

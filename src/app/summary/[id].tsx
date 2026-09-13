@@ -22,7 +22,7 @@ import {
   sessionRecordsQuery,
   sessionSetsQuery,
 } from '@/data/queries/sessions';
-import { type PrCategory, PR_LABELS } from '@/lib/pr';
+import { formatPrValue, PR_LABELS } from '@/lib/pr';
 import { formatDuration } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
 import { countWorkingSets, formatTonnage, topSet, totalVolume } from '@/lib/volume';
@@ -178,18 +178,6 @@ function volumeDeltaOf(
   const pct = ((currentKg - previousKg) / previousKg) * 100;
   const positive = pct >= 0;
   return { label: `${positive ? '+' : ''}${pct.toFixed(1)}%`, positive };
-}
-
-function formatPrValue(category: PrCategory, value: number): string {
-  switch (category) {
-    case 'most_reps_at_weight':
-      return String(value);
-    case 'best_set_volume':
-    case 'best_session_volume':
-      return formatTonnage(value);
-    default:
-      return formatWeight(value);
-  }
 }
 
 type PrRow = Awaited<ReturnType<typeof sessionRecordsQuery>>[number];
