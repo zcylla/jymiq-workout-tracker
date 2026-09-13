@@ -63,6 +63,35 @@ export function formatMinutes(sec: number): string {
   return `${Math.max(0, Math.round(sec / 60))} MIN`;
 }
 
+/** Local calendar days between two timestamps — "yesterday" is 1 regardless of clock time. */
+function calendarDaysAgo(atMs: number, now: number): number {
+  const a = new Date(atMs);
+  const b = new Date(now);
+  const start = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.round((start(b) - start(a)) / 86_400_000);
+}
+
+export type DotTone = 'accent' | 'tick3' | 'tick2' | 'tick1';
+
+/**
+ * A rail dot's tone is a coarse age bucket, not a per-row index ramp — an index
+ * ramp puts every row past the fourth on the same tone and stops meaning
+ * anything half a screen in. Thresholds derived from lab36.py:92-97 (the PR
+ * timeline, the only board with enough events to show the pattern): 0-2 days
+ * accent, 3-6 tick3, 7-12 tick2, 13+ tick1.
+ *
+ * The two 3-event boards (lab34.py:88-93 LAST THREE, lab43.py:73-83 RECENT)
+ * skip tick3 and use accent/tick2/tick1 — that's three rows compressed for
+ * visual spread across one week, not a different rule.
+ */
+export function sessionDotTone(atMs: number, now = Date.now()): DotTone {
+  const days = calendarDaysAgo(atMs, now);
+  if (days <= 2) return 'accent';
+  if (days <= 6) return 'tick3';
+  if (days <= 12) return 'tick2';
+  return 'tick1';
+}
+
 /** "Today"/"TODAY", or "Tue 2 Sep"/"TUE 2 SEP" for anything else. */
 export function sessionDateLabel(
   atMs: number,

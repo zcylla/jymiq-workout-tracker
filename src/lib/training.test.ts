@@ -16,6 +16,7 @@ import {
   formatRest,
   resolveSessionDurationSec,
   sessionDateLabel,
+  sessionDotTone,
   SESSION_DURATION_CEILING_SEC,
 } from './time.ts';
 import {
@@ -361,6 +362,33 @@ test('sessionDateLabel names today and titlecases another day, given an explicit
   assert.equal(sessionDateLabel(sameDay, { now, upper: true }), 'TODAY');
   assert.equal(sessionDateLabel(otherDay, { now }), 'Wed 26 Aug');
   assert.equal(sessionDateLabel(otherDay, { now, upper: true }), 'WED 26 AUG');
+});
+
+test('sessionDotTone is same-day accent', () => {
+  const now = new Date(2026, 8, 2, 9, 0, 0).getTime();
+  const today = new Date(2026, 8, 2, 6, 0, 0).getTime();
+  assert.equal(sessionDotTone(today, now), 'accent');
+});
+
+test('sessionDotTone buckets at the 2/3 day boundary', () => {
+  const now = new Date(2026, 8, 12, 9, 0, 0).getTime();
+  const daysAgo = (n: number) => new Date(2026, 8, 12 - n, 6, 0, 0).getTime();
+  assert.equal(sessionDotTone(daysAgo(2), now), 'accent');
+  assert.equal(sessionDotTone(daysAgo(3), now), 'tick3');
+});
+
+test('sessionDotTone buckets at the 6/7 day boundary', () => {
+  const now = new Date(2026, 8, 12, 9, 0, 0).getTime();
+  const daysAgo = (n: number) => new Date(2026, 8, 12 - n, 6, 0, 0).getTime();
+  assert.equal(sessionDotTone(daysAgo(6), now), 'tick3');
+  assert.equal(sessionDotTone(daysAgo(7), now), 'tick2');
+});
+
+test('sessionDotTone buckets at the 12/13 day boundary', () => {
+  const now = new Date(2026, 8, 12, 9, 0, 0).getTime();
+  const daysAgo = (n: number) => new Date(2026, 8, 12 - n, 6, 0, 0).getTime();
+  assert.equal(sessionDotTone(daysAgo(12), now), 'tick2');
+  assert.equal(sessionDotTone(daysAgo(13), now), 'tick1');
 });
 
 // ---------------------------------------------------------------- rest ----
