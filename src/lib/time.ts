@@ -51,9 +51,15 @@ export function resolveSessionDurationSec(
   return toLastSet <= SESSION_DURATION_CEILING_SEC ? toLastSet : null;
 }
 
-/** `'—'` for a missing or poisoned duration, otherwise `formatDuration`. */
+/**
+ * `'—'` for a duration that cannot be true, otherwise `formatDuration`.
+ *
+ * Zero counts: no workout takes no time, so a stored `0` is a measurement that
+ * never happened (the seeded demo sessions carry one) and `0 MIN` reads as a
+ * fact rather than an absence.
+ */
 export function formatSessionDuration(sec: number | null): string {
-  if (sec == null || sec > SESSION_DURATION_CEILING_SEC) return '—';
+  if (sec == null || sec <= 0 || sec > SESSION_DURATION_CEILING_SEC) return '—';
   return formatDuration(sec);
 }
 

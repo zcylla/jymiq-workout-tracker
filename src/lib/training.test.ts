@@ -293,6 +293,11 @@ test('a record prints bare, and an estimated 1RM never prints a false decimal', 
   assert.equal(formatPrValue('most_reps_at_weight', 11), '11');
 });
 
+test('a zero duration reads as absent, not as a zero-minute workout', () => {
+  assert.equal(formatSessionDuration(0), '—');
+  assert.equal(formatSessionDuration(-1), '—');
+});
+
 test('a displayed weight never leaks a float artefact', () => {
   assert.equal(formatWeight(102.5), '102.5');
   assert.equal(formatWeight(100), '100');
