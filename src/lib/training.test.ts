@@ -7,7 +7,17 @@ import { DEFAULT_INVENTORY, solvePlates, warmupRamp } from './plates.ts';
 import { DEFAULT_REST_SEC, resolveRestSec } from './rest.ts';
 import { LOAD_SCALE, RPE_SCALE, indexOf, valueAt } from './scale.ts';
 import { elapsedSec, formatClock, formatDuration, formatRest, restRemainingSec } from './time.ts';
-import { formatTonnage, setVolume, topSet, totalVolume, type SetLike } from './volume.ts';
+import {
+  countWorkingSets,
+  formatTonnage,
+  isComparableSession,
+  isLoggedSession,
+  setVolume,
+  topSet,
+  totalVolume,
+  wasPerformed,
+  type SetLike,
+} from './volume.ts';
 import { formatWeight, fromDisplay, roundToStep, toDisplay, weightKey } from './units.ts';
 
 // ---------------------------------------------------------------- e1RM ----
@@ -64,6 +74,39 @@ test('top set is the heaviest, ties broken by reps', () => {
 test('tonnage switches unit at a tonne', () => {
   assert.equal(formatTonnage(8640), '8.6 T');
   assert.equal(formatTonnage(820), '820 KG');
+});
+
+test('a pre-filled set with no completedAt was not performed', () => {
+  // startSession dials in plan values up front, so a populated row is not
+  // evidence of a lift — this is the pre-fill trap.
+  assert.equal(wasPerformed({ weightKg: 100, reps: 5, kind: 'working', completedAt: null }), false);
+});
+
+test('a set with completedAt set was performed', () => {
+  assert.equal(wasPerformed({ weightKg: 100, reps: 5, kind: 'working', completedAt: 1 }), true);
+});
+
+test('countWorkingSets and topSet exclude warm-ups and unperformed sets', () => {
+  const list = [s(100, 5, { completedAt: null }), s(60, 5, { kind: 'warmup' }), s(100, 5)];
+  assert.equal(countWorkingSets(list), 1);
+  assert.equal(topSet(list)!.weightKg, 100);
+});
+
+test('totalVolume ignores unperformed sets even when they carry weight and reps', () => {
+  const list = [s(200, 10, { completedAt: null }), s(100, 5)];
+  assert.equal(totalVolume(list), 500);
+});
+
+test('isLoggedSession accepts completed and abandoned, rejects in_progress', () => {
+  assert.equal(isLoggedSession('completed'), true);
+  assert.equal(isLoggedSession('abandoned'), true);
+  assert.equal(isLoggedSession('in_progress'), false);
+});
+
+test('isComparableSession accepts only completed', () => {
+  assert.equal(isComparableSession('completed'), true);
+  assert.equal(isComparableSession('abandoned'), false);
+  assert.equal(isComparableSession('in_progress'), false);
 });
 
 // ------------------------------------------------------------- records ----

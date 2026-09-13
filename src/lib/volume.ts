@@ -9,9 +9,19 @@ export interface SetLike {
   completedAt: number | null;
 }
 
+/**
+ * Whether a set actually happened. `startSession` pre-fills every set's
+ * `weightKg`/`reps` with the plan's target values at creation time, so a
+ * populated row is not evidence of a lift — `completedAt` is the only marker
+ * that the set was really performed.
+ */
+export function wasPerformed(s: SetLike): boolean {
+  return s.completedAt != null;
+}
+
 /** Tonnage for one set. A set that was never logged contributes nothing. */
 export function setVolume(s: SetLike): Kg {
-  if (s.completedAt == null || s.weightKg == null || s.reps == null) return 0;
+  if (!wasPerformed(s) || s.weightKg == null || s.reps == null) return 0;
   return s.weightKg * s.reps;
 }
 
@@ -27,14 +37,14 @@ export function totalVolume(sets: readonly SetLike[], opts: { includeWarmup?: bo
 }
 
 export function countWorkingSets(sets: readonly SetLike[]): number {
-  return sets.filter((s) => s.completedAt != null && s.kind !== 'warmup').length;
+  return sets.filter((s) => wasPerformed(s) && s.kind !== 'warmup').length;
 }
 
 /** Heaviest completed working set; ties go to the one with more reps. */
 export function topSet(sets: readonly SetLike[]): SetLike | null {
   let best: SetLike | null = null;
   for (const s of sets) {
-    if (s.completedAt == null || s.kind === 'warmup' || s.weightKg == null) continue;
+    if (!wasPerformed(s) || s.kind === 'warmup' || s.weightKg == null) continue;
     if (
       best == null ||
       s.weightKg > best.weightKg! ||
@@ -50,4 +60,23 @@ export function topSet(sets: readonly SetLike[]): SetLike | null {
 export function formatTonnage(kg: Kg): string {
   if (kg >= 1000) return `${(Math.round(kg / 100) / 10).toFixed(1)} T`;
   return `${Math.round(kg)} KG`;
+}
+
+export type SessionStatus = 'in_progress' | 'completed' | 'abandoned';
+
+/**
+ * A session that ended, however it ended, is part of your history: an
+ * abandoned session's sets were still lifted and its records still stand.
+ */
+export function isLoggedSession(status: SessionStatus): boolean {
+  return status !== 'in_progress';
+}
+
+/**
+ * Only a finished session is a fair baseline for a "vs last time" delta —
+ * comparing against a session you bailed on after two sets reports a
+ * meaningless swing.
+ */
+export function isComparableSession(status: SessionStatus): boolean {
+  return status === 'completed';
 }
