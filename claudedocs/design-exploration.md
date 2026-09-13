@@ -130,6 +130,7 @@ Claude Design project **`85c2eefb-a239-4501-83a0-a24a4ccd7cae`** ("Workout Sessi
 | `Lab 45 — The Week You Can Scroll.dc.html` | **Today, settled at W3.** The strip scrolls, so the date arrives; the fill is the graph |
 | `Lab 46 — History.dc.html` | **H2, and then not built.** A flat archive, ruled by month. The IA has no history list — kept as the answer if one is ever wanted |
 | `Lab 47 — The Design System.dc.html` | **The reference sheet.** The tokens as swatches, every primitive in every state, the composition rules drawn rather than written, and the interaction model. Generated from `kit.py` and the real values in `src/theme/`, so it cannot drift. Holds no screens — open it before building one |
+| `Lab 48 — Every Screen.dc.html` | **The design file.** All 24 drawn screens in one place, grouped by tab, each captioned with the decisions inside it and its build state. Imports every phone from the board that settled it rather than redrawing, so no screen can drift |
 
 **Read these five first.** Lab 22 (palette), Lab 23 (navigation), Lab 33 (live screen), Lab 40 (plate treatment), Lab 42 (containment). Everything before them is the reasoning that got there; those four are the state.
 | `Workout Session A Telemetry / B Ledger / C Focus / D Editorial` | Earlier round. **Superseded** — user found them over-simplified. Keep for reference, don't build on. |
