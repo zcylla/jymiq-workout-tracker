@@ -3,7 +3,8 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-12, the session summary — Phase 7's first screen, verified on the device.
+Last updated 2026-09-12, Phase 7 item 1 replanned through a four-voice review that found two
+live bugs in shipped code and one trap that would have shipped a third.
 
 ---
 
@@ -560,12 +561,14 @@ screenshot. That is now three sessions in a row where that has been true.
 
 **Phase 6 is closed.** Everything below is Phase 7 and after.
 
-1. **History, then session detail (C3).** A list of finished sessions off the Session tab, and the
-   read-only mono-column view of one. Session detail is where C3's "no plate, read-only rows are
-   34pt" rule gets its first real use.
+1. **History and session detail (C3) — replanned; see "What the review of Phase 7 item 1 found"
+   below.** The order inside it is now: two shared predicates and the history reads, then the two
+   shipped bugs, then the Rail, then `routine/[id]`'s LAST THREE, then C3, then the `lab46` board,
+   then the `/history` list against it.
 2. **Today, Lab 45 W3.** The landing tab is still a placeholder with a hardcoded NEXT card and a DEV
-   links section. It needs the week strip and the recent-sessions rail, neither of which Phase 2
-   built — and the rail reads exactly the rows step 1 puts on screen, so it is cheaper after.
+   links section. It needs the week strip and the recent-sessions rail. The rail arrives in step 1,
+   so what is left here is the week strip — the largest unbuilt component after the ring, and
+   `lab45.py`'s W4 column flags an unresolved nested-gesture risk in it.
 3. **Settings.** Units, default rest, plate colours, export. Storage is decided
    (`expo-sqlite/kv-store`) and unwritten; the account row moves here and the Today gear stops
    pointing straight at `/sign-in`.
@@ -580,6 +583,72 @@ plan. They stay stubs through v1 on purpose.
 
 ---
 
+## What the review of Phase 7 item 1 found
+
+Phase 7's first item was planned, then run through CEO, design and engineering review with two
+independent voices each (a Claude subagent with no prior context, and Codex). Six consensus tables,
+nineteen dimensions, all confirmed. It is recorded here because most of what it found was **not**
+about the plan.
+
+### Two bugs already on the device
+
+1. **`finishSession`'s totals and the summary's exercise list disagree.** The totals query
+   (`mutations/sessions.ts:421-424`) has no `removedAt` filter; `sessionExercisesQuery` does. So a
+   skipped exercise that had sets logged before the skip **counts toward `totalVolumeKg` and is
+   missing from WHAT YOU LIFTED**. `skipSessionExercise` keeps those sets deliberately — "a hard
+   delete would throw it away along with any sets that were logged before the skip" — so this is a
+   read-side inconsistency, not a data problem.
+2. **`routine/[id]`'s LAST THREE is a hardcoded lie.** The section renders the string "Nothing
+   logged yet. Every session you run from this routine appears here." with **no query behind it**,
+   unconditionally. Sessions have been run from that routine. Its EST. TIME and VOLUME tiles are
+   hardcoded `'—'` on the same screen.
+
+### The trap that would have shipped a third
+
+**`startSession` pre-fills every set with the routine's targets** (`mutations/sessions.ts:112-113`
+writes `weightKg: line.targetWeightKg, reps: line.targetReps` at creation), and `sessionSetsQuery`
+has no `completedAt` filter. A routine planned 5×8 @ 102.5 where three sets were logged returns
+**five fully-populated rows**. C3 built on that query renders plan as performance — beside a history
+row that says `3 SETS`, because `sessions.totalSets` is `countWorkingSets`.
+
+There is no shared definition anywhere of *"a set that happened"* or *"a session that counts"*:
+`recentSessionsQuery` uses `ne(status,'in_progress')` while `previousSessionVolumeQuery` uses
+`eq(status,'completed')`. Both go into `src/lib/` as tested predicates before any screen is built.
+**Do not retrofit `sessionSetsQuery` itself** — the live screen depends on draft sets and on
+excluding skipped exercises.
+
+### Three findings that changed the design, not the code
+
+- **`/history` had no board.** `lab36.py:151`, the round that defines rail scope, reads "session
+  history *on a routine*", with "lists where order is arbitrary" under **Not a rail**. §0 line 40's
+  generic "session list" is the earlier, looser phrasing. Ruling: the screen stays, and **`lab46.py`
+  becomes a prerequisite** rather than a follow-up. Fix the objection, do not cut the feature.
+- **C3 ships with no action bar.** The board draws `Repeat this session` + `EDIT`. `startSession`
+  snapshots a *routine*, not a session, and `routine/[id]:114` already ships that button with the
+  live-session, empty-routine and archived-routine guards. Same rule as the sheet grips and C2's
+  NOTES.
+- **`sessions.note` has no writer.** Both `finishSession` callers pass no opts, and C2's NOTES action
+  was omitted when C2 shipped. C3's NOTE section can never render, so it is struck.
+
+### §0 amendment, signed off
+
+The spacing law said "Rail events get 56pt of clear air beneath" and `kit.py:20` set
+`RAIL_AIR = 56`. **No board uses it** — Today passes 22, routine detail and the program strip 24,
+the PR timeline 26 — and `lab34.py:87` passes nothing, so LAST THREE, the first screen to consume
+the Rail, would have inherited the stale default and rendered 34pt-per-row wrong against its own
+board. **`air` is now a required prop**, and §0 records that 56 was superseded.
+
+### Two of the review's own conclusions were overturned by later phases
+
+Worth recording because it is the argument for running the phases in sequence rather than at once.
+The CEO phase called `formatDuration` wrong for returning `1H 04` where a board draws `64 MIN`; the
+design and engineering phases both showed the boards carry **two registers on purpose** —
+`lab36.py:22` and `:78` draw `1H 04`, the rail meta lines draw `64 MIN`, so a second formatter is
+needed and the existing test is correct. The design phase then specified `data === undefined` as the
+loading branch; the engineering phase read the installed hook and showed it never fires.
+
+---
+
 ## Open threads
 
 - **Branching: settled.** Trunk commits on `main` are accepted for this solo app. Do not reach for
@@ -590,6 +659,11 @@ plan. They stay stubs through v1 on purpose.
   still written and unused: `addExerciseToSession` (wants the library's `sessionId` picker mode),
   `reorderSets` / `reorderSessionExercises` (want the sheet grips), and `updateRoutineExercise`
   (wants target editing in the routine editor). Pause is not built — see above.
+- **Export may outrank every remaining screen.** Both CEO voices, independently, argued that the
+  real existential risk to this project is not a missing feature but **data loss**: there is no sync
+  (Phase 8) and no export, so a wiped phone ends the app and every session in it. JSON export
+  through the share sheet is XS-to-S and sits at item 4 behind three feature screens. Not decided —
+  recorded so the next replanning session has to look at it.
 - **A session left open runs forever.** The one resumed to test the summary had been in progress
   since 7 September and its recap reads `TIME 122H 44`, which is correct arithmetic and a useless
   number. `elapsedSec` is wall-clock by design and that is right; what is missing is any policy for
