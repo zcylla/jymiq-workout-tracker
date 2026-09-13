@@ -58,6 +58,8 @@ export const text = {
   /** kit .num — Geist Mono is tabular by construction, so no fontVariant needed. */
   num: { ...mono(500), fontSize: 15, letterSpacing: ls(-0.02, 15), lineHeight: lh(15), color: color.hi },
   numSm: { ...mono(400), fontSize: 13, lineHeight: lh(13), color: color.mid },
+  /** kit's PR value on the session recap — one step over a row name, not a tile's number. */
+  numRow: { ...mono(600), fontSize: 17, letterSpacing: ls(-0.02, 17), lineHeight: lh(17), color: color.hi },
   numTile: { ...mono(600), fontSize: 22, letterSpacing: ls(-0.02, 22), lineHeight: lh(22), color: color.hi },
   numCore: { ...mono(600), fontSize: 54, letterSpacing: ls(-0.05, 54), lineHeight: 56, color: color.hi },
 } as const satisfies Record<string, TextStyle>;
