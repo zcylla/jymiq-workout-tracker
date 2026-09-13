@@ -21,6 +21,13 @@ import { space } from '@/theme';
 
 const EQUIPMENT: Equipment[] = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'other'];
 const KINDS: ExerciseKind[] = ['compound', 'isolation'];
+
+/**
+ * A field is a mono caps label over a sentence-case value (§0) — the contrast
+ * between the two lines is the component. Both enums are single lower-case
+ * words, so the first letter is the whole job. Chips stay caps.
+ */
+const titled = (word: string) => word[0].toUpperCase() + word.slice(1);
 const RESTS: (number | null)[] = [null, 60, 90, 120, 180, 300];
 
 /** Which field's picker is open. Only one at a time — the plate grows in place. */
@@ -73,11 +80,7 @@ export default function NewExerciseScreen() {
             </RowPlate>
 
             <RowPlate>
-              <Field
-                label="EQUIPMENT"
-                value={equipment.toUpperCase()}
-                onPress={toggleFor('equipment')}
-              />
+              <Field label="EQUIPMENT" value={titled(equipment)} onPress={toggleFor('equipment')} />
               {picker === 'equipment' ? (
                 <Options
                   values={EQUIPMENT}
@@ -89,7 +92,7 @@ export default function NewExerciseScreen() {
             </RowPlate>
 
             <RowPlate>
-              <Field label="TYPE" value={kind.toUpperCase()} onPress={toggleFor('kind')} />
+              <Field label="TYPE" value={titled(kind)} onPress={toggleFor('kind')} />
               {picker === 'kind' ? (
                 <Options
                   values={KINDS}
@@ -105,7 +108,7 @@ export default function NewExerciseScreen() {
               {picker === 'rest' ? (
                 <Options
                   values={RESTS}
-                  labelOf={restLabel}
+                  labelOf={(r) => restLabel(r).toUpperCase()}
                   isOn={(r) => r === restSec}
                   onPick={setRestSec}
                 />
@@ -184,4 +187,5 @@ function Wrap({ children }: { children: React.ReactNode }) {
   );
 }
 
-const restLabel = (sec: number | null) => (sec == null ? 'DEFAULT' : formatRest(sec));
+/** Sentence case for the field; the chip row upper-cases it back. */
+const restLabel = (sec: number | null) => (sec == null ? 'Default' : formatRest(sec));
