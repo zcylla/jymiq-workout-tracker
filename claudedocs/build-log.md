@@ -3,8 +3,7 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-12, routine creation and editing — which closes Phase 6 and leaves Phase 7
-(summary, session detail, history, settings, export) as the whole of what is left before v1.
+Last updated 2026-09-12, the session summary — Phase 7's first screen, verified on the device.
 
 ---
 
@@ -33,6 +32,7 @@ computed features in v1.
 | **5b — Supabase** | **Schema, RLS and the auth flow done.** Sync itself is Phase 8. |
 | **6 — The live session** | **Done bar reordering.** Gate, data layer, core loop, both sheets and the keypad all run on the device. |
 | **6b — Routines you can make** | **Done.** Creation, editing, the library as a picker, and START actually starting a session. |
+| **7 — Closing the loop** | **The summary (C2) is done and verified on the device.** History, session detail, settings and export are not. |
 
 ### What Phase 5 settled
 
@@ -512,25 +512,66 @@ were all invisible to the same gate. Run the loop end to end on the phone before
 
 ---
 
+## The session summary — Lab 36 C2, and the loop is closed
+
+`src/app/summary/[id].tsx`. Finish no longer calls `router.back()` into nothing; it writes the
+session and `replace`s onto the recap, so the last thing a workout does is name what it earned.
+
+**It is a pure read, because Phase 6 already paid for it.** `finishSession` writes
+`totalVolumeKg`, `totalSets` and `durationSec` onto the session row inside the completion
+transaction, and `completeSet` writes every set record into `personal_records` with its
+`previousValue` and `sessionId`. So the screen needs no aggregation and no recomputation — four
+`useLiveQuery` reads and two new queries (`sessionRecordsQuery`, `previousSessionVolumeQuery`).
+That was not luck; it is the "written once, inside the completion transaction" comment on the
+schema doing its job.
+
+**`NOTES` is not drawn.** C2's action bar is `Done` + `NOTES` and there is no note editor, so the
+same rule that removed the sheet grips removed this: a control with nowhere to go is omitted, never
+drawn inert. `finishSession` already takes `opts.note`, and C3 has the NOTE section it belongs to.
+
+**The ramp gained one step.** The board sets the PR value in 17px/600 mono inline, and the ramp had
+15 (`num`) and 22 (`numTile`) and nothing between. Borrowing `numTile` put a stat-tile number inside
+a list row, so `text.numRow` was added rather than a screen setting a `fontSize`.
+
+### Three things only the device said
+
+Driven on the phone by resuming the session that had been left in progress since 7 September and
+finishing it. `pnpm check` was green before all three.
+
+1. **A record's number was formatted in two places and neither agreed with the other.**
+   `announce()` in `live.tsx` hand-rolled `Math.round(v * 100) / 100`, the recap re-implemented the
+   rule with `formatTonnage` on volume, and the screen printed `105`, `133` and `840 KG` in one
+   column — two bare numbers and one wearing a unit. There is now one `formatPrValue` in
+   `src/lib/pr.ts`, which is the tested layer, and both callers go through it.
+2. **`BEST ESTIMATED 1RM · WAS 126.67`.** `formatWeight` is a *load* formatter and 2dp is right for
+   a load; an e1RM is an estimate, and two decimals on it read as a measurement. It rounds to the
+   whole kilogram now. The board had this right — it shows `WAS 128` — and reading the board as
+   "some number" rather than as an integer is what missed it.
+3. **WHAT YOU LIFTED listed what was not lifted.** Every planned exercise rendered, so a session
+   where one lift was done showed `Active Hang — 0 SETS` under a heading that says the opposite.
+   Rows without a completed set are dropped.
+
+None of the three is visible to a type-check, a lint or a test, and all three are legible in one
+screenshot. That is now three sessions in a row where that has been true.
+
+---
+
 ## Next, in order
 
 **Phase 6 is closed.** Everything below is Phase 7 and after.
 
-1. **The session summary (C2).** This is the next thing to build and it is not a preference: the
-   loop is open without it. `finishSession` already returns the finished session and `src/lib/pr.ts`
-   already names records, so the screen is a read of work that exists.
-2. **History, then session detail (C3).** A list of finished sessions off the Session tab, and the
+1. **History, then session detail (C3).** A list of finished sessions off the Session tab, and the
    read-only mono-column view of one. Session detail is where C3's "no plate, read-only rows are
    34pt" rule gets its first real use.
-3. **Today, Lab 45 W3.** The landing tab is still a placeholder with a hardcoded NEXT card and a DEV
+2. **Today, Lab 45 W3.** The landing tab is still a placeholder with a hardcoded NEXT card and a DEV
    links section. It needs the week strip and the recent-sessions rail, neither of which Phase 2
-   built — and the rail reads exactly the rows step 2 puts on screen, so it is cheaper after.
-4. **Settings.** Units, default rest, plate colours, export. Storage is decided
+   built — and the rail reads exactly the rows step 1 puts on screen, so it is cheaper after.
+3. **Settings.** Units, default rest, plate colours, export. Storage is decided
    (`expo-sqlite/kv-store`) and unwritten; the account row moves here and the Today gear stops
    pointing straight at `/sign-in`.
-5. **The rest of Phase 7's shipping list.** Empty states, an error boundary, JSON export/import
+4. **The rest of Phase 7's shipping list.** Empty states, an error boundary, JSON export/import
    through the share sheet, and the Maestro flow over routine → session → summary.
-6. **Phase 8 — sync.** The Postgres mirror, its RLS and the auth flow are all in place and verified;
+5. **Phase 8 — sync.** The Postgres mirror, its RLS and the auth flow are all in place and verified;
    nothing pushes or pulls a row yet. Start from "The Supabase mirror" below.
 
 **Load and Strength are still 16-line placeholders** and are not on this list, because neither has a
@@ -549,6 +590,12 @@ plan. They stay stubs through v1 on purpose.
   still written and unused: `addExerciseToSession` (wants the library's `sessionId` picker mode),
   `reorderSets` / `reorderSessionExercises` (want the sheet grips), and `updateRoutineExercise`
   (wants target editing in the routine editor). Pause is not built — see above.
+- **A session left open runs forever.** The one resumed to test the summary had been in progress
+  since 7 September and its recap reads `TIME 122H 44`, which is correct arithmetic and a useless
+  number. `elapsedSec` is wall-clock by design and that is right; what is missing is any policy for
+  a session nobody finished — a cap, an auto-abandon at some age, or a prompt on resume. Undesigned,
+  and it will make the history list and every duration average wrong the first time it happens to
+  a real workout.
 - **Settings storage** is decided (`expo-sqlite/kv-store`) but not written. Everything the app
   needs from it today is hardcoded: kg, the seeded rest defaults, the plate palette.
 - Still open on the design side and not blocking: the calendar's plate, the body map, the IA.
@@ -694,6 +741,17 @@ error banner — but a real code has never been through them.
 
 ## Things that cost time once, recorded so they cost nothing again
 
+- **Verifying a JS-only change needs no rebuild, and the whole loop can be driven from the shell.**
+  `adb reverse tcp:8081 tcp:8081`, `pnpm expo start --dev-client`, then
+  `adb shell am start -a android.intent.action.VIEW -d "jymiq://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"`
+  to make the launcher load Metro rather than sit on its server list. From there
+  `adb shell input tap X Y` plus `adb exec-out screencap -p > shot.png` drives and reads any screen,
+  and once the bundle is warm a plain `jymiq://<route>` deep link jumps straight to it — which beats
+  tapping through to a screen that is four navigations deep.
+- **The database can be read off the phone**: `adb shell run-as com.zcylla.jymiq cat
+  files/SQLite/workout.db` — but it is WAL, so `workout.db` alone is a 4 KB empty shell. Pull
+  `workout.db-wal` and `workout.db-shm` beside it or every query answers "no such table". There is
+  no `sqlite3` on the device; query the copy on the host.
 - **Gradle wants JDK 21 and `ANDROID_HOME` set.** Two separate failed builds.
 - **A pnpm install and a stale `android/` cost a build each** — see "Starting on a machine that has
   never built this" above for all three failure signatures.
