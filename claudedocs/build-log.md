@@ -676,12 +676,16 @@ loading branch; the engineering phase read the installed hook and showed it neve
   (Phase 8) and no export, so a wiped phone ends the app and every session in it. JSON export
   through the share sheet is XS-to-S and sits at item 4 behind three feature screens. Not decided —
   recorded so the next replanning session has to look at it.
-- **A session left open runs forever.** The one resumed to test the summary had been in progress
-  since 7 September and its recap reads `TIME 122H 44`, which is correct arithmetic and a useless
-  number. `elapsedSec` is wall-clock by design and that is right; what is missing is any policy for
-  a session nobody finished — a cap, an auto-abandon at some age, or a prompt on resume. Undesigned,
-  and it will make the history list and every duration average wrong the first time it happens to
-  a real workout.
+- **A session left open runs forever — closed 2026-09-12.** The session resumed to test the summary
+  had been in progress since 7 September and stored `122H 44`. `elapsedSec` is wall-clock by design
+  and stays untouched (it drives the live header). What changed is the *persisted* policy:
+  `resolveSessionDurationSec` keeps the wall clock when it is plausible, falls back to the span from
+  the start to the **last completed set** when it is not, and writes **null** rather than a clamped
+  number when even that is implausible — a missing duration is honest, an invented one is not.
+  `formatSessionDuration` also renders anything past the ceiling as an em dash, so the rows already
+  poisoned in the database read correctly without a migration. Verified on the device: that session's
+  TIME tile now shows `—`. Still undesigned: whether a stale session should be auto-abandoned at all,
+  which is a prompt-on-resume question, not a storage one.
 - **Settings storage** is decided (`expo-sqlite/kv-store`) but not written. Everything the app
   needs from it today is hardcoded: kg, the seeded rest defaults, the plate palette.
 - Still open on the design side and not blocking: the calendar's plate, the body map, the IA.
