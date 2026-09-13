@@ -4,7 +4,7 @@ import { estimate1RM } from '@/lib/e1rm';
 import { newId } from '@/lib/id';
 import { type PrHit, detectSessionVolumePr, detectSetPrs } from '@/lib/pr';
 import { resolveRestSec } from '@/lib/rest';
-import { elapsedSec } from '@/lib/time';
+import { resolveSessionDurationSec } from '@/lib/time';
 import { countWorkingSets, type SetLike, totalVolume } from '@/lib/volume';
 
 import { db } from '../db';
@@ -23,6 +23,15 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** Sets given to an exercise added with no plan behind it. */
 const DEFAULT_SETS = 3;
+
+/** The latest `completedAt` among a session's sets, or null if none logged. */
+function lastCompletedAt(rows: { completedAt: number | null }[]): number | null {
+  let latest: number | null = null;
+  for (const r of rows) {
+    if (r.completedAt != null && (latest == null || r.completedAt > latest)) latest = r.completedAt;
+  }
+  return latest;
+}
 
 /**
  * Opens a session and snapshots the plan into it.
@@ -460,7 +469,12 @@ export function finishSession(sessionId: string, opts: { note?: string | null } 
         note: opts.note ?? session.note,
         totalVolumeKg: totalVolume(rows),
         totalSets: countWorkingSets(rows),
-        durationSec: elapsedSec(session.startedAt, session.pausedMs, now),
+        durationSec: resolveSessionDurationSec(
+          session.startedAt,
+          session.pausedMs,
+          now,
+          lastCompletedAt(rows),
+        ),
         restUntil: null,
         currentSessionExerciseId: null,
         currentSetId: null,
@@ -501,7 +515,12 @@ export function abandonSession(sessionId: string): void {
         endedAt: now,
         totalVolumeKg: totalVolume(rows),
         totalSets: countWorkingSets(rows),
-        durationSec: elapsedSec(session.startedAt, session.pausedMs, now),
+        durationSec: resolveSessionDurationSec(
+          session.startedAt,
+          session.pausedMs,
+          now,
+          lastCompletedAt(rows),
+        ),
         restUntil: null,
         currentSessionExerciseId: null,
         currentSetId: null,
