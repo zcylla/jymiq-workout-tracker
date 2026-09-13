@@ -51,7 +51,7 @@ export default function RoutineScreen() {
     useMemo(() => routineQuery(id), [id]),
     [id],
   );
-  const { data: lifts } = useLiveQuery(
+  const { data: lifts, updatedAt: liftsUpdatedAt } = useLiveQuery(
     useMemo(() => routineExercisesQuery(id), [id]),
     [id],
   );
@@ -108,15 +108,28 @@ export default function RoutineScreen() {
 
   const sets = rows.reduce((n, l) => n + l.targetSets, 0);
   const lastSession = sessions[0];
+  // `data` starts as [], so without this the block paints a confident
+  // EXERCISES 0 · SETS 0 before the lifts arrive. `updatedAt` is the only
+  // loading signal drizzle gives us.
+  const liftsLoading = liftsUpdatedAt === undefined;
+  // The bottom two describe the last session, not the plan, and they say so.
+  // The board's EST. TIME / VOLUME are plan figures; computing those needs load
+  // semantics for bodyweight and assisted lifts that the schema cannot express,
+  // so the honest fix is to label what we actually have.
   const tiles: Tile[] = [
-    { label: 'EXERCISES', value: String(rows.length) },
-    { label: 'SETS', value: String(sets) },
-    lastSession
-      ? { label: 'EST. TIME', value: formatSessionDuration(lastSession.durationSec) }
-      : { label: 'EST. TIME', value: '—', tone: 'lo' },
-    lastSession && lastSession.totalVolumeKg != null
-      ? { label: 'VOLUME', value: formatTonnage(lastSession.totalVolumeKg) }
-      : { label: 'VOLUME', value: '—', tone: 'lo' },
+    { label: 'EXERCISES', value: liftsLoading ? '—' : String(rows.length) },
+    { label: 'SETS', value: liftsLoading ? '—' : String(sets) },
+    {
+      label: 'LAST TIME',
+      value: lastSession ? formatSessionDuration(lastSession.durationSec) : '—',
+    },
+    {
+      label: 'LAST VOLUME',
+      value:
+        lastSession && lastSession.totalVolumeKg != null
+          ? formatTonnage(lastSession.totalVolumeKg)
+          : '—',
+    },
   ];
 
   const sessionsLoading = sessionsUpdatedAt === undefined;
