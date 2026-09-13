@@ -180,6 +180,57 @@ export function recentSessionsQuery(limit = 20) {
     .limit(limit);
 }
 
+/** The routine screen's LAST THREE rail. */
+export function routineSessionsQuery(routineId: string, limit = 3) {
+  return db
+    .select({
+      id: sessions.id,
+      startedAt: sessions.startedAt,
+      endedAt: sessions.endedAt,
+      totalVolumeKg: sessions.totalVolumeKg,
+      totalSets: sessions.totalSets,
+      durationSec: sessions.durationSec,
+      status: sessions.status,
+    })
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.routineId, routineId),
+        ne(sessions.status, 'in_progress'), // isLoggedSession: an abandoned session is still history
+      ),
+    )
+    .orderBy(desc(sessions.startedAt))
+    .limit(limit);
+}
+
+/**
+ * Top-set derivation for the LAST THREE rail. Must be `FROM sets`:
+ * `useLiveQuery` subscribes only to the table named in the query's `FROM`
+ * (`drizzle-orm/expo-sqlite/query.js` reads `getTableConfig(query.config.table)`),
+ * so a join through `sessionExercises` would never refire on a set change.
+ */
+export function sessionsTopSetsQuery(sessionIds: readonly string[]) {
+  return db
+    .select({
+      sessionId: sessionExercises.sessionId,
+      weightKg: sets.weightKg,
+      reps: sets.reps,
+      kind: sets.kind,
+      completedAt: sets.completedAt,
+    })
+    .from(sets)
+    .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+    .where(inArray(sessionExercises.sessionId, sessionIds.length ? sessionIds : ['']));
+}
+
+/** Which of these sessions set at least one record, for the rail's PR pill. */
+export function sessionsWithRecordsQuery(sessionIds: readonly string[]) {
+  return db
+    .selectDistinct({ sessionId: personalRecords.sessionId })
+    .from(personalRecords)
+    .where(inArray(personalRecords.sessionId, sessionIds.length ? sessionIds : ['']));
+}
+
 /** The most recently logged set for an exercise before the current session. */
 export function lastCompletedExerciseSetQuery(exerciseId: string, currentSessionId: string) {
   return db
