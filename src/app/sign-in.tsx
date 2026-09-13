@@ -1,8 +1,10 @@
 import type { Session } from '@supabase/supabase-js';
+import Constants from 'expo-constants';
+import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Text } from 'react-native';
+import { Alert, Text } from 'react-native';
 
 import {
   ActionBar,
@@ -15,7 +17,9 @@ import {
   Section,
   useActionBarHeight,
 } from '@/components';
+import { readAllTables } from '@/data/queries/export';
 import { authCodeFromUrl, authRedirectTo, exchangeAuthCode, supabase } from '@/data/supabase';
+import { buildExport, exportFileName, totalRows } from '@/lib/export';
 import { text } from '@/theme';
 
 /**
@@ -26,6 +30,70 @@ import { text } from '@/theme';
  * Apple sign-in is an iOS requirement once other social providers ship, and
  * lands with the iOS build — Android has no device to verify it on.
  */
+/**
+ * The backup, and the only way data leaves this phone today.
+ *
+ * It renders on every branch of this screen — including the one where Supabase
+ * is not configured at all, which is precisely the build with the most to lose.
+ *
+ * Storage Access Framework rather than a share sheet: the user picks a real
+ * folder (Downloads, or a Drive mount) and the file stays there. It also needs
+ * no new native module — `expo-file-system` is already linked — so this ships
+ * on a Metro reload rather than a six-minute Gradle build.
+ */
+function ExportSection() {
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const runExport = async () => {
+    if (busy) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const envelope = buildExport(readAllTables(), {
+        now: Date.now(),
+        appVersion: Constants.expoConfig?.version ?? 'dev',
+      });
+      const name = exportFileName(envelope.exportedAt);
+
+      const saf = FileSystem.StorageAccessFramework;
+      const permission = await saf.requestDirectoryPermissionsAsync();
+      if (!permission.granted) {
+        setNote('Export cancelled. Nothing was written.');
+        return;
+      }
+      const uri = await saf.createFileAsync(permission.directoryUri, name, 'application/json');
+      await FileSystem.writeAsStringAsync(uri, JSON.stringify(envelope));
+
+      setNote(`Wrote ${name} — ${totalRows(envelope).toLocaleString()} rows.`);
+    } catch (e) {
+      // A failed backup must say so loudly. Silence here reads as success, and
+      // the whole point of the feature is that you can rely on it having run.
+      Alert.alert('Export failed', e instanceof Error ? e.message : 'Nothing was written.');
+      setNote('Export failed. Nothing was written.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Section label="YOUR DATA" plated={false}>
+      <RowPlates>
+        <RowPlate onPress={runExport}>
+          <ListRow
+            title={busy ? 'Exporting…' : 'Export everything'}
+            meta="EVERY SESSION, SET AND ROUTINE, AS JSON"
+          />
+        </RowPlate>
+      </RowPlates>
+      <Text style={text.prose}>
+        {note ??
+          'Pick a folder and the whole database is written there as one file. This phone is the only copy until you do.'}
+      </Text>
+    </Section>
+  );
+}
+
 export default function SignInScreen() {
   const actionBar = useActionBarHeight();
   const [session, setSession] = useState<Session | null>(null);
@@ -48,6 +116,7 @@ export default function SignInScreen() {
             Sync is not configured on this build. Your workouts are on this phone and nowhere else.
           </Text>
         </Section>
+        <ExportSection />
       </Screen>
     );
   }
@@ -111,6 +180,7 @@ export default function SignInScreen() {
               Signed in. Your workouts stay on this phone and back up when there is a connection.
             </Text>
           </Section>
+          <ExportSection />
           {status ? (
             <Section plated={false}>{<Text style={text.prose}>{status}</Text>}</Section>
           ) : null}
@@ -155,6 +225,8 @@ export default function SignInScreen() {
               'Signing in claims the account that sync will use. It does not back anything up yet — this phone is still the only copy. Everything works without it.'}
           </Text>
         </Section>
+
+        <ExportSection />
       </Screen>
       <ActionBar primary="Send magic link" onPrimary={sendMagicLink} />
     </>
