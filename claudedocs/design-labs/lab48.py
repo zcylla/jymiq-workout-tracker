@@ -12,6 +12,10 @@ one thing on its own board and another here.
 Not drawn anywhere, and so not on this page: sign-in, routine create and routine
 edit. All three are built and none was ever boarded.
 """
+import re
+
+import lab28
+import lab32
 import lab33
 import lab34
 import lab35
@@ -21,6 +25,41 @@ import lab43
 import lab45
 import lab46
 import kit as K
+
+def scoped(css, under='.live'):
+    """Rewrite a stylesheet so every rule only applies inside `under`.
+
+    The live screen is the one board that never moved onto kit.py — Lab 33 builds
+    its own page out of `lab28.CSS + lab32.EXTRA`, and that stylesheet redefines
+    `.board`, `.col`, `.cap`, `.chip` and `.phone`. Pasted in raw it renders the
+    ring and the tape correctly and destroys the gallery around them, so it gets
+    scoped to the wrapper instead. Neither sheet has an at-rule, which is what
+    makes a prefixer this simple safe.
+    """
+    out = []
+    for rule in re.finditer(r"([^{}]+)\{([^}]*)\}", css):
+        sels, body = rule.group(1).strip(), rule.group(2).strip()
+        if not body:
+            continue
+        keep = []
+        for sel in (x.strip() for x in sels.split(",")):
+            if not sel:
+                continue
+            if sel.startswith(":root"):
+                keep.append(under)          # the custom properties, on the wrapper
+            elif sel == "body" or sel.startswith("body"):
+                continue                    # kit already owns the page background
+            else:
+                keep.append(under + " " + sel)
+        if keep:
+            out.append(",".join(keep) + "{" + body + "}")
+    return "\n".join(out)
+
+
+def live(phone):
+    """A Lab 33 phone, in the only place its stylesheet is allowed to reach."""
+    return '<div class="live">' + phone + '</div>'
+
 
 def state(word, note, col):
     """The build state on its own line — it is a different kind of fact from the
@@ -152,9 +191,13 @@ STRENGTH = [
  ('LAB 35 B4', 'Body map', 'Strength &middot; pushed',
   'The only screen that needs a drawing: front and back, each muscle tinted by how recently it was '
   'worked and how hard.',
-  'The map says FRESH or NEEDS REST, never a percentage &mdash; per-muscle fatigue is model output '
-  'and model output is words. <b style="color:#c9c3b6;font-weight:500">The least resolved drawing '
-  'in the set;</b> its spec is <code>claudedocs/body-map.md</code>.' + DRAWN,
+  'The verdict is words: the zone bar under the figures runs FRESH to NEEDS REST, because per-muscle '
+  'fatigue is model output and &sect;0 says model output is a sentence. '
+  '<b style="color:#c9c3b6;font-weight:500">The WORKED HARDEST list under it prints percentages '
+  'anyway, and that is unresolved</b> &mdash; either the number is defensible and &sect;0&rsquo;s '
+  'rule needs a carve-out, or it should read in sets and days like the line beneath it already '
+  'does. <b style="color:#c9c3b6;font-weight:500">The least resolved drawing in the set;</b> its '
+  'spec is <code>claudedocs/body-map.md</code>.' + DRAWN,
   lab35.B4),
 ]
 
@@ -194,7 +237,7 @@ LIVE = [
   '&mdash; horizontal moves between sets and vertical between exercises, so the two indicators are '
   'deliberately unalike. Two identical indicators at 90&deg; force the reader to work out which is '
   'which before reading either.' + BUILT,
-  lab33.G1),
+  live(lab33.G1)),
 
  ('LAB 33 G2', 'Live &middot; editing load', 'Takeover &middot; the tape',
   'The tape drives and the ring reads. Reference numerals appear only while editing load: they mark '
@@ -202,20 +245,26 @@ LIVE = [
   'Lines only &mdash; no arc, no knob. Fill and cursor both: ticks below the value are longer and '
   'lighter, and the lines swell into the current value over &plusmn;6 ticks. Length carries the '
   'fill, because a 1px hue step is invisible at this scale.' + BUILT,
-  lab33.G2),
+  live(lab33.G2)),
 
  ('LAB 33 G3', 'Live &middot; editing reps', 'Takeover &middot; the same tape',
   'All three parameters use the same vertical tape. The ring does not follow &mdash; it is the load '
   'gauge in every state and it never becomes a reps gauge.',
   'Load 20&ndash;140 by 2.5, reps 1&ndash;15 by 1, RPE 1&ndash;10 by 1. Long-press any parameter for '
   'the keypad, so no value is reachable by only one route.' + BUILT,
-  lab33.G3),
+  live(lab33.G3)),
 
- ('LAB 33 G4', 'Live &middot; resting after a set', 'Takeover &middot; the rest clock',
-  'The set is logged, any records it set are named, and the rest clock runs.',
-  'Records are named at the moment they happen rather than saved for the summary &mdash; it is the '
-  'one moment the number means something.' + BUILT,
-  lab33.G4),
+ ('LAB 33 G4', 'Live &middot; editing RPE', 'Takeover &middot; the same tape again',
+  'One to ten in whole points, with the RIR gloss in the selector cell so RPE 8 is never shown '
+  'bare. Structurally identical to G3, which is the point.',
+  'It replaced a nine-cell segmented row, which lost twice over: a third control for the parameter '
+  'you set least often is the wrong place to spend a new pattern, and a row has to fit every value '
+  'on screen at once &mdash; which is what forced the range to six-to-ten and the cells under the '
+  '44pt floor. <b style="color:#c9c3b6;font-weight:500">On a tape the range is free</b>, so warm-up '
+  'sets at RPE 3&ndash;5 get a representation they never had. Whole points, because RIR is ten '
+  'minus RPE and half a point on a subjective scale is false precision. Note &sect;0 still has RPE '
+  'arriving <em>unset</em> rather than pre-filled at 8.' + BUILT,
+  live(lab33.G4)),
 
  ('LAB 36 C2', 'Session summary', 'Pushed &middot; /summary/[id]',
   'The screen you see once, immediately after finishing. Four tiles, the records the session set, '
@@ -311,10 +360,10 @@ BOARDS = [
 # Captions vary a lot in length here, and a ragged row of phones is harder to
 # compare than a straight one. Stretch the columns and let the caption take the
 # slack, so every phone starts on the same line.
-EXTRA_CSS = '''
+EXTRA_CSS = """
   .board{align-items:stretch}
   .cap{min-height:0;flex:1}
-'''
+""" + scoped(lab28.CSS + lab32.EXTRA)
 
 HTML = K.page(48, 'Every screen', INTRO, BOARDS, CLOSING, EXTRA_CSS)
 open('lab48.html', 'w').write(HTML)
