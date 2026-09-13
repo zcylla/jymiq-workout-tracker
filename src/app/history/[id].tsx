@@ -68,6 +68,8 @@ export default function HistoryScreen() {
 
   const loading = exercisesUpdatedAt === undefined || setsUpdatedAt === undefined;
   const anyPerformed = allSets.some(wasPerformed);
+  const lifted = exercises.filter((ex) => (performedByExercise.get(ex.id)?.length ?? 0) > 0);
+  const skipped = exercises.filter((ex) => (performedByExercise.get(ex.id)?.length ?? 0) === 0);
   // Once for the screen, not per exercise: the columns are right-anchored as a
   // group, so dropping one on a single exercise pushes its KG and REP out of
   // line with the exercise above it.
@@ -90,16 +92,26 @@ export default function HistoryScreen() {
           <Text style={text.prose}>No sets logged in this session.</Text>
         </Section>
       ) : (
-        exercises.map((ex, i) => (
-          <ExerciseSection
-            key={ex.id}
-            exercise={ex}
-            sets={performedByExercise.get(ex.id) ?? []}
-            first={i === 0}
-            hasRecord={prExerciseIds.has(ex.exerciseId)}
-            showRpe={showRpe}
-          />
-        ))
+        <>
+          {lifted.map((ex, i) => (
+            <ExerciseSection
+              key={ex.id}
+              exercise={ex}
+              sets={performedByExercise.get(ex.id) ?? []}
+              first={i === 0}
+              hasRecord={prExerciseIds.has(ex.exerciseId)}
+              showRpe={showRpe}
+            />
+          ))}
+          {/* One section, not one per exercise. They were planned and skipped,
+              which is worth saying — but §0 keeps an empty thing dim, and it
+              does not give it a heading of its own. */}
+          {skipped.length ? (
+            <Section label="NOT LIFTED" plated={false} first={lifted.length === 0}>
+              <Text style={text.prose}>{skipped.map((ex) => ex.name).join(' · ')}</Text>
+            </Section>
+          ) : null}
+        </>
       )}
     </Screen>
   );
@@ -119,14 +131,6 @@ function ExerciseSection({
   showRpe: boolean;
 }) {
   const right = hasRecord ? <Pill label="PR" /> : undefined;
-
-  if (sets.length === 0) {
-    return (
-      <Section label={exercise.name.toUpperCase()} plated={false} first={first} right={right}>
-        <Text style={text.prose}>No sets logged.</Text>
-      </Section>
-    );
-  }
 
   return (
     <Section label={exercise.name.toUpperCase()} plated={false} first={first} right={right}>
