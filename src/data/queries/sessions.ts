@@ -138,6 +138,7 @@ export function sessionRecordsQuery(sessionId: string) {
       previousValue: personalRecords.previousValue,
       weightKg: personalRecords.weightKg,
       reps: personalRecords.reps,
+      exerciseId: personalRecords.exerciseId,
       name: exercises.name,
     })
     .from(personalRecords)
