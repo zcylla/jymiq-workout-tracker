@@ -17,7 +17,6 @@ TICK1, TICK2, TICK3, OFF = '#5a5449', '#7d7666', '#a8a091', '#2a2720'
 
 # Spacing law: between-section >= 3x within-section.
 BETWEEN, WITHIN = 46, 11
-RAIL_AIR = 56          # clear air beneath every rail event
 PAD = 22               # screen side margin
 
 FRAME_W, FRAME_H = 402, 860
@@ -245,7 +244,7 @@ def sec(label, body, first=False, right=''):
     return '<div class="sec"' + style + '>' + head_ + body + '</div>' 
 
 
-def rail(events, air=RAIL_AIR, on_plate=False):
+def rail(events, air, on_plate=False):
     """Chronological only — exercise history, session list, PR timeline.
 
     Dots cut free of the line: the segment stops short of the dot above and
