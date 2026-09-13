@@ -129,6 +129,7 @@ export default function RoutineScreen() {
         hasRecord={recordedSessionIds.has(session.id)}
       />
     ),
+    onPress: () => router.push(`/history/${session.id}`),
   }));
 
   return (
