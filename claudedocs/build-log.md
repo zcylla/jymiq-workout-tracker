@@ -633,10 +633,17 @@ excluding skipped exercises.
 ### §0 amendment, signed off
 
 The spacing law said "Rail events get 56pt of clear air beneath" and `kit.py:20` set
-`RAIL_AIR = 56`. **No board uses it** — Today passes 22, routine detail and the program strip 24,
-the PR timeline 26 — and `lab34.py:87` passes nothing, so LAST THREE, the first screen to consume
-the Rail, would have inherited the stale default and rendered 34pt-per-row wrong against its own
-board. **`air` is now a required prop**, and §0 records that 56 was superseded.
+`RAIL_AIR = 56`. **No board has ever used it** — Today passes 22, routine detail and the program
+strip 24, the PR timeline 26, and the two earlier rails 22 and 26. The constant was dead from the
+day it was written. `air` is now a **required** prop on `rail()`, the constant is deleted, and §0
+records that the 56pt figure was written before any rail shipped.
+
+**One review finding was wrong here and it is worth recording why.** The engineering phase reported
+that `lab34.py:87` passes no `air`, so LAST THREE inherits 56. It does pass it — on the *closing*
+line, `lab34.py:98`, because the call spans twelve lines. A single-line grep cannot see the
+arguments of a multi-line call, and acting on that report without checking added a second `air`
+argument to the same call, which would have raised a TypeError the next time anyone regenerated the
+board. Every `K.rail(` audit in this repo has to match parentheses, not lines.
 
 ### Two of the review's own conclusions were overturned by later phases
 
