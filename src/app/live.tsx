@@ -207,8 +207,8 @@ export default function LiveScreen() {
       {
         text: 'Finish',
         onPress: () => {
-          announce(finishSession(session.id), 'Finished');
-          router.back();
+          finishSession(session.id);
+          router.replace(`/summary/${session.id}`);
         },
       },
     ]);
