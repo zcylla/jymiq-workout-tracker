@@ -49,7 +49,6 @@ export const space = {
   within: 11,
   /** Between row plates — the gap that replaced every list hairline (Lab 42). */
   row: 7,
-  railAir: 56,
   pad: 22,
 } as const;
 
