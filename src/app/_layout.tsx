@@ -7,6 +7,7 @@ import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
+import { DialogProvider } from '@/components';
 import migrations from '@/../drizzle/migrations';
 import { db } from '@/data/db';
 import { authCodeFromUrl, exchangeAuthCode } from '@/data/supabase';
@@ -55,19 +56,21 @@ export default function RootLayout() {
         ) : !success ? (
           <View style={{ flex: 1, backgroundColor: color.ground }} />
         ) : (
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: color.ground },
-              animation: 'slide_from_right',
-            }}
-          >
-            {/* Detail routes are siblings of `(tabs)` and need no options — a push
+          <DialogProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: color.ground },
+                animation: 'slide_from_right',
+              }}
+            >
+              {/* Detail routes are siblings of `(tabs)` and need no options — a push
                 covers the tab shell entirely, which is how they lose the bar.
                 The live session is the exception: it takes over rather than
                 pushes, and Phase 6 owns disabling the back gesture on it. */}
-            <Stack.Screen name="live" options={{ animation: 'fade' }} />
-          </Stack>
+              <Stack.Screen name="live" options={{ animation: 'fade' }} />
+            </Stack>
+          </DialogProvider>
         )}
       </SafeAreaProvider>
     </GestureHandlerRootView>

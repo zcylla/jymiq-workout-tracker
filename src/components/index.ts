@@ -2,6 +2,12 @@ export { ActionBar, useActionBarHeight } from './action-bar';
 export { Calendar } from './calendar';
 export { Chip, ChipStrip } from './chip';
 export { Delta } from './delta';
+export {
+  DialogProvider,
+  useDialog,
+  type DialogAction,
+  type DialogRequest,
+} from './dialog';
 export { ExercisesSheet } from './exercises-sheet';
 export { KeypadSheet } from './keypad-sheet';
 export { Field } from './field';
