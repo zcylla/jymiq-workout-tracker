@@ -4,6 +4,8 @@ import { estimate1RM } from '@/lib/e1rm';
 import { newId } from '@/lib/id';
 import { type PrHit, detectSessionVolumePr, detectSetPrs } from '@/lib/pr';
 import { resolveRestSec } from '@/lib/rest';
+
+import { getSettings } from '../settings';
 import { resolveSessionDurationSec } from '@/lib/time';
 import { countWorkingSets, type SetLike, totalVolume } from '@/lib/volume';
 
@@ -42,6 +44,12 @@ function lastCompletedAt(rows: { completedAt: number | null }[]): number | null 
  * which is what makes the row the draft — the tape writes to a row that exists,
  * and a force-stop loses nothing.
  */
+/** Settings' per-kind rest, read at the moment a session is built from the plan. */
+const restDefaults = () => {
+  const s = getSettings();
+  return { compound: s.restCompoundSec, isolation: s.restIsolationSec };
+};
+
 export function startSession(input: { routineId?: string | null; name?: string } = {}): string {
   const id = newId();
   const now = Date.now();
@@ -105,7 +113,7 @@ export function startSession(input: { routineId?: string | null; name?: string }
           plannedSets: line.targetSets,
           plannedReps: line.targetReps,
           plannedWeightKg: line.targetWeightKg,
-          restSec: resolveRestSec(line.restSec, line.exerciseRestSec, line.kind),
+          restSec: resolveRestSec(line.restSec, line.exerciseRestSec, line.kind, restDefaults()),
         })
         .run();
 
@@ -320,7 +328,7 @@ export function addExerciseToSession(sessionId: string, exerciseId: string): str
         sessionId,
         exerciseId,
         position: (last?.max ?? -1) + 1,
-        restSec: resolveRestSec(null, ex.defaultRestSec, ex.kind),
+        restSec: resolveRestSec(null, ex.defaultRestSec, ex.kind, restDefaults()),
         addedMidSession: true,
       })
       .run();
