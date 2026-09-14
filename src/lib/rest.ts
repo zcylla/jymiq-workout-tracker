@@ -6,15 +6,21 @@ export type ExerciseKind = 'compound' | 'isolation';
  *
  * The kind defaults are the fallback of last resort, and they are deliberately
  * far apart: a compound taken to within a couple of reps of failure needs
- * minutes, a curl does not. Settings will own these once it is written; until
- * then this is the only place they exist.
+ * minutes, a curl does not. Settings owns them now; these are what it ships
+ * with, and what this function falls back to when no caller supplies any.
  */
 export const DEFAULT_REST_SEC = { compound: 180, isolation: 90 } as const;
+
+export interface RestDefaults {
+  compound: number;
+  isolation: number;
+}
 
 export function resolveRestSec(
   routineRestSec: number | null | undefined,
   exerciseRestSec: number | null | undefined,
   kind: ExerciseKind,
+  defaults: RestDefaults = DEFAULT_REST_SEC,
 ): number {
-  return routineRestSec ?? exerciseRestSec ?? DEFAULT_REST_SEC[kind];
+  return routineRestSec ?? exerciseRestSec ?? defaults[kind];
 }

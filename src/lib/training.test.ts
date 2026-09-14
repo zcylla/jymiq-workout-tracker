@@ -302,7 +302,9 @@ test('a zero duration reads as absent, not as a zero-minute workout', () => {
 test('a displayed weight never leaks a float artefact', () => {
   assert.equal(formatWeight(102.5), '102.5');
   assert.equal(formatWeight(100), '100');
-  assert.equal(formatWeight(42.18, 'lb'), '92.99');
+  // One decimal in pounds: every pounds figure is a conversion, and 92.99 claims
+  // a precision 42.18 kg never had.
+  assert.equal(formatWeight(42.18, 'lb'), '93');
   assert.equal(formatWeight(0.1 + 0.2), '0.3');
 });
 
@@ -425,4 +427,24 @@ test('a session where nothing was logged has nothing to lose', () => {
   // startSession pre-fills every planned set, so a populated row is not evidence.
   assert.equal(countLoggedSets(planned), 0);
   assert.equal(countLoggedSets([]), 0);
+});
+
+test('a record in pounds converts the weights and never the rep count', () => {
+  // Four of the five categories are kilograms; most_reps_at_weight is reps.
+  assert.equal(formatPrValue('heaviest', 100, 'lb'), '220.5');
+  assert.equal(formatPrValue('best_e1rm', 100, 'lb'), '220');
+  assert.equal(formatPrValue('most_reps_at_weight', 8, 'lb'), '8');
+  assert.equal(formatPrValue('most_reps_at_weight', 8, 'kg'), '8');
+  // Volume is a kilogram-volume, so it converts like a weight.
+  assert.equal(formatPrValue('best_set_volume', 100, 'kg'), '100');
+});
+
+test('pounds keep one decimal, kilograms keep two', () => {
+  // 102.5 and 1.25 are real plates; 231.485... is a conversion artefact.
+  assert.equal(formatWeight(102.5), '102.5');
+  assert.equal(formatWeight(1.25), '1.25');
+  assert.equal(formatWeight(105, 'lb'), '231.5');
+  assert.equal(formatWeight(100, 'lb'), '220.5');
+  // A whole number stays whole in either unit.
+  assert.equal(formatWeight(100), '100');
 });

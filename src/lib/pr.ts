@@ -1,5 +1,5 @@
 import type { Kg } from './units.ts';
-import { formatWeight, weightKey } from './units.ts';
+import { type Unit, formatWeight, toDisplay, weightKey } from './units.ts';
 import type { SetKind } from './volume.ts';
 
 export type PrCategory =
@@ -106,13 +106,18 @@ export function detectSessionVolumePr(exerciseVolumeKg: Kg, base: PrBaseline): P
  * Bare — the category label above it already says what kind of number it is,
  * and the caption carries any unit.
  *
- * An e1RM is an estimate, so it rounds to a whole kilogram: 126.666… is a
- * false precision that reads as a measurement.
+ * An e1RM is an estimate, so it rounds to a whole unit: 126.666… is a false
+ * precision that reads as a measurement.
+ *
+ * **`most_reps_at_weight` is a rep count and must never be converted.** Four of
+ * the five categories are kilograms — two of them a kilogram-volume — and one is
+ * a number of repetitions; running that one through the weight transform would
+ * turn 8 reps into 17.6 the moment someone picked pounds.
  */
-export function formatPrValue(category: PrCategory, value: number): string {
+export function formatPrValue(category: PrCategory, value: number, unit: Unit = 'kg'): string {
   if (category === 'most_reps_at_weight') return String(Math.round(value));
-  if (category === 'best_e1rm') return String(Math.round(value));
-  return formatWeight(value);
+  if (category === 'best_e1rm') return String(Math.round(toDisplay(value, unit)));
+  return formatWeight(value, unit);
 }
 
 export const PR_LABELS: Record<PrCategory, string> = {

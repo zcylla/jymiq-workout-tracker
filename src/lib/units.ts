@@ -21,8 +21,16 @@ export const floorToStep = (value: number, step: number): number =>
  */
 export const weightKey = (kg: Kg): number => Math.round(kg * 100);
 
-/** 102.5 -> "102.5", 100 -> "100". Trailing zeros never help a load. */
+/**
+ * `102.5 -> "102.5"`, `100 -> "100"`. Trailing zeros never help a load.
+ *
+ * Kilograms keep two decimals because 102.5 is a real plate configuration and
+ * 1.25 is a real plate. Pounds keep one, because every pounds figure here is a
+ * *conversion* — 105 kg is 231.485…, and printing 231.49 claims a precision the
+ * number never had. Nobody loads a bar to a hundredth of a pound.
+ */
 export const formatWeight = (kg: Kg, unit: Unit = 'kg'): string => {
   const v = toDisplay(kg, unit);
-  return (Math.round(v * 100) / 100).toString();
+  const places = unit === 'kg' ? 100 : 10;
+  return (Math.round(v * places) / places).toString();
 };
