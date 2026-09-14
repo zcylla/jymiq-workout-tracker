@@ -34,6 +34,13 @@ function useAuthDeepLink() {
   }, [url]);
 }
 
+/** Drizzle wraps the SQLite error: the query is the message, the reason is the cause. */
+function migrationError(error: Error): string {
+  const cause = (error as { cause?: unknown }).cause;
+  const reason = cause instanceof Error ? cause.message : cause ? String(cause) : null;
+  return reason ? `${reason}\n\n${error.message}` : error.message;
+}
+
 export default function RootLayout() {
   useAuthDeepLink();
   // The render is gated on migrations rather than racing them, and a failure is
@@ -51,7 +58,10 @@ export default function RootLayout() {
           >
             <Text style={text.label}>DATABASE</Text>
             <Text style={text.lead}>The database could not be migrated.</Text>
-            <Text style={text.prose}>{error.message}</Text>
+            {/* The message drizzle throws is only the SQL it was running; the
+                reason SQLite refused it is on `cause`, and without it this
+                screen says a migration failed without saying why. */}
+            <Text style={text.prose}>{migrationError(error)}</Text>
           </View>
         ) : !success ? (
           <View style={{ flex: 1, backgroundColor: color.ground }} />
