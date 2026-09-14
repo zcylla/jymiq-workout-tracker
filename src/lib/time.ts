@@ -52,15 +52,24 @@ export function resolveSessionDurationSec(
 }
 
 /**
- * `'—'` for a duration that cannot be true, otherwise `formatDuration`.
+ * Whether a stored duration can be true.
  *
- * Zero counts: no workout takes no time, so a stored `0` is a measurement that
- * never happened (the seeded demo sessions carry one) and `0 MIN` reads as a
- * fact rather than an absence.
+ * Zero counts as false: no workout takes no time, so a stored `0` is a
+ * measurement that never happened (the seeded demo sessions carry one) and
+ * `0 MIN` reads as a fact rather than an absence. The ceiling catches the other
+ * end — a session left open for a week persisted `122H 44` once.
+ *
+ * A predicate rather than a `=== '—'` test on the formatted string, because
+ * every caller that prints minutes has to make this check and one of them
+ * forgot: the Today rail shipped `7364 MIN` on exactly that session.
  */
+export function isPlausibleDuration(sec: number | null): sec is number {
+  return sec != null && sec > 0 && sec <= SESSION_DURATION_CEILING_SEC;
+}
+
+/** `'—'` for a duration that cannot be true, otherwise `formatDuration`. */
 export function formatSessionDuration(sec: number | null): string {
-  if (sec == null || sec <= 0 || sec > SESSION_DURATION_CEILING_SEC) return '—';
-  return formatDuration(sec);
+  return isPlausibleDuration(sec) ? formatDuration(sec) : '—';
 }
 
 /** Always the minutes form, e.g. `64 MIN` — used by rail meta lines, which
@@ -98,6 +107,15 @@ export function sessionDotTone(atMs: number, now = Date.now()): DotTone {
   return 'tick1';
 }
 
+/** "Tue 2 Sep" — always the date, never a relative word. The Today header's
+ *  kicker, which must say which day it is even when that day is today. */
+export function dateLabel(atMs: number): string {
+  const d = new Date(atMs);
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
+  const month = d.toLocaleDateString('en-US', { month: 'short' });
+  return `${weekday} ${d.getDate()} ${month}`;
+}
+
 /** "Today"/"TODAY", or "Tue 2 Sep"/"TUE 2 SEP" for anything else. */
 export function sessionDateLabel(
   atMs: number,
@@ -110,8 +128,6 @@ export function sessionDateLabel(
     end.getMonth() === now.getMonth() &&
     end.getDate() === now.getDate();
   if (sameDay) return opts.upper ? 'TODAY' : 'Today';
-  const weekday = end.toLocaleDateString('en-US', { weekday: 'short' });
-  const month = end.toLocaleDateString('en-US', { month: 'short' });
-  const label = `${weekday} ${end.getDate()} ${month}`;
+  const label = dateLabel(atMs);
   return opts.upper ? label.toUpperCase() : label;
 }
