@@ -1251,12 +1251,107 @@ the query range and the header title all come out of one `monthGrid()` call, so 
 about which month it is. A month summary is one line of text under it, not a second chart competing
 with the grid for the same attention. Tapping a trained day opens `/history/[sessionId]`.
 
-**One departure from §0, forced by the schema: there is no missed state.** §0 says rest and missed
-must look different — rest a plate, missed a ring under the number — and that is right, but it needs
-to know which days you were *supposed* to train. Programs (Lab 34 A3/A4) are boarded and unbuilt, and
-nothing in `src/data/schema.ts` stores a plan-by-weekday, so every untrained day draws as rest.
-Inventing a schedule to colour a cell would be the app asserting a lapse it cannot know about. What
-unblocks it: a program table resolving a weekday (or cycle position) to a routine.
+**That departure is closed.** The calendar shipped with no missed state, because §0's
+rest-versus-missed rule needs to know which days you were *supposed* to train and nothing stored a
+plan by weekday. Programs store one now — see "Programs — Lab 34 A3 and A4" below — so a past day
+the running program put a routine on, and you did not train, drops its rest plate and rings its
+numeral.
+
+---
+
+## Programs — Lab 34 A3 and A4, and the three departures they close
+
+Built and device-verified: a program is created, given a weekday schedule, activated and paused on
+the phone, and the whole of it was driven by `adb shell input tap` with a screenshot after each step.
+
+**What a program is: seven weekday slots, each a routine or rest.** `programs` (name, note, status,
+`started_at`) and `program_days` (`program_id`, `weekday` 0–6 Monday-first, `routine_id`, composite
+primary key). A weekday with no row *is* rest — absence is the rest state, so there is no nullable
+routine column meaning two different things, and clearing a day is a delete.
+
+**At most one program runs**, enforced by `idx_programs_one_active`, a partial unique index on
+`status` — the same trick `idx_sessions_one_live` already uses for the live session. `activateProgram`
+therefore pauses the incumbent and activates the new one **inside one transaction**: activating first
+throws against that index and would leave the old program running while the screen had already moved
+on.
+
+**`started_at` is what keeps the missed state honest.** It is written on first activation and never
+reset. Nothing earlier than the day a program started can be a lapse, so activating a program today
+does not retroactively accuse you of missing every Monday since January. `isMissed` is one function
+(`src/lib/program.ts`), and the calendar, Today's week strip and A3's own day strip all call it —
+one rule, one place, three screens.
+
+### The three departures, closed
+
+- **The calendar and the week strip draw missed.** §0: rest is a plate, missed carries a ring. A past
+  day the running program scheduled and you did not train drops its rest plate and rings its numeral;
+  a day with no routine on it keeps the plate and stays rest. With no program running the schedule is
+  empty and every untrained day is rest again, which is the honest answer rather than a fallback.
+- **Today's card reads the schedule.** `pickNextRoutine` — "the routine trained least recently" — is
+  **deleted**, not kept as a fallback. Two rules for what "next" means is how the card ends up
+  disagreeing with the strip beside it. With nothing running the card says *Nothing scheduled* and
+  offers MAKE A PROGRAM, which is an action, not an apology.
+
+**One ring means one thing.** The calendar first drew missed as a ring around the whole cell, which
+collided with the ring that means *today* — two rings, two meanings, one grid. The cell ring is now
+today's alone and missed rings the numeral, which is also what §0 and Lab 45 actually say ("a ring
+under the number") and what the week strip was already doing.
+
+### What is not built, and why
+
+- **No fixed cycle.** §0 calls a program "routines scheduled by weekday **or fixed cycle**". Only the
+  weekday half is stored: a cycle needs a length, a start and a position, and none of those has a
+  screen. The cost is visible on both boards — A3's `WEEK 3 / 8` pill loses its denominator and reads
+  `WEEK 3`, and A4's two tiles ship plain, because §0 is explicit that a meter needs a real
+  denominator. A3's `14 OF 48 SESSIONS DONE` is a cycle figure too; it reads `N OF 7 DAYS SCHEDULED`,
+  which is a number the schedule already holds.
+- **A4's SESSIONS PER WEEK chart.** `kit.chart()` has no React counterpart, and §0's chart rules are
+  strict enough (y min and max anchored, first and last x labels, latest mark in the accent, its
+  value printed, a title stating the takeaway) that this is the wrong screen to settle the primitive
+  on. Lab 35 B2′ needs the same component and should be where it is designed. **Deferred, not
+  dropped.**
+- **The weekday rows carry no grip.** The board draws one, but seven weekdays do not reorder, so the
+  grip would be a control that does nothing — the rule that already removed the exercise screen's two
+  dead buttons and Lab 35 B3's two toggles. Tapping a row opens a routine picker as a chip row
+  expanding inside the row's own plate, the idiom the custom-exercise form uses.
+- **A4's action bar adapts rather than showing a dead Start.** `Start <routine>` + `PAUSE` when the
+  program is running and today has a routine on it; `Pause program` when it is running and today is
+  rest; `Activate program` when it is paused. Activating with nothing scheduled opens a dialog rather
+  than silently doing nothing.
+
+### Two defects only a tap found
+
+Both passed format, typecheck, lint and 135 tests, and neither is visible in a screenshot of the
+screen that has them.
+
+- **The active program was not a target.** A3's NOT RUNNING rows navigated and the one you actually
+  use did not, so the running program had no route to its own detail — which is where pause and the
+  schedule live. The plate is the target now, with a chevron so it says so.
+- **The Session tab root had two sections both labelled PLAN** — the header kicker and the section
+  carrying Programs and Library. Split into `PROGRAMS` and `EXERCISES`.
+
+### A hand-edited migration timestamp and a warm Metro
+
+`drizzle/0002_programs.sql` is the first migration this project added by hand, and the trap recorded
+under "A migration that would have silently done nothing" was avoided — and then a second one,
+unrecorded, cost the session twenty minutes.
+
+The journal's `when` was hand-set to a fresh constant above every existing entry. **Metro was already
+running, warm, from before the edit**, and the bundle it served carried the *pre-edit* journal. So
+the device ran the migration under drizzle-kit's original timestamp and recorded that in
+`__drizzle_migrations`. Every launch after that compared the new journal value against the older
+recorded one, decided 0002 was still pending, re-ran it, and failed with ``table `programs` already
+exists`` — on a database where the tables were in fact correct and every row of real training data
+was intact.
+
+**The rule: a hand-edited `_journal.json` needs `pnpm expo start -c`, exactly like a babel or metro
+config change.** The journal is a JSON import and a warm bundler will keep serving the old one. The
+fix here was to pin the journal to the timestamp the device had actually recorded, which is still a
+hard-coded constant greater than every earlier entry, so the original trap stays closed.
+
+That failure was only diagnosable because the error screen now prints `error.cause`. Drizzle throws
+`Failed to run the query '<the whole SQL>'` and puts the reason SQLite gave on `cause`, so the screen
+used to say a migration failed without ever saying why. `src/app/_layout.tsx` prints both now.
 
 ---
 
@@ -1441,6 +1536,9 @@ error banner — but a real code has never been through them.
   files/SQLite/workout.db` — but it is WAL, so `workout.db` alone is a 4 KB empty shell. Pull
   `workout.db-wal` and `workout.db-shm` beside it or every query answers "no such table". There is
   no `sqlite3` on the device; query the copy on the host.
+- **A hand-edited `drizzle/meta/_journal.json` needs `pnpm expo start -c`.** A warm Metro serves the
+  pre-edit journal, the device records *that* timestamp, and every later launch re-runs the migration
+  and dies on ``table ... already exists``. See "A hand-edited migration timestamp and a warm Metro".
 - **Gradle wants JDK 21 and `ANDROID_HOME` set.** Two separate failed builds.
 - **A pnpm install and a stale `android/` cost a build each** — see "Starting on a machine that has
   never built this" above for all three failure signatures.
