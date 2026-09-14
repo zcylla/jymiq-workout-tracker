@@ -1,8 +1,9 @@
 import { Link, router } from 'expo-router';
 import { useMemo } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import {
+  Chevron,
   Icon,
   ListRow,
   Pill,
@@ -75,14 +76,24 @@ export default function ProgramsScreen() {
 
       {program ? (
         <Section label="ACTIVE" first pad={13}>
-          <View style={{ gap: 14 }}>
+          {/* The plate is the target. Without this the running program has no
+              route to its own detail at all — the NOT RUNNING rows navigate and
+              the one you actually use would not, which is where pause and the
+              schedule live. */}
+          <Pressable
+            onPress={() => router.push(`/program/${program.id}`)}
+            accessibilityRole="button"
+            style={({ pressed }) => [{ gap: 14 }, pressed && { opacity: 0.6 }]}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Text style={text.lead}>{program.name}</Text>
               <Pill label={`WEEK ${programWeekNumber(program.startedAt) ?? 1}`} />
+              <View style={{ flex: 1 }} />
+              <Chevron />
             </View>
             <Text style={text.meta}>BY WEEKDAY · {schedule.days.size} OF 7 DAYS SCHEDULED</Text>
             <ProgramWeek days={week} />
-          </View>
+          </Pressable>
         </Section>
       ) : null}
 
