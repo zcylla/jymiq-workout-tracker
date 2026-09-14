@@ -960,6 +960,17 @@ it wrote nothing; replacing wrote 1,223 rows and a rollback file, `jymiq-2026-09
 alongside. The five counts after the restore are identical to the five before it, and both new tab
 screens re-read the restored rows and render.
 
+**And verified on `jymiq-a` from an empty database — the path a real recovery takes.** A fresh
+install has the 302 seeded exercises and nothing else, so Records read "No records yet. Log a session
+to set your first one." over two dim zero tiles, and the calendar drew the full month grid with today
+ringed and "Nothing logged this month. Start a session and it lands here." under it. Both are what §0
+asks for: a component that will fill in stays visible and dim rather than hidden. Restoring the
+phone's own backup file on that device wrote the same 1,223 rows and the two screens then rendered
+*identically to the phone* — same eighteen records in the same order, same filled 7 September, same
+"Trained 1 of 30 · volume 22.6 T". Reproducing one device's database on another is the strongest
+statement the round trip can make, and it is only reachable because the emulator's database starts
+empty.
+
 **One defect the round trip found, and a screenshot would not have.** The section's prose line is the
 only feedback this screen gives, and it sat *under* the list of backup files. A list of two backups
 is tall enough to push it off the bottom of the screen, so a cancelled restore said "Restore
