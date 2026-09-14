@@ -1,13 +1,12 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Text } from 'react-native';
 
 import {
   ActionBar,
   Icon,
   ListRow,
-  Pill,
   Rail,
   type RailItem,
   RowPlate,
@@ -15,6 +14,7 @@ import {
   Screen,
   ScreenHeader,
   Section,
+  SessionRow,
   StatTiles,
   type Tile,
   useActionBarHeight,
@@ -26,13 +26,7 @@ import {
   sessionsWithRecordsQuery,
 } from '@/data/queries/sessions';
 import { startSession } from '@/data/mutations/sessions';
-import {
-  formatMinutes,
-  formatRest,
-  formatSessionDuration,
-  sessionDateLabel,
-  sessionDotTone,
-} from '@/lib/time';
+import { formatRest, formatSessionDuration, sessionDotTone } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
 import { formatTonnage, topSet } from '@/lib/volume';
 import { text } from '@/theme';
@@ -137,7 +131,10 @@ export default function RoutineScreen() {
     tone: sessionDotTone(session.startedAt),
     body: (
       <SessionRow
-        session={session}
+        startedAt={session.startedAt}
+        durationSec={session.durationSec}
+        totalSets={session.totalSets}
+        totalVolumeKg={session.totalVolumeKg}
         topSet={topSetsBySession.get(session.id) ?? null}
         hasRecord={recordedSessionIds.has(session.id)}
       />
@@ -201,7 +198,6 @@ export default function RoutineScreen() {
 }
 
 type Lift = Awaited<ReturnType<typeof routineExercisesQuery>>[number];
-type RoutineSession = Awaited<ReturnType<typeof routineSessionsQuery>>[number];
 type TopSetRow = Awaited<ReturnType<typeof sessionsTopSetsQuery>>[number];
 
 /** kit's `lift_row` meta: "5 × 8 @ 102.5 KG · REST 3:00". */
@@ -212,37 +208,4 @@ function liftMeta(lift: Lift): string {
   if (lift.targetWeightKg != null) parts[0] += ` @ ${formatWeight(lift.targetWeightKg)} KG`;
   if (lift.restSec != null) parts.push(`REST ${formatRest(lift.restSec)}`);
   return parts.join(' · ');
-}
-
-/** lab34.py:88-97's LAST THREE rail body: a two-line stack per session. */
-function SessionRow({
-  session,
-  topSet: sessionTopSet,
-  hasRecord,
-}: {
-  session: RoutineSession;
-  topSet: ReturnType<typeof topSet>;
-  hasRecord: boolean;
-}) {
-  const metaParts = [];
-  const duration = formatSessionDuration(session.durationSec);
-  if (duration !== '—') metaParts.push(formatMinutes(session.durationSec!));
-  metaParts.push(`${session.totalSets ?? 0} SETS`);
-  if (sessionTopSet) {
-    metaParts.push(`TOP ${formatWeight(sessionTopSet.weightKg!)} × ${sessionTopSet.reps}`);
-  }
-
-  return (
-    <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
-        <Text style={text.num}>{sessionDateLabel(session.startedAt)}</Text>
-        {hasRecord ? <Pill label="PR" /> : null}
-        <View style={{ flex: 1 }} />
-        {session.totalVolumeKg != null ? (
-          <Text style={text.numSm}>{formatTonnage(session.totalVolumeKg)}</Text>
-        ) : null}
-      </View>
-      <Text style={text.meta}>{metaParts.join(' · ')}</Text>
-    </>
-  );
 }
