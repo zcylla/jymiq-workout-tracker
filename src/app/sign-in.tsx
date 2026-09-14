@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
+import Storage from 'expo-sqlite/kv-store';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Alert, Text } from 'react-native';
@@ -41,6 +42,26 @@ import { text } from '@/theme';
  * no new native module — `expo-file-system` is already linked — so this ships
  * on a Metro reload rather than a six-minute Gradle build.
  */
+/** The folder the user last exported into. Remembered so the second one is a tap. */
+const EXPORT_DIR_KEY = 'export.directoryUri';
+
+/**
+ * Ask for a folder.
+ *
+ * Opened at Documents on purpose: **Android 11+ refuses a SAF grant on the root
+ * of shared storage and on Download**, so a picker that starts at the root
+ * greets you with "Can't use this folder" and no obvious way forward. Documents
+ * is grantable. A bad initial URI is ignored by the picker rather than failing,
+ * so this is safe if the folder does not exist.
+ */
+async function pickExportDirectory(): Promise<string | null> {
+  const saf = FileSystem.StorageAccessFramework;
+  const permission = await saf.requestDirectoryPermissionsAsync(
+    saf.getUriForDirectoryInRoot('Documents'),
+  );
+  return permission.granted ? permission.directoryUri : null;
+}
+
 function ExportSection() {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,16 +76,32 @@ function ExportSection() {
         appVersion: Constants.expoConfig?.version ?? 'dev',
       });
       const name = exportFileName(envelope.exportedAt);
-
       const saf = FileSystem.StorageAccessFramework;
-      const permission = await saf.requestDirectoryPermissionsAsync();
-      if (!permission.granted) {
-        setNote('Export cancelled. Nothing was written.');
-        return;
-      }
-      const uri = await saf.createFileAsync(permission.directoryUri, name, 'application/json');
-      await FileSystem.writeAsStringAsync(uri, JSON.stringify(envelope));
 
+      // The remembered folder first. A grant can be revoked and a folder can be
+      // deleted, so a failure here is expected rather than exceptional — fall
+      // back to asking, don't report it as an error.
+      let uri: string | null = null;
+      const saved = await Storage.getItem(EXPORT_DIR_KEY);
+      if (saved) {
+        try {
+          uri = await saf.createFileAsync(saved, name, 'application/json');
+        } catch {
+          uri = null;
+        }
+      }
+
+      if (!uri) {
+        const dir = await pickExportDirectory();
+        if (!dir) {
+          setNote('Export cancelled. Nothing was written.');
+          return;
+        }
+        await Storage.setItem(EXPORT_DIR_KEY, dir);
+        uri = await saf.createFileAsync(dir, name, 'application/json');
+      }
+
+      await FileSystem.writeAsStringAsync(uri, JSON.stringify(envelope));
       setNote(`Wrote ${name} — ${totalRows(envelope).toLocaleString()} rows.`);
     } catch (e) {
       // A failed backup must say so loudly. Silence here reads as success, and
