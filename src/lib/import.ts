@@ -126,3 +126,32 @@ export function describeBackup(b: ParsedBackup): string {
   const d = new Date(b.exportedAt);
   return `${tally} — exported ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
+
+/**
+ * The table order restore writes in. It is `KNOWN_TABLES` because that list is
+ * already in dependency order — parents before children — and foreign keys are
+ * ON, so inserting out of order fails and deleting out of order fails the other
+ * way round. Deletion walks it backwards.
+ */
+export const RESTORE_ORDER = KNOWN_TABLES;
+
+export interface BackupFile {
+  uri: string;
+  name: string;
+}
+
+/**
+ * Which of a folder's files are Jymiq backups, newest first.
+ *
+ * Storage Access Framework hands back percent-encoded document URIs
+ * (`content://…/document/primary%3ADocuments%2Fjymiq-2026-09-13-1042.json`), so
+ * the name has to be decoded out of the tail. The filename stamp is
+ * year-month-day-hourminute, which sorts lexicographically in chronological
+ * order — no date parsing needed to put the newest at the top.
+ */
+export function backupFiles(uris: readonly string[]): BackupFile[] {
+  return uris
+    .map((uri) => ({ uri, name: decodeURIComponent(uri).split('/').pop() ?? '' }))
+    .filter(({ name }) => /^jymiq-.*\.json$/.test(name))
+    .sort((a, b) => b.name.localeCompare(a.name));
+}

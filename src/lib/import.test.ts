@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { EXPORT_VERSION, buildExport } from './export.ts';
-import { describeBackup, parseBackup } from './import.ts';
+import { backupFiles, describeBackup, parseBackup } from './import.ts';
 
 const meta = { now: Date.UTC(2026, 8, 13, 10, 42), appVersion: '1.0.0' };
 
@@ -163,4 +163,27 @@ test('a backup with nothing in it says so rather than printing an empty tally', 
   assert.equal(result.ok, true);
   if (!result.ok) return;
   assert.match(describeBackup(result.backup), /no training yet/);
+});
+
+const TREE = 'content://com.android.externalstorage.documents/tree/primary%3ADocuments';
+const doc = (name: string) => `${TREE}/document/primary%3ADocuments%2F${name}`;
+
+test("a folder listing yields only this app's backups, newest first", () => {
+  const found = backupFiles([
+    doc('jymiq-2026-09-11-0900.json'),
+    doc('tax-return.pdf'),
+    doc('jymiq-2026-09-13-1042.json'),
+    doc('notes.json'),
+    doc('jymiq-2026-09-12-2015.json'),
+  ]);
+  assert.deepEqual(
+    found.map((f) => f.name),
+    ['jymiq-2026-09-13-1042.json', 'jymiq-2026-09-12-2015.json', 'jymiq-2026-09-11-0900.json'],
+  );
+  // The URI is what expo-file-system reads from — the name is only for the eye.
+  assert.equal(found[0]?.uri, doc('jymiq-2026-09-13-1042.json'));
+});
+
+test('a folder with no backups in it is empty, not an error', () => {
+  assert.deepEqual(backupFiles([doc('notes.json'), doc('photo.jpg')]), []);
 });
