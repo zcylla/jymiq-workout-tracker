@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
 import { Calendar, Screen, ScreenHeader, Section, useTabBarHeight } from '@/components';
-import { monthSessionsQuery } from '@/data/queries/calendar';
+import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { monthGrid, type TrainedDay, trainedDays } from '@/lib/calendar';
 import { formatTonnage } from '@/lib/volume';
 import { color, hairline, text } from '@/theme';
@@ -33,7 +33,7 @@ export default function LoadScreen() {
   const grid = useMemo(() => monthGrid(), []);
 
   const { data, updatedAt } = useLiveQuery(
-    useMemo(() => monthSessionsQuery(grid.from, grid.to), [grid.from, grid.to]),
+    useMemo(() => sessionsInRangeQuery(grid.from, grid.to), [grid.from, grid.to]),
     [grid.from, grid.to],
   );
   const loading = updatedAt === undefined;

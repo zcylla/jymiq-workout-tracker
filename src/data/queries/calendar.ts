@@ -4,7 +4,8 @@ import { db } from '../db';
 import { sessions } from '../schema';
 
 /**
- * Every logged session inside one month, for the Load tab's calendar.
+ * Every logged session inside a date range — the Load tab's calendar asks for a
+ * month, Today's week strip asks for three weeks.
  *
  * `FROM sessions` with no join: `useLiveQuery` subscribes only to the table
  * named in the query's `FROM`, so reading the tonnage back off the session row
@@ -12,7 +13,7 @@ import { sessions } from '../schema';
  * live. An in-progress session is excluded — it has no volume yet and nothing
  * to open.
  */
-export function monthSessionsQuery(from: number, to: number) {
+export function sessionsInRangeQuery(from: number, to: number) {
   return db
     .select({
       id: sessions.id,
