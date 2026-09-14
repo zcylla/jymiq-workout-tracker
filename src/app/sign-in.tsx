@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import Storage from 'expo-sqlite/kv-store';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import {
   ActionBar,
@@ -17,6 +17,7 @@ import {
   ScreenHeader,
   Section,
   useActionBarHeight,
+  useDialog,
 } from '@/components';
 import { readAllTables } from '@/data/queries/export';
 import { restoreBackup } from '@/data/queries/import';
@@ -106,6 +107,7 @@ async function writeBackup(dir: string): Promise<{ name: string; rows: number }>
 }
 
 function DataSection() {
+  const show = useDialog();
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [files, setFiles] = useState<BackupFile[] | null>(null);
@@ -125,7 +127,10 @@ function DataSection() {
     } catch (e) {
       // A failed backup must say so loudly. Silence here reads as success, and
       // the whole point of the feature is that you can rely on it having run.
-      Alert.alert('Export failed', e instanceof Error ? e.message : 'Nothing was written.');
+      show({
+        title: 'Export failed',
+        message: e instanceof Error ? e.message : 'Nothing was written.',
+      });
       setNote('Export failed. Nothing was written.');
     } finally {
       setBusy(false);
@@ -145,7 +150,10 @@ function DataSection() {
       setFiles(found);
       if (found.length === 0) setNote('No Jymiq backups in that folder.');
     } catch (e) {
-      Alert.alert('Could not read that folder', e instanceof Error ? e.message : 'Unknown error.');
+      show({
+        title: 'Could not read that folder',
+        message: e instanceof Error ? e.message : 'Unknown error.',
+      });
     } finally {
       setBusy(false);
     }
@@ -167,21 +175,25 @@ function DataSection() {
         return;
       }
       const { backup } = parsed;
-      Alert.alert(
-        'Replace everything?',
-        `${describeBackup(backup)}\n\nEverything on this phone is deleted and replaced with this file. ` +
+      show({
+        title: 'Replace everything?',
+        message:
+          `${describeBackup(backup)}\n\nEverything on this phone is deleted and replaced with this file. ` +
           'Your current database is written to the same folder as a rollback file first.',
-        [
+        actions: [
+          { label: 'Replace', tone: 'destructive', onPress: () => void applyRestore(backup) },
           {
-            text: 'Cancel',
-            style: 'cancel',
+            label: 'Cancel',
+            tone: 'cancel',
             onPress: () => setNote('Restore cancelled. Nothing was written.'),
           },
-          { text: 'Replace', style: 'destructive', onPress: () => void applyRestore(backup) },
         ],
-      );
+      });
     } catch (e) {
-      Alert.alert('Could not read that file', e instanceof Error ? e.message : 'Unknown error.');
+      show({
+        title: 'Could not read that file',
+        message: e instanceof Error ? e.message : 'Unknown error.',
+      });
     } finally {
       setBusy(false);
     }
@@ -201,7 +213,10 @@ function DataSection() {
       );
     } catch (e) {
       // The write is one transaction, so a failure here left the database alone.
-      Alert.alert('Restore failed', e instanceof Error ? e.message : 'Nothing was written.');
+      show({
+        title: 'Restore failed',
+        message: e instanceof Error ? e.message : 'Nothing was written.',
+      });
       setNote('Restore failed. Nothing was written — your data is untouched.');
     } finally {
       setBusy(false);

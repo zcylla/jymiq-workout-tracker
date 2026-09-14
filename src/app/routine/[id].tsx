@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import {
   ActionBar,
@@ -18,6 +18,7 @@ import {
   StatTiles,
   type Tile,
   useActionBarHeight,
+  useDialog,
 } from '@/components';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
 import {
@@ -40,6 +41,7 @@ import { text } from '@/theme';
  */
 export default function RoutineScreen() {
   const actionBar = useActionBarHeight();
+  const show = useDialog();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: found } = useLiveQuery(
     useMemo(() => routineQuery(id), [id]),
@@ -86,17 +88,20 @@ export default function RoutineScreen() {
 
   const start = () => {
     if (!routine || rows.length === 0) {
-      Alert.alert(
-        'Add an exercise first',
-        'A routine needs at least one lift before it can start.',
-      );
+      show({
+        title: 'Add an exercise first',
+        message: 'A routine needs at least one lift before it can start.',
+      });
       return;
     }
     try {
       startSession({ routineId: routine.id });
       router.replace('/live');
     } catch {
-      Alert.alert('A session is already running', 'Finish or discard it before starting another.');
+      show({
+        title: 'A session is already running',
+        message: 'Finish or discard it before starting another.',
+      });
     }
   };
 

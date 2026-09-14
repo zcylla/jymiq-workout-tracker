@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import {
   ActionBar,
@@ -13,6 +13,7 @@ import {
   ScreenHeader,
   Section,
   useActionBarHeight,
+  useDialog,
 } from '@/components';
 import { removeRoutineExercise, updateRoutine } from '@/data/mutations/routines';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
@@ -46,6 +47,7 @@ export default function EditRoutineScreen() {
 
 function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
   const actionBar = useActionBarHeight();
+  const show = useDialog();
   const [name, setName] = useState(routine.name);
   const [note, setNote] = useState(routine.note ?? '');
 
@@ -56,10 +58,14 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
   };
 
   const remove = (liftId: string, liftName: string) =>
-    Alert.alert(`Remove ${liftName}?`, 'It stays in your exercise library.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => removeRoutineExercise(liftId) },
-    ]);
+    show({
+      title: `Remove ${liftName}?`,
+      message: 'It stays in your exercise library.',
+      actions: [
+        { label: 'Remove', tone: 'destructive', onPress: () => removeRoutineExercise(liftId) },
+        { label: 'Cancel', tone: 'cancel' },
+      ],
+    });
 
   return (
     <>

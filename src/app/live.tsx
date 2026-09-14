@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, BackHandler, Pressable, Text, View } from 'react-native';
+import { BackHandler, Pressable, Text, View } from 'react-native';
 
 import {
   ActionBar,
@@ -15,6 +15,7 @@ import {
   SetsSheet,
   Tape,
   useActionBarHeight,
+  useDialog,
 } from '@/components';
 import type { WorkoutParameter } from '@/components';
 import {
@@ -49,17 +50,17 @@ const TAPES = {
 } as const;
 
 /** A record is named, never counted — "2 PRs" tells you nothing. */
-function announce(hits: PrHit[], title: string) {
+function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: string) {
   if (hits.length === 0) return;
-  Alert.alert(
+  show({
     title,
-    hits
+    message: hits
       .map((h) => {
         const line = `${PR_LABELS[h.category]} ${formatPrValue(h.category, h.value)}`;
         return h.previous == null ? line : `${line}\nWAS ${formatPrValue(h.category, h.previous)}`;
       })
       .join('\n\n'),
-  );
+  });
 }
 
 export default function LiveScreen() {
@@ -68,6 +69,7 @@ export default function LiveScreen() {
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const barHeight = useActionBarHeight();
+  const show = useDialog();
 
   // `useLiveQuery`'s second argument is a dependency list and it defaults to
   // `[]`, so a query built from a value that arrives later subscribes once with
@@ -146,42 +148,47 @@ export default function LiveScreen() {
     }
 
     if (intent === 'discard') {
-      Alert.alert(
-        'Discard this session?',
-        `${tally} will be deleted, along with any records from this session. This cannot be undone.`,
-        [
-          { text: 'Keep going', style: 'cancel' },
+      show({
+        title: 'Discard this session?',
+        message: `${tally} will be deleted, along with any records from this session. This cannot be undone.`,
+        actions: [
           {
-            text: 'Discard',
-            style: 'destructive',
+            label: 'Discard',
+            tone: 'destructive',
             onPress: () => {
               discardSession(session.id);
               router.replace('/');
             },
           },
+          { label: 'Keep going', tone: 'cancel' },
         ],
-      );
+      });
       return true;
     }
 
-    Alert.alert('Finish this session?', `${tally}.`, [
-      { text: 'Not yet', style: 'cancel' },
-      {
-        text: 'Discard',
-        style: 'destructive',
-        onPress: () => {
-          discardSession(session.id);
-          router.replace('/');
+    show({
+      title: 'Finish this session?',
+      message: `${tally}.`,
+      actions: [
+        {
+          label: 'Finish',
+          tone: 'primary',
+          onPress: () => {
+            finishSession(session.id);
+            router.replace(`/summary/${session.id}`);
+          },
         },
-      },
-      {
-        text: 'Finish',
-        onPress: () => {
-          finishSession(session.id);
-          router.replace(`/summary/${session.id}`);
+        {
+          label: 'Discard',
+          tone: 'destructive',
+          onPress: () => {
+            discardSession(session.id);
+            router.replace('/');
+          },
         },
-      },
-    ]);
+        { label: 'Not yet', tone: 'cancel' },
+      ],
+    });
     return true;
   };
 
@@ -271,7 +278,7 @@ export default function LiveScreen() {
   const log = () => {
     const hits = completeSet(set.id);
     setEditing(null);
-    announce(hits, 'Logged');
+    announce(show, hits, 'Logged');
   };
 
   const finish = () => leave('finish');

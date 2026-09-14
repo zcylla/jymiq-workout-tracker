@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { Link, router } from 'expo-router';
 import { useMemo } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import {
   Delta,
@@ -18,6 +18,7 @@ import {
   StatTiles,
   type Tile,
   WeekStrip,
+  useDialog,
   useTabBarHeight,
 } from '@/components';
 import { startSession } from '@/data/mutations/sessions';
@@ -110,6 +111,7 @@ export default function TodayScreen() {
  * and the tab bar's start button stays the only other accent fill on the screen.
  */
 function NextCard({ next }: { next: ReturnType<typeof pickNextRoutine> }) {
+  const show = useDialog();
   const { data: lifts } = useLiveQuery(
     useMemo(() => routineExercisesQuery(next?.routine.id ?? ''), [next?.routine.id]),
     [next?.routine.id],
@@ -148,10 +150,10 @@ function NextCard({ next }: { next: ReturnType<typeof pickNextRoutine> }) {
       <Pressable
         onPress={() => {
           if (rows.length === 0) {
-            Alert.alert(
-              'Add an exercise first',
-              'A routine needs at least one lift before it can start.',
-            );
+            show({
+              title: 'Add an exercise first',
+              message: 'A routine needs at least one lift before it can start.',
+            });
             return;
           }
           try {
@@ -160,10 +162,10 @@ function NextCard({ next }: { next: ReturnType<typeof pickNextRoutine> }) {
             // session is not a state this screen should be able to return to.
             router.replace('/live');
           } catch {
-            Alert.alert(
-              'A session is already running',
-              'Finish or discard it before starting another.',
-            );
+            show({
+              title: 'A session is already running',
+              message: 'Finish or discard it before starting another.',
+            });
           }
         }}
         accessibilityRole="button"

@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ListRow, RowPlate, RowPlates } from '@/components';
+import { ListRow, RowPlate, RowPlates, useDialog } from '@/components';
 import { db } from '@/data/db';
 import { addExerciseToRoutine, createRoutine } from '@/data/mutations/routines';
 import {
@@ -41,10 +41,10 @@ function makeDemoRoutine() {
 }
 
 /** Leaves a session open on the device so `/live` has something to render. */
-function startLiveSession(): void {
+function startLiveSession(show: ReturnType<typeof useDialog>): void {
   const [routine] = db.select({ id: routines.id }).from(routines).limit(1).all();
   if (!routine) {
-    Alert.alert('No routine', 'Make a demo routine first.');
+    show({ title: 'No routine', message: 'Make a demo routine first.' });
     return;
   }
   const [live] = activeSessionQuery().all();
@@ -59,10 +59,10 @@ function startLiveSession(): void {
  * detected against real history, so pressing this twice should name fewer the
  * second time, and pressing it on a heavier routine should name more.
  */
-function runDemoSession(): void {
+function runDemoSession(show: ReturnType<typeof useDialog>): void {
   const [routine] = db.select({ id: routines.id }).from(routines).limit(1).all();
   if (!routine) {
-    Alert.alert('No routine', 'Make a demo routine first.');
+    show({ title: 'No routine', message: 'Make a demo routine first.' });
     return;
   }
 
@@ -77,18 +77,19 @@ function runDemoSession(): void {
   const [done] = db.select().from(sessions).where(eq(sessions.id, sessionId)).limit(1).all();
   const named = [...hits, ...closing].map((h) => `${PR_LABELS[h.category]} ${h.value}`);
 
-  Alert.alert(
-    `${planned.length} sets logged`,
-    [
+  show({
+    title: `${planned.length} sets logged`,
+    message: [
       `${formatTonnage(done?.totalVolumeKg ?? 0)} · ${done?.totalSets ?? 0} working sets`,
       named.length ? named.join('\n') : 'No records.',
     ].join('\n\n'),
-  );
+  });
 }
 
 /** Row counts, so "did the migration run" has an answer on the device. */
 export default function DbScreen() {
   const insets = useSafeAreaInsets();
+  const show = useDialog();
   const counts = [
     ['EXERCISES', useLiveQuery(db.select().from(exercises)).data?.length],
     ['ROUTINES', useLiveQuery(db.select().from(routines)).data?.length],
@@ -129,10 +130,10 @@ export default function DbScreen() {
           <RowPlate onPress={makeDemoRoutine}>
             <ListRow title="Make a demo routine" meta="createRoutine + addExerciseToRoutine" />
           </RowPlate>
-          <RowPlate onPress={startLiveSession}>
+          <RowPlate onPress={() => startLiveSession(show)}>
             <ListRow title="Start a live session" meta="leaves it in progress and opens /live" />
           </RowPlate>
-          <RowPlate onPress={runDemoSession}>
+          <RowPlate onPress={() => runDemoSession(show)}>
             <ListRow
               title="Run a demo session"
               meta="start + log every set + finish, with records"
