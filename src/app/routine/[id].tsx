@@ -26,6 +26,7 @@ import {
   sessionsTopSetsQuery,
   sessionsWithRecordsQuery,
 } from '@/data/queries/sessions';
+import { useRows } from '@/data/live';
 import { startSession } from '@/data/mutations/sessions';
 import { formatRest, formatSessionDuration, sessionDotTone } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
@@ -47,7 +48,7 @@ export default function RoutineScreen() {
     useMemo(() => routineQuery(id), [id]),
     [id],
   );
-  const { data: lifts, updatedAt: liftsUpdatedAt } = useLiveQuery(
+  const lifts = useRows(
     useMemo(() => routineExercisesQuery(id), [id]),
     [id],
   );
@@ -87,7 +88,10 @@ export default function RoutineScreen() {
   );
 
   const start = () => {
-    if (!routine || rows.length === 0) {
+    // `lifts` is null until the query answers. Refusing on that told the user
+    // their routine was empty because the app had not looked yet.
+    if (lifts === null) return;
+    if (!routine || lifts.length === 0) {
       show({
         title: 'Add an exercise first',
         message: 'A routine needs at least one lift before it can start.',
@@ -110,7 +114,7 @@ export default function RoutineScreen() {
   // `data` starts as [], so without this the block paints a confident
   // EXERCISES 0 · SETS 0 before the lifts arrive. `updatedAt` is the only
   // loading signal drizzle gives us.
-  const liftsLoading = liftsUpdatedAt === undefined;
+  const liftsLoading = lifts === null;
   // The bottom two describe the last session, not the plan, and they say so.
   // The board's EST. TIME / VOLUME are plan figures; computing those needs load
   // semantics for bodyweight and assisted lifts that the schema cannot express,

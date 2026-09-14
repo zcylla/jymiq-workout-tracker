@@ -1,4 +1,3 @@
-import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { Link, router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -21,6 +20,7 @@ import {
   useDialog,
   useTabBarHeight,
 } from '@/components';
+import { useRows } from '@/data/live';
 import { startSession } from '@/data/mutations/sessions';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { routineExercisesQuery, routineListQuery } from '@/data/queries/routines';
@@ -49,27 +49,33 @@ export default function TodayScreen() {
   // Empty first, only for its range and its clock.
   const strip = useMemo(() => weekStrip(new Map()), []);
 
-  const { data: rangeRows } = useLiveQuery(
+  const rangeRows = useRows(
     useMemo(() => sessionsInRangeQuery(strip.from, strip.to), [strip.from, strip.to]),
     [strip.from, strip.to],
   );
   const week = useMemo(() => weekStrip(trainedDays(rangeRows ?? [])), [rangeRows]);
 
-  const { data: routines } = useLiveQuery(
+  const routines = useRows(
     useMemo(() => routineListQuery(), []),
     [],
   );
-  const { data: lastRuns } = useLiveQuery(
+  const lastRuns = useRows(
     useMemo(() => lastRunPerRoutineQuery(), []),
     [],
   );
 
+  /**
+   * `null` until both have answered. Deciding "no routines yet" off a list that
+   * has not loaded is what made the tab the app opens on flash its empty state
+   * on every launch.
+   */
   const next = useMemo(() => {
+    if (routines === null || lastRuns === null) return null;
     const byRoutine = new Map<string, number>();
-    for (const row of lastRuns ?? []) {
+    for (const row of lastRuns) {
       if (row.routineId && row.lastRunAt != null) byRoutine.set(row.routineId, row.lastRunAt);
     }
-    return pickNextRoutine(routines ?? [], byRoutine);
+    return pickNextRoutine(routines, byRoutine);
   }, [routines, lastRuns]);
 
   return (
@@ -86,7 +92,7 @@ export default function TodayScreen() {
         }
       />
 
-      <NextCard next={next} />
+      <NextCard next={next} loading={routines === null || lastRuns === null} />
 
       <Section label="THIS WEEK" pad={13}>
         <WeekStrip
@@ -110,12 +116,23 @@ export default function TodayScreen() {
  * rather than a filled accent slab. It survives a bad screen-brightness moment,
  * and the tab bar's start button stays the only other accent fill on the screen.
  */
-function NextCard({ next }: { next: ReturnType<typeof pickNextRoutine> }) {
+function NextCard({
+  next,
+  loading,
+}: {
+  next: ReturnType<typeof pickNextRoutine>;
+  loading: boolean;
+}) {
   const show = useDialog();
-  const { data: lifts } = useLiveQuery(
+  const lifts = useRows(
     useMemo(() => routineExercisesQuery(next?.routine.id ?? ''), [next?.routine.id]),
     [next?.routine.id],
   );
+
+  // "No routines yet" is a claim, not a placeholder, so it waits until the
+  // question has actually been answered. Nothing is drawn in the meantime: the
+  // window is a frame or two, and a skeleton that flashes for 16ms is noise.
+  if (loading) return null;
 
   if (!next) {
     return (
@@ -129,7 +146,7 @@ function NextCard({ next }: { next: ReturnType<typeof pickNextRoutine> }) {
   }
 
   const rows = lifts ?? [];
-  const meta = [`${rows.length} ${rows.length === 1 ? 'LIFT' : 'LIFTS'}`];
+  const meta = lifts ? [`${rows.length} ${rows.length === 1 ? 'LIFT' : 'LIFTS'}`] : ['\u2014'];
   const sets = rows.reduce((n, lift) => n + lift.targetSets, 0);
   if (sets > 0) meta.push(`${sets} SETS`);
 
@@ -149,7 +166,11 @@ function NextCard({ next }: { next: ReturnType<typeof pickNextRoutine> }) {
 
       <Pressable
         onPress={() => {
-          if (rows.length === 0) {
+          // `lifts` is null until the query answers; refusing on that is
+          // telling the user their routine is empty because the app has not
+          // looked yet.
+          if (lifts === null) return;
+          if (lifts.length === 0) {
             show({
               title: 'Add an exercise first',
               message: 'A routine needs at least one lift before it can start.',
@@ -216,14 +237,14 @@ function WeekTiles({ week }: { week: ReturnType<typeof weekStrip> }) {
 /** §0 reserves the rail for anything chronological. Two, because the calendar
  *  and the week strip are the other two routes into history. */
 function RecentRail() {
-  const { data: sessions, updatedAt } = useLiveQuery(
+  const sessions = useRows(
     useMemo(() => recentSessionsQuery(2), []),
     [],
   );
   const rows = useMemo(() => sessions ?? [], [sessions]);
   const ids = useMemo(() => rows.map((s) => s.id), [rows]);
 
-  const { data: recorded } = useLiveQuery(
+  const recorded = useRows(
     useMemo(() => sessionsWithRecordsQuery(ids), [ids]),
     [ids],
   );
@@ -248,7 +269,7 @@ function RecentRail() {
     <Section label="RECENT" plated={false}>
       {rows.length ? (
         <Rail items={items} air={22} />
-      ) : updatedAt === undefined ? null : (
+      ) : sessions === null ? null : (
         <Text style={text.prose}>Nothing logged yet. Your first session lands here.</Text>
       )}
     </Section>

@@ -25,6 +25,7 @@ import {
   finishSession,
   updateSet,
 } from '@/data/mutations/sessions';
+import { useRows } from '@/data/live';
 import {
   activeSessionQuery,
   lastCompletedExerciseSetQuery,
@@ -78,12 +79,11 @@ export default function LiveScreen() {
   // session forever — and it fails as plausible data, not as an error.
   const session = useLiveQuery(activeSessionQuery()).data?.[0];
   const sessionId = session?.id ?? '';
-  const exercises = useLiveQuery(sessionExercisesQuery(sessionId), [sessionId]).data ?? [];
-  const setsResult = useLiveQuery(sessionSetsQuery(sessionId), [sessionId]);
-  const allSets = setsResult.data ?? [];
-  // `data` is `[]` both while loading and when genuinely empty; `updatedAt`
-  // is the only signal that separates them, and `leave` deletes on a zero count.
-  const setsLoaded = setsResult.updatedAt !== undefined;
+  const sessionExerciseRows = useRows(sessionExercisesQuery(sessionId), [sessionId]);
+  const sessionSets = useRows(sessionSetsQuery(sessionId), [sessionId]);
+  const exercises = sessionExerciseRows ?? [];
+  const allSets = sessionSets ?? [];
+  const setsLoaded = sessionSets !== null;
 
   const exercise =
     exercises.find((e) => e.id === session?.currentSessionExerciseId) ?? exercises[0];
@@ -225,12 +225,18 @@ export default function LiveScreen() {
   }
 
   if (!exercise || !set) {
+    // "No exercises in it" is a claim about the session, and both queries are
+    // still in flight on the frame this screen takes over. Say nothing until
+    // they have answered, rather than accusing a full session of being empty.
+    const answered = sessionExerciseRows !== null && sessionSets !== null;
     return (
       <Screen>
         <ScreenHeader title={session.name} kicker="LIVE" onBack={() => router.replace('/')} />
-        <Section first label="EMPTY SESSION" plated={false}>
-          <Text style={text.prose}>This session has no exercises in it yet.</Text>
-        </Section>
+        {answered ? (
+          <Section first label="EMPTY SESSION" plated={false}>
+            <Text style={text.prose}>This session has no exercises in it yet.</Text>
+          </Section>
+        ) : null}
       </Screen>
     );
   }
