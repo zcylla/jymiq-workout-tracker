@@ -71,7 +71,6 @@ def state(word, note, col):
 
 
 BUILT = state('BUILT', 'on the phone and verified there', '#9fae3a')
-SHELL = state('SHELL', 'a placeholder stands where this goes', '#e4c68c')
 DRAWN = state('DRAWN', 'boarded, not built', '#7d7666')
 RULED = state('RULED OUT', 'boarded, then decided against', '#6f6a5e')
 
@@ -86,14 +85,25 @@ TODAY = [
   'Under that the recent-sessions rail.',
   'No separate records section: the rail&rsquo;s PR pill already says it and the timeline lives on '
   'Strength. Rest and future days are <em>not targets at all</em> rather than targets that do '
-  'nothing.' + SHELL,
+  'nothing. <b style="color:#c9c3b6;font-weight:500">Built, with two departures.</b> There is no '
+  'missed state &mdash; the same schema gap as the calendar, since nothing stores a plan by weekday '
+  'until programs exist &mdash; and <b style="color:#c9c3b6;font-weight:500">SESSIONS ships without '
+  'its meter</b>: the board draws it as 3 of 4, no weekly target is stored anywhere, and &sect;0 is '
+  'explicit that a meter needs a real denominator. VOLUME keeps its delta, because last week is a '
+  'real previous value. <b style="color:#c9c3b6;font-weight:500">&ldquo;Next&rdquo; is a heuristic:'
+  '</b> the routine trained least recently, standing in for the schedule programs will supply.'
+  + BUILT,
   lab45.W3),
 
  ('LAB 43 T3', 'Today, empty', 'Today &middot; a fresh install',
   'What the app opens on before anything has been logged. Every component that will fill in stays '
   'visible and dim rather than hidden.',
   'The empty state is a short sentence plus a set of actions &mdash; never an apology, never an '
-  'illustration. The layout a new user learns is the layout they keep.' + SHELL,
+  'illustration. The layout a new user learns is the layout they keep. '
+  '<b style="color:#c9c3b6;font-weight:500">Partly built:</b> the card degrades to &ldquo;No '
+  'routines yet&rdquo; and the strip and rail each carry their own sentence, but this exact '
+  'composition has not been seen on a device &mdash; the emulator proved the Strength and Load '
+  'empty states, not this one.' + DRAWN,
   lab43.T3),
 
  ('LAB 37 D3', 'Readiness', 'Today &middot; pushed',

@@ -142,9 +142,10 @@ navigation, 411 × 914 dp). It shows a placeholder Today screen with links to fo
 - `/dev/kitchen-sink` — every primitive in every state. **This is Phase 2's gate.**
 - `/dev/lab34-a1` — the routines screen rebuilt from the primitives alone, for board comparison.
 
-Today is still a placeholder apart from its dev links. `/library` is a stub whose only job is to
-prove a pushed route loses the bar; `/live` is a stub proving the takeover. Strength and Load are no
-longer stubs — see "Two tab roots got their screen" below.
+All four tabs now carry their screen: Today is Lab 45 W3 (see "Today, at last" below), Strength the
+record timeline and Load the month calendar. `/library` is a stub whose only job is to prove a pushed
+route loses the bar. The DEV links on Today survive behind `__DEV__` — they are the only route to the
+Phase 1, 2 and 6 gates, and they are absent from a release build.
 
 ### Three risks closed by that build, not by argument
 
@@ -614,10 +615,12 @@ screenshot. That is now three sessions in a row where that has been true.
    "There is no history list" above. Phase 7 item 1 is otherwise **done**: the predicates, the
    history reads, the Rail, `routine/[id]`'s LAST THREE and session detail (C3) are all built and
    device-verified. The `/history` list is **dropped**, not deferred — the IA has no room for it.
-2. **Today, Lab 45 W3.** The landing tab is still a placeholder with a hardcoded NEXT card and a DEV
-   links section. It needs the week strip and the recent-sessions rail. What is left here is the
-   week strip — the largest unbuilt component after the ring, and `lab45.py`'s W4 column flags an
-   unresolved nested-gesture risk in it.
+2. **Today, Lab 45 W3 — done.** The week strip, the next-routine card and the recent rail are all on
+   the device. `lab45.py`'s W4 column flagged a nested-gesture risk in the strip — a horizontally
+   scrolling row inside a vertically scrolling screen — and it did not materialise: the strip scrolls
+   and its cells stay tappable, which is the same answer the live screen got. What is left here is
+   the meter on SESSIONS, blocked on Settings storing a weekly target, and a real schedule behind
+   "next", blocked on programs.
 3. **Settings.** Units, default rest, plate colours. Storage is decided (`expo-sqlite/kv-store`) and
    unwritten; the account row moves here and the Today gear stops pointing straight at `/sign-in`.
    Export and restore are **done** — see "Export" and "Restore" above.
@@ -976,6 +979,76 @@ only feedback this screen gives, and it sat *under* the list of backup files. A 
 is tall enough to push it off the bottom of the screen, so a cancelled restore said "Restore
 cancelled. Nothing was written." into empty space below the fold — the one message whose whole job is
 to reassure you that nothing happened. The line now renders above the list, which is fixed in place.
+
+---
+
+## Today, at last — Lab 45 W3
+
+The tab the app opens on stopped being a hardcoded NEXT card and a list of dev links. Three blocks,
+and the two that needed new primitives are new.
+
+**The next-routine card is Lab 44 U4** — the quiet raised plate with the accent spent on a full-width
+Start inside it, rather than U3's filled accent slab. It keeps the card's text on the normal ramp,
+never has to solve the contrast inversion, and leaves the tab bar's start button as the only other
+accent fill on the screen.
+
+**Which routine is "next" is a heuristic, and it is marked as one.** §0's IA says Today carries the
+next routine; programs (Lab 34 A3/A4) are what will answer that, and nothing stores a plan by weekday
+yet. `src/lib/next.ts` picks **the routine trained least recently**, with never-run winning outright
+and `position` as the tie-break. It is the routine that is due, it invents no schedule, and it
+degrades to "the first one" on a fresh install. Replace it wholesale when programs land; do not grow
+it. The card's kicker says `LAST RUN 6 DAYS AGO` off the same number, so the rule is visible on the
+screen rather than buried.
+
+**The week strip is `src/lib/week.ts` plus `src/components/week-strip.tsx`.** Three whole Monday-first
+weeks ending on this Sunday — §0 bounds it to two weeks back, and whole weeks are what keep the
+M T W T F S S rhythm legible once it moves. Scrolling is also why the date is on the cell at all: a
+row of weekday letters cannot say *which* Tuesday. The strip bleeds past the 22pt margin through the
+same `ChipStrip` pattern the library filters use, so a cell cut by the screen edge reads as "more
+that way". Every cell reserves a 14 × 26 bar box: the fill is the graph, and a rest day keeps a 4px
+stub so the row never has a hole in it. The scale is **relative to the days in view** (§0), which is
+why the tonnage stays printed in the tile underneath.
+
+Scrolling to today needed no offset arithmetic. The strip ends on this week's Sunday, so today is at
+most six cells from the right-hand end and always inside a 411pt screen — `scrollToEnd` on the first
+content-size change is the whole of it.
+
+**The strip has no missed state either**, for the reason the calendar has none: see the departure
+recorded under "Two tab roots got their screen" below. Every untrained past day is rest.
+
+**SESSIONS ships without a meter, on purpose.** Lab 45 draws it as 3-of-4 against a weekly target.
+There is no weekly target stored anywhere, and §0 is explicit that a meter needs a real denominator —
+so the tile ships plain rather than wearing a proportion of nothing. VOLUME keeps its delta, because
+last week is a real previous value. Add the meter when Settings can store a target.
+
+The DEV links did not survive into the design, but the gates behind them (`/dev/kitchen-sink`,
+`/dev/gestures`, the type ramp) are the only record of Phases 1, 2 and 6 and nothing else links to
+them. They are now wrapped in `__DEV__`: present in this build, absent from a release one.
+
+### Four things the device said, and `pnpm check` did not
+
+All four rendered perfectly and all four were wrong.
+
+1. **The header read `TODAY` instead of `SUN 13 SEP`.** `sessionDateLabel` collapses the current day
+   to the word "Today" — correct for a rail row, exactly wrong for a header whose whole job is to say
+   which day it is. Split out `dateLabel`, which never returns a relative word.
+2. **The rail printed `7364 MIN`.** `formatSessionDuration` has had a plausibility ceiling since the
+   session-left-open bug; `formatMinutes` never did, so every caller had to remember to gate — and the
+   new one did not. The guard is now `isPlausibleDuration`, a predicate both of them go through,
+   rather than a `=== '—'` test on a formatted string.
+3. **The week strip did not scroll.** It was built with the bleed margins but as a plain `View`, so
+   twenty-one 46pt cells simply overflowed and clipped. A screenshot of the current week looks
+   identical either way.
+4. **Start would have thrown.** `startSession` refuses when a session is already in progress, and the
+   new button called it bare — routine detail has always wrapped it in a try/catch and an Alert. An
+   uncaught throw in an `onPress` is a red screen, and no test or typecheck sees it.
+
+**Verified by tapping, not by looking.** A strip cell opens that day's session detail; the strip
+scrolls back through the two earlier weeks and cuts the cell at the screen edge; Start created the
+session with the plan already dialled in (`SET 1 OF 5`, 100 kg × 8 from last time) and handed over to
+the live screen. The test session was then cleared by restoring the rollback file written earlier in
+the session, which put the database back to 302 / 1 / 3 / 42 / 18 — the restore feature paying for
+itself the same evening it shipped.
 
 ---
 
