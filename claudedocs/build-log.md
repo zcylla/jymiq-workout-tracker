@@ -1052,6 +1052,84 @@ itself the same evening it shipped.
 
 ---
 
+## Leaving a session, and the app's own dialog
+
+### What happens when you walk away
+
+Two exits have always existed — the back chevron and "Finish session" — and **both kept the
+session**. `abandonSession` writes `status = 'abandoned'` with totals and stops; nothing in the app
+deleted a session, anywhere. `isLoggedSession` treats abandoned as history, so a session started by
+mistake and abandoned with nothing logged still appeared in the RECENT rail, still counted as a
+trained day on the calendar and the week strip (`trainedDays` deliberately counts a session with no
+volume — "it happened, so an empty cell would be a lie"), and still drove the summary delta. An
+accidental Start was unrecoverable in-product: clearing one cost a database restore, which is exactly
+how the first one got cleaned up.
+
+The policy now, decided by the user:
+
+- **Nothing logged → discarded, no question asked.** Every planned set exists as a row from the
+  moment the session starts, so a session opened by mistake is indistinguishable from one you are
+  three sets into until you read `completedAt`. With none of them logged there is nothing to keep,
+  nothing to summarise and nothing to ask about.
+- **One logged set or more → the user decides.** Both answers are defensible at that point, so the
+  dialog offers Discard alongside Finish and names the count.
+
+`discardSession` is the first and only thing in the app that deletes a session. One `delete` does it:
+`session_exercises` cascades from `sessions`, `sets` from `session_exercises`, and
+`personal_records.session_id` too — which is what makes discarding retract the records it set,
+exactly as the append-only design intends. Only an `in_progress` session can be discarded; history is
+not deletable from here.
+
+`countLoggedSets` is deliberately **not** `countWorkingSets`: that one drops warm-ups because they
+inflate a volume delta, and a session whose only logged set was a warm-up is still a session you did
+something in. Confusing the two would silently delete it.
+
+**One bug this shipped with for about ten minutes, caught on the device.** `useLiveQuery` hands back
+an empty array while a query is in flight, which is indistinguishable from "nobody logged anything",
+and the delete branch reads exactly that count. An early tap would have destroyed a real session's
+work with no dialog. The zero branch is now gated on `updatedAt !== undefined` — the loading signal
+AGENTS.md already documents, and which this codebase keeps walking into.
+
+**A second one, same class.** `router.back()` after discarding strands you on the live screen's empty
+state with a "GO_BACK was not handled" warning: every route into `/live` uses `replace`, so there is
+nothing behind it. Three call sites and the two empty-state headers now `replace('/')` instead.
+
+Verified on the device, all three branches, with the database returned to 302 / 1 / 3 / 42 / 18
+afterwards: Finish with nothing logged returns to Today silently and leaves no row; Finish with one
+set offers Finish / Discard / Not yet and names "1 logged set"; the back chevron offers Discard /
+Keep going and says what will be deleted. Discard from either removed the session and its set.
+
+### `Alert.alert` is gone
+
+The native dialog was the one surface in the app drawn by someone else: Material type, Material
+spacing, a blue that is not in the palette, and — on the three destructive flows — no way to make
+"Discard" look different from "Keep going". §0 says the accent must not appear twice at size and that
+a lapse and a rest day must not look alike; a platform dialog can honour neither.
+
+`src/components/dialog.tsx` is a provider plus a `useDialog()` hook, imperative on purpose: all
+sixteen call sites fire from event handlers, and a declarative `<Dialog open={…}>` would have put a
+piece of transient state in every screen that asks a question. It is built from vocabulary that
+already exists — the sheet's scrim, a grouped plate, the row-plate idiom for anything you touch
+(Lab 42), the text ramp, `chromeShadow` because a dialog is chrome. The one decision §0 has no word
+for is which action is destructive; that is carried by `live`, the palette's red.
+
+Actions stack full-width at 44pt rather than sitting in a row of text buttons, so two actions and
+three read the same, and the order inverts from the platform's: **affirmative or destructive first,
+cancel last**, because a vertical stack is read top-to-bottom.
+
+**It is a real `Modal`, and only because of the back button.** As an absolutely-positioned overlay it
+registered a `BackHandler` subscription, and the live screen's own handler has no dependency array —
+so it re-subscribed on every render and became the most recent listener the moment a dialog opened.
+Back then dismissed the dialog *and* fell through, which on the finish flow opened the discard
+confirm behind it. Android routes back to the focused modal through `onRequestClose`, which is
+deterministic; subscription order is not.
+
+**Not yet drawn.** The dialog has no board. It should not get one alone — the next design pass is the
+whole state vocabulary (loading, empty, error, success, warning) in one lab, and boarding the dialog
+by itself means drawing it twice.
+
+---
+
 ## Two tab roots got their screen
 
 Lab 47 flagged that Strength and Load had no board for their tab *root* — both existed only as their
