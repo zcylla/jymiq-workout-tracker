@@ -12,9 +12,10 @@ import {
   type Tile,
 } from '@/components';
 import { recordsQuery } from '@/data/queries/records';
+import { useSettings } from '@/data/settings';
 import { PR_LABELS, type PrCategory, formatPrValue } from '@/lib/pr';
 import { sessionDateLabel, sessionDotTone } from '@/lib/time';
-import { formatWeight } from '@/lib/units';
+import { formatWeight, type Unit } from '@/lib/units';
 import { color, text } from '@/theme';
 
 /** Shadowing the global `Record<K, V>` utility in this file would be a trap. */
@@ -73,18 +74,19 @@ export default function StrengthScreen() {
 }
 
 /** `kind === 'most_reps_at_weight'` names the weight it was set at; every other category's label is fixed. */
-function categoryLabel(category: PrCategory, weightKg: number | null): string {
+function categoryLabel(category: PrCategory, weightKg: number | null, unit: Unit): string {
   if (category === 'most_reps_at_weight' && weightKg != null) {
-    return `${PR_LABELS[category]} ${formatWeight(weightKg)}`;
+    return `${PR_LABELS[category]} ${formatWeight(weightKg, unit)}`;
   }
   return PR_LABELS[category];
 }
 
 /** lab36.py's `pr_node`: date + value, exercise name, mono `CATEGORY · WAS previous`. */
 function RecordRow({ record }: { record: PrRow }) {
-  const meta = [categoryLabel(record.category, record.weightKg)];
+  const settings = useSettings();
+  const meta = [categoryLabel(record.category, record.weightKg, settings.weightUnit)];
   if (record.previousValue != null) {
-    meta.push(`WAS ${formatPrValue(record.category, record.previousValue)}`);
+    meta.push(`WAS ${formatPrValue(record.category, record.previousValue, settings.weightUnit)}`);
   }
 
   return (
@@ -93,7 +95,7 @@ function RecordRow({ record }: { record: PrRow }) {
         <Text style={text.num}>{sessionDateLabel(record.achievedAt)}</Text>
         <View style={{ flex: 1 }} />
         <Text style={[text.numRow, { color: color.accent }]}>
-          {formatPrValue(record.category, record.value)}
+          {formatPrValue(record.category, record.value, settings.weightUnit)}
         </Text>
       </View>
       <View style={{ gap: 2 }}>

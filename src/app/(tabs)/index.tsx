@@ -80,13 +80,12 @@ export default function TodayScreen() {
 
   return (
     <Screen bottomInset={tabBar}>
-      {/* Settings is not a tab (§0) — it is this gear. Until that screen exists
-          the gear opens the one thing behind it that does: the account. */}
+      {/* Settings is not a tab (§0) — it is this gear. */}
       <ScreenHeader
         title="Today"
         kicker={dateLabel(strip.todayAt).toUpperCase()}
         right={
-          <Pressable onPress={() => router.push('/sign-in')} hitSlop={12}>
+          <Pressable onPress={() => router.push('/settings')} hitSlop={12}>
             <Icon name="gear" />
           </Pressable>
         }

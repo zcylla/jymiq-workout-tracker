@@ -26,6 +26,7 @@ import {
   updateSet,
 } from '@/data/mutations/sessions';
 import { useRows } from '@/data/live';
+import { useSettings } from '@/data/settings';
 import {
   activeSessionQuery,
   lastCompletedExerciseSetQuery,
@@ -64,6 +65,18 @@ function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: stri
   });
 }
 
+/**
+ * **The live screen is kilograms, whatever Settings says, and that is the rule
+ * rather than an omission.** This screen is the instrument: the tape's scale is
+ * §0's, 20–140 by 2.5, and those steps are the plates that go on the bar. A
+ * pounds scale would need increments §0 has not decided, and converting only
+ * the readout would put 220.5 above a tape reading 100 — two units for one
+ * number, on the one screen where the number matters most.
+ *
+ * Everything that *reports* a weight — history, summaries, records, routine
+ * targets — follows the setting. You dial the kilograms you load; you read your
+ * training back in your own unit.
+ */
 export default function LiveScreen() {
   const [editing, setEditing] = useState<WorkoutParameter | null>(null);
   const [sheet, setSheet] = useState<'sets' | 'exercises' | null>(null);
@@ -71,6 +84,7 @@ export default function LiveScreen() {
   const [now, setNow] = useState(() => Date.now());
   const barHeight = useActionBarHeight();
   const show = useDialog();
+  const settings = useSettings();
 
   // `useLiveQuery`'s second argument is a dependency list and it defaults to
   // `[]`, so a query built from a value that arrives later subscribes once with
@@ -247,7 +261,8 @@ export default function LiveScreen() {
   const restLeft = restRemainingSec(session.restUntil, now);
   const exerciseIndex = exercises.findIndex((e) => e.id === exercise.id);
   const setIndex = sets.findIndex((s) => s.id === set.id);
-  const params: WorkoutParameter[] = exercise.trackRpe ? ['load', 'reps', 'rpe'] : ['load', 'reps'];
+  const showRpe = exercise.trackRpe || settings.trackRpe;
+  const params: WorkoutParameter[] = showRpe ? ['load', 'reps', 'rpe'] : ['load', 'reps'];
   const exerciseRows = exercises.map((e) => {
     const exSets = allSets.filter((s) => s.sessionExerciseId === e.id);
     return {
@@ -269,9 +284,7 @@ export default function LiveScreen() {
       ? undefined
       : [
           { value: String(reps), unit: 'REPS' },
-          ...(exercise.trackRpe
-            ? [{ value: set.rpe == null ? '—' : String(set.rpe), unit: 'RPE' }]
-            : []),
+          ...(showRpe ? [{ value: set.rpe == null ? '—' : String(set.rpe), unit: 'RPE' }] : []),
         ],
   };
 
@@ -359,8 +372,18 @@ export default function LiveScreen() {
                 rpe: set.rpe == null ? '—' : String(set.rpe),
               }}
               gloss={editing === 'rpe' && set.rpe != null ? `RIR ${10 - set.rpe}` : undefined}
-              onSelect={(p) => setEditing((current) => (current === p ? null : p))}
-              onLongPress={(p) => setKeypadParam(p)}
+              // Lab 32's switch: one route or the other opens the keypad, and
+              // the tape is always reachable by the one it is not on.
+              onSelect={(p) =>
+                settings.tapOpensKeypad
+                  ? setKeypadParam(p)
+                  : setEditing((current) => (current === p ? null : p))
+              }
+              onLongPress={(p) =>
+                settings.tapOpensKeypad
+                  ? setEditing((current) => (current === p ? null : p))
+                  : setKeypadParam(p)
+              }
             />
           ) : null}
         </View>

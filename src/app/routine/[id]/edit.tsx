@@ -17,8 +17,9 @@ import {
 } from '@/components';
 import { removeRoutineExercise, updateRoutine } from '@/data/mutations/routines';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
+import { useSettings } from '@/data/settings';
 import { formatRest } from '@/lib/time';
-import { formatWeight } from '@/lib/units';
+import { formatWeight, type Unit } from '@/lib/units';
 import { text } from '@/theme';
 
 export default function EditRoutineScreen() {
@@ -48,6 +49,7 @@ export default function EditRoutineScreen() {
 function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
   const actionBar = useActionBarHeight();
   const show = useDialog();
+  const settings = useSettings();
   const [name, setName] = useState(routine.name);
   const [note, setNote] = useState(routine.note ?? '');
 
@@ -89,7 +91,7 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
                 <ListRow
                   lead={String(index + 1).padStart(2, '0')}
                   title={lift.name}
-                  meta={liftMeta(lift)}
+                  meta={liftMeta(lift, settings.weightUnit)}
                   valueLabel="REMOVE"
                 />
               </RowPlate>
@@ -120,11 +122,13 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
 type Lift = Awaited<ReturnType<typeof routineExercisesQuery>>[number];
 type Routine = Awaited<ReturnType<typeof routineQuery>>[number];
 
-function liftMeta(lift: Lift): string {
+function liftMeta(lift: Lift, unit: Unit): string {
   const parts = [
     lift.targetReps ? `${lift.targetSets} × ${lift.targetReps}` : `${lift.targetSets} SETS`,
   ];
-  if (lift.targetWeightKg != null) parts[0] += ` @ ${formatWeight(lift.targetWeightKg)} KG`;
+  if (lift.targetWeightKg != null) {
+    parts[0] += ` @ ${formatWeight(lift.targetWeightKg, unit)} ${unit.toUpperCase()}`;
+  }
   if (lift.restSec != null) parts.push(`REST ${formatRest(lift.restSec)}`);
   return parts.join(' · ');
 }

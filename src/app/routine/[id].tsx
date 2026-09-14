@@ -28,8 +28,9 @@ import {
 } from '@/data/queries/sessions';
 import { useRows } from '@/data/live';
 import { startSession } from '@/data/mutations/sessions';
+import { useSettings } from '@/data/settings';
 import { formatRest, formatSessionDuration, sessionDotTone } from '@/lib/time';
-import { formatWeight } from '@/lib/units';
+import { formatWeight, type Unit } from '@/lib/units';
 import { formatTonnage, topSet } from '@/lib/volume';
 import { text } from '@/theme';
 
@@ -43,6 +44,7 @@ import { text } from '@/theme';
 export default function RoutineScreen() {
   const actionBar = useActionBarHeight();
   const show = useDialog();
+  const settings = useSettings();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: found } = useLiveQuery(
     useMemo(() => routineQuery(id), [id]),
@@ -176,7 +178,7 @@ export default function RoutineScreen() {
                     lead={String(i + 1).padStart(2, '0')}
                     quiet
                     title={lift.name}
-                    meta={liftMeta(lift)}
+                    meta={liftMeta(lift, settings.weightUnit)}
                   />
                 </RowPlate>
               ))}
@@ -210,11 +212,13 @@ type Lift = Awaited<ReturnType<typeof routineExercisesQuery>>[number];
 type TopSetRow = Awaited<ReturnType<typeof sessionsTopSetsQuery>>[number];
 
 /** kit's `lift_row` meta: "5 × 8 @ 102.5 KG · REST 3:00". */
-function liftMeta(lift: Lift): string {
+function liftMeta(lift: Lift, unit: Unit): string {
   const parts = [
     lift.targetReps ? `${lift.targetSets} × ${lift.targetReps}` : `${lift.targetSets} SETS`,
   ];
-  if (lift.targetWeightKg != null) parts[0] += ` @ ${formatWeight(lift.targetWeightKg)} KG`;
+  if (lift.targetWeightKg != null) {
+    parts[0] += ` @ ${formatWeight(lift.targetWeightKg, unit)} ${unit.toUpperCase()}`;
+  }
   if (lift.restSec != null) parts.push(`REST ${formatRest(lift.restSec)}`);
   return parts.join(' · ');
 }

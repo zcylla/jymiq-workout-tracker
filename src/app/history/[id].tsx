@@ -10,6 +10,7 @@ import {
   sessionRecordsQuery,
   sessionSetsQuery,
 } from '@/data/queries/sessions';
+import { useSettings } from '@/data/settings';
 import { formatPrValue } from '@/lib/pr';
 import { formatSessionDuration, sessionDateLabel } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
@@ -148,11 +149,14 @@ function ExerciseSection({
 }
 
 function SetTableHeader({ showRpe }: { showRpe: boolean }) {
+  const settings = useSettings();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
       <Text style={[text.label, { width: 26 }]}>SET</Text>
       <View style={{ flex: 1 }} />
-      <Text style={[text.label, { width: COL.kg, textAlign: 'right' }]}>KG</Text>
+      <Text style={[text.label, { width: COL.kg, textAlign: 'right' }]}>
+        {settings.weightUnit.toUpperCase()}
+      </Text>
       <Text style={[text.label, { width: COL.rep, textAlign: 'right' }]}>REP</Text>
       {showRpe ? (
         <Text style={[text.label, { width: COL.rpe, textAlign: 'right' }]}>RPE</Text>
@@ -163,12 +167,14 @@ function SetTableHeader({ showRpe }: { showRpe: boolean }) {
 }
 
 function SetTableRow({ index, set, showRpe }: { index: number; set: SetRow; showRpe: boolean }) {
+  const settings = useSettings();
   // A warm-up dims its index so it never reads as a top set at a glance.
   const indexColor = set.kind === 'warmup' ? color.dim : color.done;
-  const kg = set.weightKg != null ? formatWeight(set.weightKg) : DASH;
+  const kg = set.weightKg != null ? formatWeight(set.weightKg, settings.weightUnit) : DASH;
   const rep = set.reps != null ? `×${set.reps}` : DASH;
   const rpe = set.rpe != null ? String(set.rpe) : DASH;
-  const e1rm = set.e1rmKg != null ? formatPrValue('best_e1rm', set.e1rmKg) : DASH;
+  const e1rm =
+    set.e1rmKg != null ? formatPrValue('best_e1rm', set.e1rmKg, settings.weightUnit) : DASH;
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', height: size.readRow, gap: 10 }}>

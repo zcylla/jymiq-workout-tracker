@@ -22,15 +22,17 @@ import {
   sessionRecordsQuery,
   sessionSetsQuery,
 } from '@/data/queries/sessions';
+import { useSettings } from '@/data/settings';
 import { formatPrValue, PR_LABELS } from '@/lib/pr';
 import { formatSessionDuration, sessionDateLabel } from '@/lib/time';
-import { formatWeight } from '@/lib/units';
+import { formatWeight, type Unit } from '@/lib/units';
 import { countWorkingSets, formatTonnage, topSet, totalVolume } from '@/lib/volume';
 import { color, text } from '@/theme';
 
 /** Lab 36 C2. VS LAST was its own tile and is now the delta on VOLUME. */
 export default function SummaryScreen() {
   const actionBar = useActionBarHeight();
+  const settings = useSettings();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data: found } = useLiveQuery(
@@ -136,11 +138,11 @@ export default function SummaryScreen() {
                     <Text style={text.rowName} numberOfLines={1}>
                       {r.name}
                     </Text>
-                    <Text style={text.meta}>{prCaption(r)}</Text>
+                    <Text style={text.meta}>{prCaption(r, settings.weightUnit)}</Text>
                   </View>
                   <View style={{ flex: 1 }} />
                   <Text style={[text.numRow, { color: color.accent }]}>
-                    {formatPrValue(r.category, r.value)}
+                    {formatPrValue(r.category, r.value, settings.weightUnit)}
                   </Text>
                 </View>
               ))}
@@ -155,7 +157,7 @@ export default function SummaryScreen() {
               chevron={false}
               lead={String(i + 1).padStart(2, '0')}
               title={ex.name}
-              meta={`${ex.count} SETS${ex.top ? ` · TOP ${formatWeight(ex.top.weightKg ?? 0)} × ${ex.top.reps}` : ''} · ${formatTonnage(ex.volumeKg)}`}
+              meta={`${ex.count} SETS${ex.top ? ` · TOP ${formatWeight(ex.top.weightKg ?? 0, settings.weightUnit)} × ${ex.top.reps}` : ''} · ${formatTonnage(ex.volumeKg)}`}
             />
           ))}
         </Section>
@@ -176,11 +178,11 @@ function volumeDeltaOf(
 
 type PrRow = Awaited<ReturnType<typeof sessionRecordsQuery>>[number];
 
-function prCaption(r: PrRow): string {
+function prCaption(r: PrRow, unit: Unit): string {
   const label =
     r.category === 'most_reps_at_weight' && r.weightKg != null
-      ? `${PR_LABELS[r.category]} ${formatWeight(r.weightKg)}`
+      ? `${PR_LABELS[r.category]} ${formatWeight(r.weightKg, unit)}`
       : PR_LABELS[r.category];
   if (r.previousValue == null) return label;
-  return `${label} · WAS ${formatPrValue(r.category, r.previousValue)}`;
+  return `${label} · WAS ${formatPrValue(r.category, r.previousValue, unit)}`;
 }
