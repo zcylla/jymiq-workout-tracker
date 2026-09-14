@@ -85,13 +85,18 @@ TODAY = [
   'Under that the recent-sessions rail.',
   'No separate records section: the rail&rsquo;s PR pill already says it and the timeline lives on '
   'Strength. Rest and future days are <em>not targets at all</em> rather than targets that do '
-  'nothing. <b style="color:#c9c3b6;font-weight:500">Built, with two departures.</b> There is no '
-  'missed state &mdash; the same schema gap as the calendar, since nothing stores a plan by weekday '
-  'until programs exist &mdash; and <b style="color:#c9c3b6;font-weight:500">SESSIONS ships without '
-  'its meter</b>: the board draws it as 3 of 4, no weekly target is stored anywhere, and &sect;0 is '
-  'explicit that a meter needs a real denominator. VOLUME keeps its delta, because last week is a '
-  'real previous value. <b style="color:#c9c3b6;font-weight:500">&ldquo;Next&rdquo; is a heuristic:'
-  '</b> the routine trained least recently, standing in for the schedule programs will supply.'
+  'nothing. <b style="color:#c9c3b6;font-weight:500">Built, with two departures.</b> '
+  '<b style="color:#c9c3b6;font-weight:500">The missed state is live:</b> a past day the running '
+  'program scheduled and you did not train carries a ring under its number; a day with no routine '
+  'on it stays rest. With no program running the schedule is empty and every untrained day is rest '
+  'again &mdash; nothing before the day a program was activated is ever missed. And '
+  '<b style="color:#c9c3b6;font-weight:500">SESSIONS ships without its meter</b>: the board draws '
+  'it as 3 of 4, no weekly target is stored anywhere, and &sect;0 is explicit that a meter needs a '
+  'real denominator. VOLUME keeps its delta, because last week is a real previous value. '
+  '<b style="color:#c9c3b6;font-weight:500">&ldquo;Next&rdquo; is the schedule now:</b> the '
+  'least-recently-trained heuristic is deleted rather than kept as a fallback, because two rules for '
+  'what &ldquo;next&rdquo; means is how the card ends up disagreeing with the strip beside it. With '
+  'no program running the card says nothing is scheduled and offers to make a program.'
   + BUILT,
   lab45.W3),
 
@@ -135,20 +140,49 @@ SESSION = [
   'app was showing one past session under them.' + BUILT,
   lab34.A2),
 
- ('LAB 34 A3', 'Programs', 'Session &middot; pushed',
+ ('LAB 34 A3', 'Programs', 'Session &middot; /session/programs',
   'One program is running and the rest are not. The active one gets a week counter and a seven-day '
   'strip showing which routine falls where, today lit and completed days in the done green.',
   'The day strip is the screen&rsquo;s one plated hero and it earns it &mdash; a program <em>is</em> '
   'a weekly shape, so showing the shape is showing the thing. Paused and never-run stay in one '
-  'section: the distinction is in the meta line, not the structure.' + DRAWN,
+  'section: the distinction is in the meta line, not the structure. '
+  '<b style="color:#c9c3b6;font-weight:500">Built at /session/programs, pushed inside the Session '
+  'tab so it keeps the tab bar, with two departures &mdash; both because the schema stores only half '
+  'of what &sect;0 names.</b> &sect;0 calls a program a routine &ldquo;scheduled by weekday '
+  '<em>or fixed cycle</em>&rdquo;; only the weekday half is stored, because a cycle needs a length, '
+  'a start and a position and none of those has a screen. So every meta line reads BY WEEKDAY, and '
+  'the board&rsquo;s WEEK 3 / 8 pill loses its denominator &mdash; it reads WEEK 3. A program has no '
+  'stored length, so there is no fraction, and by &sect;0&rsquo;s visuals rule (&ldquo;a meter needs '
+  'a denominator&rdquo;) no meter either. The board&rsquo;s second meta line, 14 OF 48 SESSIONS DONE, '
+  'is likewise a cycle figure; it now reads N OF 7 DAYS SCHEDULED, which is a real number the '
+  'schedule already holds. The day strip is still the screen&rsquo;s one plated hero, as drawn. A '
+  'missed day &mdash; a past weekday the running program put a routine on, and you did not train '
+  '&mdash; carries a ring, the same device the calendar and Today&rsquo;s week strip now use.'
+  + BUILT,
   lab34.A3),
 
- ('LAB 34 A4', 'Program detail', 'Session &middot; pushed',
+ ('LAB 34 A4', 'Program detail', 'Session &middot; /program/[id]',
   'Two tiles, a labelled column chart, then the seven weekdays with grips so the schedule reorders '
   'the way everything else does.',
   'Two tiles rather than four, because the chart already says how many sessions are done and how '
   'many are left &mdash; a tile repeating the chart is the redundancy that gets spotted every time. '
-  'The chart sits on the canvas: a baseline and two axes are already a frame.' + DRAWN,
+  'The chart sits on the canvas: a baseline and two axes are already a frame. '
+  '<b style="color:#c9c3b6;font-weight:500">Built at /program/[id], with three departures.</b> The '
+  'two tiles lose their denominators for the same reason as A3 &mdash; no cycle length is stored '
+  '&mdash; so they read WEEK and DAYS A WEEK, both plain, and neither wears a meter. '
+  '<b style="color:#c9c3b6;font-weight:500">The SESSIONS PER WEEK chart is not built:</b> '
+  '<code>kit.chart()</code> has no React counterpart yet, &sect;0&rsquo;s chart rules are strict '
+  '(y minimum and maximum anchored to the plot, first and last x labels, the latest mark in the '
+  'accent with the rest de-emphasised, its value printed, a title that states the takeaway) and '
+  'this is the wrong screen to settle that primitive on &mdash; Lab 35 B2&prime; needs the same '
+  'component and should be where it is designed. Deferred, not dropped. '
+  '<b style="color:#c9c3b6;font-weight:500">The weekday rows carry no grip:</b> seven weekdays do '
+  'not reorder, so a grip would be a control that does nothing &mdash; the same rule that removed '
+  'the exercise screen&rsquo;s two dead buttons and Lab 35 B3&rsquo;s two toggles. Tapping a row '
+  'opens a routine picker as a chip row expanding inside the row&rsquo;s own plate, the idiom the '
+  'custom-exercise form already uses. The action bar adapts rather than showing a dead Start: it is '
+  'Start &lt;routine&gt; / PAUSE when the program is running and today has a routine on it, Pause '
+  'program when it is running and today is rest, and Activate program when it is paused.' + BUILT,
   lab34.A4),
 
  ('LAB 35 B1', 'Exercise library', 'Session &middot; /session/library',
@@ -228,12 +262,12 @@ LOAD = [
   'cell; it flips to dark ink only at the top step. '
   '<b style="color:#c9c3b6;font-weight:500">The plate question answered itself:</b> it was built on '
   'one, which is what the fills were composited against, so no ramp was recomputed. '
-  '<b style="color:#c9c3b6;font-weight:500">Built without the missed state</b>, and that is a '
-  'departure forced by the schema rather than a shortcut. Rest and missed must look different, but '
-  'missed needs to know which days you were <em>supposed</em> to train, and nothing stores a plan '
-  'by weekday &mdash; programs are boarded and unbuilt. So every untrained day draws as rest. '
-  'Inventing a schedule to colour a cell would be the app asserting a lapse it cannot know about. '
-  'What unblocks it is a program table resolving a weekday to a routine. '
+  '<b style="color:#c9c3b6;font-weight:500">The missed state now draws</b>, on the same terms as '
+  'Today&rsquo;s: the program table exists, so a past day the running program scheduled and you did '
+  'not train drops its rest plate and takes a ring; a day with no routine on it stays a rest plate; '
+  'nothing before the program&rsquo;s activation date is ever missed; and with nothing running, '
+  'every untrained day is rest again. The key under the grid gains a ring swatch labelled MISSED, '
+  'but only while a program is running. '
   'Built as the Load tab root, on the same reversible judgement call as C4: that root has no board '
   'either.' + BUILT,
   lab36.C1),
