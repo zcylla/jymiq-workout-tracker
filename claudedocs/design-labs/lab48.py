@@ -185,7 +185,15 @@ STRENGTH = [
   'record it is, the value and what it beat.',
   'The dots are <em>age buckets</em> and not an index ramp: 0&ndash;2 days accent, 3&ndash;6 tick3, '
   '7&ndash;12 tick2, older tick1. With twenty rows an index ramp is tick1 from the fifth row down '
-  'and the dot stops carrying anything half a screen in.' + DRAWN,
+  'and the dot stops carrying anything half a screen in. '
+  '<b style="color:#c9c3b6;font-weight:500">Built as the Strength tab root, with two stat tiles '
+  'above the rail</b> &mdash; THIS MONTH and THIS YEAR. The <em>screen</em> is settled; where it '
+  'sits is not. The Strength root has no board, so putting the timeline on it was a reversible '
+  'judgement call and not a drawing anyone agreed to. '
+  '<b style="color:#c9c3b6;font-weight:500">One thing the data says and the board does not:</b> '
+  '<code>best_session_volume</code> records are stored per-exercise, so a single session arrives '
+  'here as three separate BEST SESSION VOLUME rows. That is a data-model question, not a screen '
+  'bug.' + BUILT,
   lab36.C4),
 
  ('LAB 35 B4', 'Body map', 'Strength &middot; pushed',
@@ -206,11 +214,18 @@ LOAD = [
  ('LAB 36 C1', 'Calendar', 'Load &middot; the index into history',
   'The one review screen that is not a rail, and the answer to &ldquo;take me to March&rdquo;. Three '
   'intensity steps, no more.',
-  'Adjacent-month days are dimmed, not omitted. Rest and missed must look different &mdash; rest is '
-  'a plate, missed carries a ring under the number. The numeral never wears the accent on a filled '
-  'cell; it flips to dark ink only at the top step. <b style="color:#c9c3b6;font-weight:500">Open: '
-  'whether it sits on a plate</b> &mdash; its fills were composited against one, so the ramp needs '
-  'recomputing before it moves to the canvas.' + DRAWN,
+  'Adjacent-month days are dimmed, not omitted. The numeral never wears the accent on a filled '
+  'cell; it flips to dark ink only at the top step. '
+  '<b style="color:#c9c3b6;font-weight:500">The plate question answered itself:</b> it was built on '
+  'one, which is what the fills were composited against, so no ramp was recomputed. '
+  '<b style="color:#c9c3b6;font-weight:500">Built without the missed state</b>, and that is a '
+  'departure forced by the schema rather than a shortcut. Rest and missed must look different, but '
+  'missed needs to know which days you were <em>supposed</em> to train, and nothing stores a plan '
+  'by weekday &mdash; programs are boarded and unbuilt. So every untrained day draws as rest. '
+  'Inventing a schedule to colour a cell would be the app asserting a lapse it cannot know about. '
+  'What unblocks it is a program table resolving a weekday to a routine. '
+  'Built as the Load tab root, on the same reversible judgement call as C4: that root has no board '
+  'either.' + BUILT,
   lab36.C1),
 
  ('LAB 37 D1', 'Volume and deload', 'Load &middot; the tab root',
@@ -325,20 +340,24 @@ INTRO = (
 CLOSING = (
   '<div class="sect"><h2 style="margin:0;font-size:20px;font-weight:600;letter-spacing:-0.02em;'
   'color:#f0efec">Where the map has holes</h2>'
-  + K.para('<b style="color:#c9c3b6;font-weight:500">Three tab roots have no board.</b> Today has '
-           'Lab 45 W3. Strength and Load have a sentence each in &sect;0 saying what they carry, and '
-           'they appear on this page only as their <em>contents</em> &mdash; C4 and B4, D1 and D2 '
-           'and C1. Nothing anywhere draws what you see when you tap those two tabs, and that has to '
-           'be answered before either can be built.')
+  + K.para('<b style="color:#c9c3b6;font-weight:500">Two tab roots were built without a board.</b> '
+           'Today has Lab 45 W3. Strength and Load have a sentence each in &sect;0 saying what they '
+           'carry, and they appear on this page only as their <em>contents</em> &mdash; C4 and B4, '
+           'D1 and D2 and C1. Rather than wait, the timeline was put on the Strength root and the '
+           'calendar on the Load root, and both are on the phone today. That is a judgement call '
+           'made in code, it is reversible, and it is the one place on this page where the build ran '
+           'ahead of the drawing. Nothing draws what those two tabs should hold <em>beside</em> what '
+           'is now on them.')
   + K.para('<b style="color:#c9c3b6;font-weight:500">Three built screens were never drawn.</b> '
            'Sign-in, routine create and routine edit were built out of the vocabulary on this page '
            'without a board of their own. They work, and they are the three places where the '
            'implementation is the only record of the design.')
-  + K.para('<b style="color:#c9c3b6;font-weight:500">Four screens on this page are drawn against '
+  + K.para('<b style="color:#c9c3b6;font-weight:500">Three screens on this page are drawn against '
            'data the app cannot produce yet.</b> B2&prime;&rsquo;s rep maxes and 1RM chart, '
-           'C4&rsquo;s timeline, D1&rsquo;s landmarks and D2&rsquo;s trend all need history the '
-           'database has but nothing computes. They are designs, not specifications of something '
-           'nearly done.')
+           'D1&rsquo;s landmarks and D2&rsquo;s trend all need history the database has but nothing '
+           'computes. They are designs, not specifications of something nearly done. C4 was the '
+           'fourth and is no longer: personal records are written inside the session-completion '
+           'transaction, so the timeline reads rows that already exist.')
   + K.para('Updating this page is updating the board a screen comes from and re-running '
            '<code>python3 lab48.py</code>. It imports rather than copies, so there is no second '
            'place for a screen to drift.', '#6f6c66')
