@@ -487,6 +487,38 @@ export function finishSession(sessionId: string, opts: { note?: string | null } 
 }
 
 /**
+ * Thrown away, and the only thing in this app that deletes a session.
+ *
+ * The counterpart to `abandonSession`, and the difference is the point.
+ * *Abandoned* means "this happened and I stopped early" — it stays in history,
+ * counts as a trained day on the calendar and the week strip, and keeps the
+ * records it set. *Discarded* means "this never happened": a session started by
+ * mistake, or one you walked away from before lifting anything. Keeping those
+ * is not conservatism, it is a lie the calendar then repeats every time you
+ * open it.
+ *
+ * One `delete` because the foreign keys do the rest: `session_exercises`
+ * cascades from `sessions`, `sets` cascades from `session_exercises`, and
+ * `personal_records.session_id` cascades too — which is what makes deleting a
+ * session retract the records it set, exactly as the append-only design intends.
+ *
+ * Only a live session can be discarded. History is not deletable from here, and
+ * a session that has already ended is one the user has seen a summary of.
+ */
+export function discardSession(sessionId: string): void {
+  db.transaction((tx) => {
+    const [session] = tx
+      .select({ status: sessions.status })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .limit(1)
+      .all();
+    if (!session || session.status !== 'in_progress') return;
+    tx.delete(sessions).where(eq(sessions.id, sessionId)).run();
+  });
+}
+
+/**
  * Abandoned, not deleted, and the records it set stand: a set that was logged
  * was still lifted. Totals are written the same way, so an abandoned session
  * still draws correctly in history.
