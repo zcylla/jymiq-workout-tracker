@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 
 import { Calendar, Screen, ScreenHeader, Section, useTabBarHeight } from '@/components';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
+import { useActiveSchedule } from '@/data/schedule';
 import { monthGrid, type TrainedDay, trainedDays } from '@/lib/calendar';
 import { formatTonnage } from '@/lib/volume';
 import { color, hairline, text } from '@/theme';
@@ -14,16 +15,12 @@ import { color, hairline, text } from '@/theme';
  * "volume, deload, bodyweight, calendar", but no board draws the tab root, and
  * the calendar is the only one of the four with both data and a board today.
  *
- * One departure from §0, forced by the schema: **there is no missed state.**
- * The board draws rest and missed differently — rest a plate, missed a ring
- * under the number — and that distinction is right, but it needs to know which
- * days you were *supposed* to train. Programs (Lab 34 A3/A4) are boarded and
- * unbuilt, and nothing in `src/data/schema.ts` stores a plan-by-weekday, so
- * every untrained day is drawn as rest. Inventing a schedule to colour a cell
- * would be the app asserting a lapse it cannot know about. What unblocks it: a
- * program table that resolves a weekday (or a cycle position) to a routine, at
- * which point a past day with a scheduled routine and no session is missed and
- * takes the ring.
+ * **The missed state is live**, now that programs store a plan by weekday: a
+ * past day the running program put a routine on, and you did not train, drops
+ * its rest plate and takes a ring instead (§0). With nothing running the
+ * schedule is empty and every untrained day is rest again, which is the honest
+ * answer — the app cannot assert a lapse against a plan that does not exist.
+ * Nothing before the day a program was activated is ever missed either.
  */
 export default function LoadScreen() {
   const tabBar = useTabBarHeight();
@@ -31,6 +28,7 @@ export default function LoadScreen() {
   // One month, computed once: the grid, the query range and the title all come
   // out of the same call, so they cannot disagree about which month this is.
   const grid = useMemo(() => monthGrid(), []);
+  const active = useActiveSchedule();
 
   const { data, updatedAt } = useLiveQuery(
     useMemo(() => sessionsInRangeQuery(grid.from, grid.to), [grid.from, grid.to]),
@@ -56,6 +54,7 @@ export default function LoadScreen() {
           weeks={grid.weeks}
           trained={trained}
           todayKey={grid.todayKey}
+          schedule={active?.schedule}
           onPressDay={openDay}
         />
 

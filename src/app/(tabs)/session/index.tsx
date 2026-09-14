@@ -58,8 +58,13 @@ export default function RoutinesScreen() {
         )}
       </Section>
 
-      <Section label="EXERCISES" plated={false}>
+      <Section label="PLAN" plated={false}>
         <RowPlates>
+          <Link href="/session/programs" asChild>
+            <RowPlate onPress={() => {}}>
+              <ListRow title="Programs" meta="routines on weekdays" />
+            </RowPlate>
+          </Link>
           <Link href="/session/library" asChild>
             <RowPlate onPress={() => {}}>
               <ListRow title="Library" meta="every exercise, searchable" />

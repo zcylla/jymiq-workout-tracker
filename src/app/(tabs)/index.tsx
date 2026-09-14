@@ -23,15 +23,17 @@ import {
 import { useRows } from '@/data/live';
 import { startSession } from '@/data/mutations/sessions';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
-import { routineExercisesQuery, routineListQuery } from '@/data/queries/routines';
+import { routineExercisesQuery } from '@/data/queries/routines';
 import { recentSessionsQuery, sessionsWithRecordsQuery } from '@/data/queries/sessions';
 import { lastRunPerRoutineQuery } from '@/data/queries/today';
+import { useActiveSchedule } from '@/data/schedule';
 import { trainedDays } from '@/lib/calendar';
-import { lastRunLabel, pickNextRoutine } from '@/lib/next';
+import { dueLabel, lastRunLabel } from '@/lib/next';
+import { type ScheduledDay, nextScheduled } from '@/lib/program';
 import { dateLabel, sessionDotTone } from '@/lib/time';
 import { formatTonnage } from '@/lib/volume';
 import { type StripDay, weekStrip } from '@/lib/week';
-import { color, fabShadow, radius, text } from '@/theme';
+import { color, fabShadow, radius, size, text } from '@/theme';
 
 /**
  * Today — Lab 45 W3. The next routine on a quiet raised card with a full-width
@@ -40,6 +42,11 @@ import { color, fabShadow, radius, text } from '@/theme';
  *
  * §0 gives it no records section: the rail's PR pill already says it and the
  * timeline lives on Strength.
+ *
+ * "Next" is the running program's schedule and nothing else. It used to be a
+ * heuristic — the routine trained least recently — standing in for a schedule
+ * nothing stored; programs store one, so the heuristic is gone rather than kept
+ * as a fallback. With no program running there is no next, and the card says so.
  */
 export default function TodayScreen() {
   const tabBar = useTabBarHeight();
@@ -48,35 +55,33 @@ export default function TodayScreen() {
   // of the same arithmetic, so they cannot disagree about which days are in view.
   // Empty first, only for its range and its clock.
   const strip = useMemo(() => weekStrip(new Map()), []);
+  const active = useActiveSchedule();
 
   const rangeRows = useRows(
     useMemo(() => sessionsInRangeQuery(strip.from, strip.to), [strip.from, strip.to]),
     [strip.from, strip.to],
   );
-  const week = useMemo(() => weekStrip(trainedDays(rangeRows ?? [])), [rangeRows]);
-
-  const routines = useRows(
-    useMemo(() => routineListQuery(), []),
-    [],
+  const week = useMemo(
+    () => weekStrip(trainedDays(rangeRows ?? []), strip.todayAt, active?.schedule),
+    [rangeRows, strip.todayAt, active?.schedule],
   );
+
   const lastRuns = useRows(
     useMemo(() => lastRunPerRoutineQuery(), []),
     [],
   );
 
   /**
-   * `null` until both have answered. Deciding "no routines yet" off a list that
-   * has not loaded is what made the tab the app opens on flash its empty state
-   * on every launch.
+   * `null` until the schedule has answered. Deciding "no program running" off a
+   * query that has not loaded is what made the tab the app opens on flash its
+   * empty state on every launch.
    */
-  const next = useMemo(() => {
-    if (routines === null || lastRuns === null) return null;
-    const byRoutine = new Map<string, number>();
-    for (const row of lastRuns) {
-      if (row.routineId && row.lastRunAt != null) byRoutine.set(row.routineId, row.lastRunAt);
-    }
-    return pickNextRoutine(routines, byRoutine);
-  }, [routines, lastRuns]);
+  const next = useMemo(() => (active === null ? null : nextScheduled(active.schedule)), [active]);
+  const lastRunAt = useMemo(() => {
+    if (!next || lastRuns === null) return null;
+    const row = lastRuns.find((r) => r.routineId === next.routine.id);
+    return row?.lastRunAt ?? null;
+  }, [next, lastRuns]);
 
   return (
     <Screen bottomInset={tabBar}>
@@ -91,7 +96,7 @@ export default function TodayScreen() {
         }
       />
 
-      <NextCard next={next} loading={routines === null || lastRuns === null} />
+      <NextCard next={next} lastRunAt={lastRunAt} loading={active === null} />
 
       <Section label="THIS WEEK" pad={13}>
         <WeekStrip
@@ -117,9 +122,11 @@ export default function TodayScreen() {
  */
 function NextCard({
   next,
+  lastRunAt,
   loading,
 }: {
-  next: ReturnType<typeof pickNextRoutine>;
+  next: ScheduledDay<{ id: string; name: string }> | null;
+  lastRunAt: number | null;
   loading: boolean;
 }) {
   const show = useDialog();
@@ -128,7 +135,7 @@ function NextCard({
     [next?.routine.id],
   );
 
-  // "No routines yet" is a claim, not a placeholder, so it waits until the
+  // "Nothing is scheduled" is a claim, not a placeholder, so it waits until the
   // question has actually been answered. Nothing is drawn in the meantime: the
   // window is a frame or two, and a skeleton that flashes for 16ms is noise.
   if (loading) return null;
@@ -136,10 +143,17 @@ function NextCard({
   if (!next) {
     return (
       <Section first pad={15}>
-        <Text style={text.lead}>No routines yet</Text>
+        <Text style={text.lead}>Nothing scheduled</Text>
         <Text style={text.prose}>
-          Make one on the Session tab and it lands here, with a button to start it.
+          A program puts your routines on weekdays, and this card then says which one is next.
         </Text>
+        <Pressable
+          onPress={() => router.push('/session/programs')}
+          accessibilityRole="button"
+          style={{ minHeight: size.hit, justifyContent: 'center' }}
+        >
+          <Text style={[text.label, { color: color.accent }]}>MAKE A PROGRAM</Text>
+        </Pressable>
       </Section>
     );
   }
@@ -151,7 +165,9 @@ function NextCard({
 
   return (
     <Section first pad={15}>
-      <Text style={text.label}>{lastRunLabel(next.lastRunAt)}</Text>
+      <Text style={text.label}>
+        {dueLabel(next.daysAway, next.at)} · {lastRunLabel(lastRunAt)}
+      </Text>
       <Text style={text.lead}>{next.routine.name}</Text>
       <Text style={text.meta}>{meta.join(' · ')}</Text>
 
