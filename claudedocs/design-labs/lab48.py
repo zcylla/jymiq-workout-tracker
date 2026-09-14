@@ -314,7 +314,17 @@ LIVE = [
   'plate palette, language.',
   '<b style="color:#c9c3b6;font-weight:500">Settings is not a tab</b> &mdash; it is a gear in the '
   'Today header, because you open it twice a year. Storage is decided (<code>expo-sqlite/kv-store'
-  '</code>) and unwritten, so every one of these is hardcoded today.' + DRAWN,
+  '</code>) and unwritten, so every one of these is hardcoded today. '
+  '<b style="color:#c9c3b6;font-weight:500">Built, and smaller than the board on purpose.</b> '
+  'UNITS keeps Weight and drops Distance and Language; TRAINING keeps Track RPE, both rest '
+  'defaults and Tap-opens-the-keypad and drops Warm-up ramps; the whole PLATES section is absent. '
+  'Everything dropped configures something that does not exist yet &mdash; no screen renders a '
+  'distance or a second language, and <code>solvePlates</code>, <code>warmupRamp</code> and '
+  '<code>PLATE_COLORS</code> are pure functions with tests and no caller. A switch that toggles '
+  'nothing is worse than a missing switch. They arrive with the features they configure. '
+  '<b style="color:#c9c3b6;font-weight:500">An ACCOUNT row was added</b>, because the gear now '
+  'opens this screen rather than sign-in, and the export and restore behind it had to stay '
+  'reachable.' + BUILT,
   lab37.D4),
 ]
 

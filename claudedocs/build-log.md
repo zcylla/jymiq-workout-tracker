@@ -982,6 +982,71 @@ to reassure you that nothing happened. The line now renders above the list, whic
 
 ---
 
+## Settings — Lab 37 D4, and smaller than the board
+
+The gear in the Today header used to open sign-in. §0 says the gear **is** Settings, and now it is.
+Storage was decided long ago (`expo-sqlite/kv-store`) and unwritten; `src/data/settings.ts` writes it.
+
+**Read synchronously at launch, and that is the design.** `kv-store` has a sync API, and settings
+decide how the first frame renders — a weight in kg or lb. An async read would make every screen
+either flash the wrong unit or grow a loading state for a value already on disk. It is a module-level
+store behind `useSyncExternalStore` rather than a provider, because mutations need it too:
+`resolveRestSec` runs inside a database transaction, nowhere near React.
+
+The defaults are today's hardcoded behaviour exactly, so opening Settings for the first time changes
+nothing, and `coerceSettings` is tolerant per key — one unreadable value falls back alone rather than
+resetting the other four or taking the app down.
+
+### Half the board is missing, deliberately
+
+The board draws DISTANCE and LANGUAGE rows, a PLATES section with a colour scheme and a plate-maths
+switch, and a warm-up ramps toggle. None of them shipped, because none has anything to act on: no
+screen renders a distance or a second language, and `solvePlates`, `warmupRamp` and `PLATE_COLORS`
+are pure functions with tests and **no caller anywhere in the app**. A switch that toggles nothing is
+worse than a missing switch, and this project has already shipped two buttons that rendered perfectly
+and did nothing. They arrive with the features they configure.
+
+What shipped is five controls that all do something: the weight unit, Track RPE, both rest defaults,
+and Tap-opens-the-keypad. An ACCOUNT row was added that the board does not have, because the gear no
+longer opens sign-in and export and restore had to stay reachable.
+
+### The weight unit stops at the live screen, and that is a rule
+
+Kilograms are what the database stores, always; pounds are a display transform. Every number the app
+*reports* now follows the setting — history, summaries, records, routine targets, the sets table and
+its column headers.
+
+**The live screen stays kilograms whatever Settings says.** It is the instrument: the tape's scale is
+§0's, 20–140 by 2.5, and those steps are the plates that go on the bar. A pounds scale needs
+increments §0 has not decided, and converting only the readout would put 220.5 above a tape reading
+100 — two units for one number, on the one screen where the number matters most. So the rule is: you
+dial the kilograms you load, and you read your training back in your own unit. The keypad and the
+sets sheet are part of that instrument and stay kg with it.
+
+Two things the conversion turned up:
+
+- **`formatPrValue` had no unit**, so the Records timeline still printed kilograms after the setting
+  flipped — the feature looked wired and was not. It takes one now, and it must never convert
+  `most_reps_at_weight`: four of the five categories are kilograms, one is a rep count, and running
+  that through the weight transform turns 8 reps into 17.6.
+- **Pounds now print to one decimal, kilograms to two.** 102.5 and 1.25 are real plates; 231.485… is
+  a conversion artefact, and 231.49 claims a precision the number never had.
+
+**Open: tonnage stays metric.** Session and week volume still read `22.6 T` in either unit. A tonne
+is a metric unit and the boards print T; the honest alternative has not been drawn.
+
+### Verified by tapping
+
+Every control was exercised on the device. The unit flip reached the Records timeline (105 → 231.5),
+Track RPE put the RPE parameter on the live screen, the rest picker wrote 4:00 and the toggles held.
+
+**The rest default is wired but was not observable on this data, and that is correct behaviour rather
+than a gap.** Rest resolves routine → exercise → settings, and every lift in the only routine on the
+device pins its own `rest_sec`, so the routine wins and the setting never applies. The fallback is
+covered by a unit test; the device could not show it without a routine that leaves rest unset.
+
+---
+
 ## Today, at last — Lab 45 W3
 
 The tab the app opens on stopped being a hardcoded NEXT card and a list of dev links. Three blocks,
