@@ -1,4 +1,5 @@
-import { type TrainedDay, dayKey } from './calendar.ts';
+import { type TrainedDay, dayKey, mondayIndex } from './calendar.ts';
+import { NO_SCHEDULE, type Schedule, isMissed } from './program.ts';
 
 /**
  * The week strip on Today (Lab 45 W3), as arithmetic.
@@ -9,13 +10,13 @@ import { type TrainedDay, dayKey } from './calendar.ts';
  * the cell at all: a row of weekday letters cannot say *which* Tuesday once it
  * moves.
  *
- * **There is no missed state**, for the same reason the calendar has none: a
- * lapse needs to know which days you were supposed to train, and nothing stores
- * a plan by weekday until programs are built. Every untrained past day is rest.
- * Asserting a lapse the app cannot know about would be worse than not drawing one.
+ * **Missed comes from the active program's schedule**, which is the only thing
+ * that knows which days you were supposed to train. With no program running the
+ * schedule is empty, nothing is missed, and every untrained past day stays rest
+ * — asserting a lapse the app cannot know about is worse than not drawing one.
  */
 
-export type DayState = 'done' | 'today' | 'rest' | 'ahead';
+export type DayState = 'done' | 'today' | 'missed' | 'rest' | 'ahead';
 
 export interface StripDay {
   key: string;
@@ -56,9 +57,6 @@ export interface WeekTotals {
 
 const LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-/** Monday-first weekday index: Mon 0 … Sun 6. */
-const mondayIndex = (d: Date) => (d.getDay() + 6) % 7;
-
 /** Weeks back from the current one that the strip reaches. §0 caps it at two. */
 const WEEKS_BACK = 2;
 const SPAN = (WEEKS_BACK + 1) * 7;
@@ -66,6 +64,7 @@ const SPAN = (WEEKS_BACK + 1) * 7;
 export function weekStrip(
   trained: ReadonlyMap<string, TrainedDay>,
   at: number | Date = Date.now(),
+  schedule: Schedule = NO_SCHEDULE,
 ): WeekStrip {
   const now = at instanceof Date ? at : new Date(at);
   const todayKey = dayKey(now);
@@ -91,7 +90,15 @@ export function weekStrip(
 
     // "today" outranks "done": the cell's job is to say where you are, and a
     // today you have already trained keeps its session through `sessionId`.
-    const state: DayState = isToday ? 'today' : day ? 'done' : key > todayKey ? 'ahead' : 'rest';
+    const state: DayState = isToday
+      ? 'today'
+      : day
+        ? 'done'
+        : key > todayKey
+          ? 'ahead'
+          : isMissed(schedule, key, i % 7, false, todayKey)
+            ? 'missed'
+            : 'rest';
 
     const volumeKg = day?.volumeKg ?? 0;
     if (volumeKg > maxVolumeKg) maxVolumeKg = volumeKg;

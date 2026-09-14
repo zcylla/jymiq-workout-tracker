@@ -42,8 +42,12 @@ export function dayKey(at: number | Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** Monday-first weekday index: Mon 0 … Sun 6. The board's heads are M T W T F S S. */
-const mondayIndex = (d: Date) => (d.getDay() + 6) % 7;
+/**
+ * Monday-first weekday index: Mon 0 … Sun 6. The board's heads are M T W T F S S.
+ * Exported because the week strip and the program schedule index off the same
+ * seven positions, and three private copies of this is how they drift apart.
+ */
+export const mondayIndex = (d: Date) => (d.getDay() + 6) % 7;
 
 export function monthGrid(at: number | Date = Date.now()): MonthGrid {
   const now = asDate(at);

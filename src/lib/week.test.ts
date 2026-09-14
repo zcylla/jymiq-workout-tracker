@@ -100,3 +100,32 @@ test('a week boundary at a month end does not lose a day', () => {
   assert.equal(days[0]?.key, '2026-02-09');
   assert.equal(days[20]?.key, '2026-03-01');
 });
+
+test('an untrained past day is rest when no program is running', () => {
+  const { days } = weekStrip(none, THU);
+  // Wednesday of this week — yesterday.
+  assert.equal(days[16]?.state, 'rest');
+});
+
+test('a past day the running program scheduled and you skipped is missed', () => {
+  const schedule = { days: new Map([[2, { id: 'push', name: 'Push' }]]), since: '2026-08-17' };
+  const { days } = weekStrip(none, THU, schedule);
+  assert.equal(days[16]?.key, '2026-09-02');
+  assert.equal(days[16]?.state, 'missed');
+  // Tuesday has nothing on it, so it stays rest — §0 wants the two different.
+  assert.equal(days[15]?.state, 'rest');
+});
+
+test('a scheduled day you trained is done, not missed', () => {
+  const schedule = { days: new Map([[2, { id: 'push', name: 'Push' }]]), since: '2026-08-17' };
+  const { days } = weekStrip(new Map([['2026-09-02', day('s1', 4000)]]), THU, schedule);
+  assert.equal(days[16]?.state, 'done');
+});
+
+test('a scheduled day ahead of today is ahead, never missed', () => {
+  const schedule = { days: new Map([[4, { id: 'pull', name: 'Pull' }]]), since: '2026-08-17' };
+  const { days } = weekStrip(none, THU, schedule);
+  assert.equal(days[18]?.key, '2026-09-04');
+  assert.equal(days[18]?.state, 'today');
+  assert.equal(days[19]?.state, 'ahead');
+});

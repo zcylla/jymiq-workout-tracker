@@ -1,50 +1,24 @@
+import { dateLabel } from './time.ts';
+
 /**
- * Which routine Today offers to start.
+ * What Today's card says about the routine the schedule offers next.
  *
- * **This is a heuristic standing in for a schedule, not a schedule.** §0's IA
- * gives Today "the next routine", and programs (Lab 34 A3/A4) are what will
- * eventually answer that — a table resolving a weekday or a cycle position to a
- * routine. Nothing stores one yet, so the honest substitute is the routine you
- * have trained *least recently*: it is the one that is due, it needs no invented
- * schedule, and it degrades correctly to "the first one" on a fresh install.
- * Replace this wholesale when programs land; do not grow it.
+ * **The schedule is the answer now.** This file used to hold
+ * `pickNextRoutine` — "the routine trained least recently" — an explicit
+ * stand-in for a schedule nothing stored. Programs (Lab 34 A3/A4) store one, so
+ * the heuristic is gone rather than kept as a fallback: two rules for what
+ * "next" means is how the card ends up disagreeing with the week strip beside it.
+ * With no program running there is no next, and the card says so.
  */
 
-export interface PickableRoutine {
-  id: string;
-  name: string;
-  position: number;
+/** `"TODAY"` · `"TOMORROW"` · `"FRI 19 SEP"` — the card's kicker. */
+export function dueLabel(daysAway: number, atMs: number): string {
+  if (daysAway <= 0) return 'TODAY';
+  if (daysAway === 1) return 'TOMORROW';
+  return dateLabel(atMs).toUpperCase();
 }
 
-export interface NextRoutine<T extends PickableRoutine> {
-  routine: T;
-  /** Null when this routine has never been run. */
-  lastRunAt: number | null;
-}
-
-export function pickNextRoutine<T extends PickableRoutine>(
-  routines: readonly T[],
-  lastRunByRoutine: ReadonlyMap<string, number>,
-): NextRoutine<T> | null {
-  let best: NextRoutine<T> | null = null;
-
-  for (const routine of routines) {
-    const lastRunAt = lastRunByRoutine.get(routine.id) ?? null;
-    if (best === null) {
-      best = { routine, lastRunAt };
-      continue;
-    }
-    // Never-run wins outright; otherwise the older last run wins. `position` is
-    // the tie-break, and it arrives already sorted, so only a strict improvement
-    // displaces the incumbent.
-    if (best.lastRunAt === null) continue;
-    if (lastRunAt === null || lastRunAt < best.lastRunAt) best = { routine, lastRunAt };
-  }
-
-  return best;
-}
-
-/** `"LAST RUN 5 DAYS AGO"`, and what the card's kicker says before there is one. */
+/** `"LAST RUN 5 DAYS AGO"`, and what the card says before there is one. */
 export function lastRunLabel(lastRunAt: number | null, now: number = Date.now()): string {
   if (lastRunAt === null) return 'NEVER RUN';
   const days = Math.floor((now - lastRunAt) / 86_400_000);
