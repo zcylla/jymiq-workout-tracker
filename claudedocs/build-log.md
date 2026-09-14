@@ -1099,6 +1099,38 @@ afterwards: Finish with nothing logged returns to Today silently and leaves no r
 set offers Finish / Discard / Not yet and names "1 logged set"; the back chevron offers Discard /
 Keep going and says what will be deleted. Discard from either removed the session and its set.
 
+### Loading is now in the type, because writing it down did not work
+
+`useLiveQuery().data` is `[]` **both** while a query is in flight and when it genuinely matched
+nothing; `updatedAt === undefined` is the only thing separating them. That is in `AGENTS.md`, and
+writing it down has not been enough — `data ?? []` is shorter to type and reads as correct. An audit
+found the same mistake in five places, three of them shipped:
+
+1. **The live screen counted logged sets off an unloaded query** and would have deleted a session
+   with work in it. Found and fixed within the hour, above.
+2. **Today decided "No routines yet" from an unloaded list**, so the tab the app opens on flashed its
+   empty state on every launch.
+3. **Start refused with "Add an exercise first"** — on Today and on routine detail — for a routine
+   whose lifts had simply not arrived yet. Not a flash: a wrong refusal of a valid action.
+4. **The live screen accused a full session of being empty** for the frame before its exercises
+   landed.
+
+None fail as an error. They fail as plausible, confident, wrong answers, which no typecheck, lint or
+test sees.
+
+`src/data/live.ts` adds `useRows`, which returns **`null` until the query has answered** and an array
+once it has. Anything that branches on the rows being empty now has to say what it does about `null`,
+because `null` is not an array and `tsc` will not let it pretend otherwise. `useLiveQuery(...).data ??
+[]` is still right where nothing branches — a list the screen only maps over should render empty for a
+frame and then fill.
+
+**No skeletons, deliberately.** SQLite reads here finish inside a frame or two, and §0 asks what an
+element indicates: a placeholder that flashes for 16ms indicates nothing and is noise. The loading
+state's job in this app is to stop the screen *asserting* something false, not to be drawn. A
+component that will fill in stays visible and dim; a **claim** about the data waits for the data.
+
+---
+
 ### `Alert.alert` is gone
 
 The native dialog was the one surface in the app drawn by someone else: Material type, Material
