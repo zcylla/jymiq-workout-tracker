@@ -112,15 +112,14 @@ function DayCell({
         borderRadius: radius.cell,
         borderCurve: 'continuous',
         // A rest day is a plate; an adjacent day is nothing at all but its
-        // numeral; a missed day drops the plate and takes a ring instead, which
-        // is §0's rule and the only way the two stay different things.
+        // numeral; a missed day drops the plate and rings its numeral instead,
+        // which is §0's rule and the only way the two stay different things.
         backgroundColor: cell.adjacent || day || missed ? undefined : wash.field,
         opacity: cell.adjacent ? 0.4 : 1,
-        boxShadow: today
-          ? `0 0 0 1.5px ${color.accent}`
-          : missed
-            ? `0 0 0 1px ${color.tick2}`
-            : undefined,
+        // The cell ring means today and only today. Missed rings the numeral —
+        // the same device the week strip uses — so one grid never carries two
+        // rings that mean different things.
+        boxShadow: today ? `0 0 0 1.5px ${color.accent}` : undefined,
       }}
     >
       {day ? (
@@ -131,9 +130,21 @@ function DayCell({
           ]}
         />
       ) : null}
-      <Text style={[text.numSm, { color: day ? INK[day.step] : missed ? color.lo : color.dim }]}>
-        {cell.day}
-      </Text>
+      <View
+        style={{
+          minWidth: 24,
+          alignItems: 'center',
+          paddingHorizontal: 4,
+          paddingVertical: 1,
+          borderRadius: radius.pill,
+          borderWidth: 1,
+          borderColor: missed ? color.tick2 : 'transparent',
+        }}
+      >
+        <Text style={[text.numSm, { color: day ? INK[day.step] : missed ? color.lo : color.dim }]}>
+          {cell.day}
+        </Text>
+      </View>
     </View>
   );
 
