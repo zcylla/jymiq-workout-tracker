@@ -3,7 +3,14 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-13. Export and restore both shipped this session — export is device-verified
+Last updated 2026-09-13. **Programs shipped** — Lab 34 A3 and A4 are on the device, and with them
+the three departures they were blocking: the calendar and Today's week strip draw a missed day
+differently from a rest day, and Today's next-routine card reads the schedule instead of
+`pickNextRoutine`'s heuristic, which is deleted. See **"Programs — Lab 34 A3 and A4"**, and read
+**"A hand-edited migration timestamp and a warm Metro"** before touching `drizzle/meta/_journal.json`
+again. **Start the next session at "Pick this up here"** immediately below.
+
+Before that, in the same session: export and restore both shipped — export is device-verified
 at 1,223 rows, restore is pure and tested with the destructive path designed around a rollback
 export taken before anything is written. The Strength and Load tab roots stopped being placeholders:
 Strength got the record timeline (Lab 36 C4), Load got the month calendar (Lab 36 C1) — see
@@ -14,6 +21,82 @@ board-versus-device refinement pass followed it and shipped seven fixes, two of 
 screenshot alone could not catch — see "The refinement pass". Before both, Phase 7 item 1 was
 replanned through a four-voice review, then built: the Rail, routine detail's LAST THREE, and
 session detail (C3). The history *list* was dropped — the IA never had one.
+
+---
+
+## Pick this up here
+
+**State:** clean on `main`, `pnpm check` exit 0, **135 tests**. Every one of the four tabs, the live
+session, routines, programs, library, exercise detail, session summary and detail, export, restore
+and Settings are on the device and verified there. **Six drawn screens remain unbuilt.**
+
+**The next thing to build is the column chart primitive**, not a screen. It is the only item that
+unblocks two others, and it was deliberately deferred out of A4 this session rather than invented in
+the wrong place — §0's chart rules are strict enough that the primitive deserves its own pass:
+
+> `kit.chart()` is the one column chart — never bare. Minimum: y min/max anchored to the chart, first
+> and last x labels, latest mark in the accent with the rest de-emphasised, its value printed, and a
+> title that states the takeaway. **Text never wears the series colour.** It takes no plate — a
+> baseline and two axes are already a frame.
+
+`claudedocs/design-labs/kit.py`'s `chart()` is that spec as code, and Lab 37 D1, Lab 35 B2′ and
+Lab 34 A4 are the three boards that draw it. Build it against `kit.chart()`, then D1 is mostly
+composition.
+
+### What remains, in order
+
+| # | What | Board | Blocked on |
+|---|---|---|---|
+| 1 | **The column chart** | §0 *Charts* · `kit.chart()` | nothing — it is the unblocker |
+| 2 | **Volume and deload** — the real Load tab root | Lab 37 D1 | the chart |
+| 3 | **Exercise detail, scrolled** | Lab 35 B2′ | the chart |
+| 4 | **A4's SESSIONS PER WEEK** — drop it in | Lab 34 A4 | the chart |
+| 5 | **Bodyweight** | Lab 37 D2 | a bodyweight table — a schema change, so re-read the migration trap |
+| 6 | **Readiness** | Lab 37 D3 | an input and a model; §0 says the output is a *sentence*, never a score |
+| 7 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; this is a `jymiq-a` emulator job |
+| 8 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled by the plan; least resolved drawing in the set |
+
+**The Load tab root is still the calendar squatting on D1's slot.** That is item 2's real job, and
+the calendar moves down or into a month picker when D1 lands.
+
+### Smaller things, none of them blocking
+
+- **Today's SESSIONS tile ships without its meter** — the board draws `3 of 4` and no weekly target
+  is stored anywhere. Needs a target in Settings first; §0 forbids a meter without a real denominator.
+- **Settings deliberately omits half its board.** `solvePlates`, `warmupRamp` and `PLATE_COLORS` are
+  pure, tested and have **no caller** (the only mentions in `src/app` are comments saying so). The
+  switches that would configure them stay out until something renders them — do not ship the control
+  first.
+- **Three session mutations are written, tested and unused**: `addExerciseToSession` (wants the
+  library's `sessionId` picker mode), `reorderSets` / `reorderSessionExercises` (want the sheet
+  grips), `updateRoutineExercise` (wants target editing in the routine editor).
+- **Phase 8 — sync.** Schema, RLS and auth are in place and verified; nothing pushes or pulls a row.
+  Start from "The Supabase mirror".
+- **Still on Phase 7's list:** an error boundary and the Maestro flow over routine → session → summary.
+
+### First commands
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk ANDROID_HOME=$HOME/Android/Sdk
+pnpm check                              # expect exit 0, 135 tests
+pnpm expo start --dev-client            # add -c after ANY config or drizzle-journal edit
+adb reverse tcp:8081 tcp:8081           # re-run after every force-stop; it drops silently
+adb shell am start -a android.intent.action.VIEW \
+  -d "jymiq://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+adb shell am start -a android.intent.action.VIEW -d "jymiq://session/programs"   # once warm
+adb exec-out screencap -p > shot.png
+```
+
+### What is on the phone right now
+
+302 exercises, 1 routine (**Lower A**), 3 sessions, 42 sets, 18 records — and **one program,
+"PPL 3-Day", Lower A on Mon/Wed/Fri, running since 13 Sep**. That program is *test data made during
+the Programs build*; rename, reschedule or delete it freely. Export before anything destructive, and
+restoring the rollback file is still the fastest undo.
+
+**A missed day cannot appear until two days after a program is activated** — nothing before
+`started_at` is ever missed, and today is never missed. Verifying that rendering on the device meant
+back-dating `started_at` with a database swap; the emulator is the cheaper route next time.
 
 ---
 
@@ -42,7 +125,7 @@ computed features in v1.
 | **5b — Supabase** | **Schema, RLS and the auth flow done.** Sync itself is Phase 8. |
 | **6 — The live session** | **Done bar reordering.** Gate, data layer, core loop, both sheets and the keypad all run on the device. |
 | **6b — Routines you can make** | **Done.** Creation, editing, the library as a picker, and START actually starting a session. |
-| **7 — Closing the loop** | **Summary (C2), the Rail, routine detail's LAST THREE, session detail (C3), export and restore are done and verified.** Settings and the Maestro flow are not. |
+| **7 — Closing the loop** | **Summary (C2), the Rail, routine detail's LAST THREE, session detail (C3), export, restore, Settings (D4) and Programs (A3/A4) are done and verified.** Only the error boundary and the Maestro flow are left. |
 
 ### What Phase 5 settled
 
@@ -609,30 +692,40 @@ screenshot. That is now three sessions in a row where that has been true.
 
 ## Next, in order
 
-**Phase 6 is closed.** Everything below is Phase 7 and after.
+**"Pick this up here" at the top of this file is the short version, with the first commands.** This
+section is the phase-by-phase history behind it.
 
-1. **A screen index board, then a design/UX refinement pass.** The index is described under
-   "There is no history list" above. Phase 7 item 1 is otherwise **done**: the predicates, the
-   history reads, the Rail, `routine/[id]`'s LAST THREE and session detail (C3) are all built and
-   device-verified. The `/history` list is **dropped**, not deferred — the IA has no room for it.
-2. **Today, Lab 45 W3 — done.** The week strip, the next-routine card and the recent rail are all on
-   the device. `lab45.py`'s W4 column flagged a nested-gesture risk in the strip — a horizontally
-   scrolling row inside a vertically scrolling screen — and it did not materialise: the strip scrolls
-   and its cells stay tappable, which is the same answer the live screen got. What is left here is
-   the meter on SESSIONS, blocked on Settings storing a weekly target, and a real schedule behind
-   "next", blocked on programs.
-3. **Settings.** Units, default rest, plate colours. Storage is decided (`expo-sqlite/kv-store`) and
-   unwritten; the account row moves here and the Today gear stops pointing straight at `/sign-in`.
-   Export and restore are **done** — see "Export" and "Restore" above.
-4. **The rest of Phase 7's shipping list.** Empty states, an error boundary, and the Maestro flow
-   over routine → session → summary. JSON export/import shipped — see above.
-5. **Phase 8 — sync.** The Postgres mirror, its RLS and the auth flow are all in place and verified;
+**Phase 6 is closed. Phase 7 is all but closed** — only the error boundary and the Maestro flow are
+left on its shipping list.
+
+1. **Phase 7 item 1 — done.** The predicates, the history reads, the Rail, `routine/[id]`'s LAST
+   THREE and session detail (C3) are all built and device-verified. The `/history` list is
+   **dropped**, not deferred — the IA has no room for it. The screen index board it asked for was
+   published as `Lab 48 — Every Screen`, and the refinement pass that followed shipped seven fixes
+   (see "The refinement pass").
+2. **Today, Lab 45 W3 — done, and its last gap is closed.** The week strip, the next-routine card and
+   the recent rail are on the device. `lab45.py`'s W4 column flagged a nested-gesture risk in the
+   strip — a horizontally scrolling row inside a vertically scrolling screen — and it did not
+   materialise: the strip scrolls and its cells stay tappable, the same answer the live screen got.
+   **"Next" now reads the running program's schedule** and the strip draws missed days (see
+   "Programs"). What is still missing here is only the **meter on SESSIONS**, blocked on Settings
+   storing a weekly target.
+3. **Settings — done** (Lab 37 D4). Units, default rest and the account row are on the device; export
+   and restore are wired from there. Half the board is deliberately absent — see "Half the board is
+   missing, deliberately".
+4. **Programs — done** (Lab 34 A3/A4). See "Programs — Lab 34 A3 and A4". This closed the missed
+   state on both the calendar and the week strip, and replaced `pickNextRoutine` wholesale.
+5. **The six screens that remain, and the chart primitive that unblocks three of them.** Listed with
+   their blockers in "Pick this up here". The chart is the next thing to build.
+6. **The rest of Phase 7's shipping list.** An error boundary and the Maestro flow over routine →
+   session → summary. Empty states and JSON export/import shipped.
+7. **Phase 8 — sync.** The Postgres mirror, its RLS and the auth flow are all in place and verified;
    nothing pushes or pulls a row yet. Start from "The Supabase mirror" below.
 
-**Load and Strength tab roots are built** — see "Two tab roots got their screen" above — but neither
-is a locked design: Load wants D1 and Strength wants the body map (`body-map.md`), both after-v1 in
-the plan, and the review flagged putting Records and the Calendar at the tab root as reversible
-rather than settled.
+**The Load tab root is still a placeholder in disguise** — the month calendar is sitting in the slot
+Lab 37 D1 (volume and deload) is drawn for. Strength's root is the record timeline and wants the body
+map (`body-map.md`) eventually; both were flagged at review as reversible judgement calls rather than
+settled design, and both are still open on that basis.
 
 ---
 
@@ -1057,13 +1150,13 @@ Start inside it, rather than U3's filled accent slab. It keeps the card's text o
 never has to solve the contrast inversion, and leaves the tab bar's start button as the only other
 accent fill on the screen.
 
-**Which routine is "next" is a heuristic, and it is marked as one.** §0's IA says Today carries the
-next routine; programs (Lab 34 A3/A4) are what will answer that, and nothing stores a plan by weekday
-yet. `src/lib/next.ts` picks **the routine trained least recently**, with never-run winning outright
-and `position` as the tie-break. It is the routine that is due, it invents no schedule, and it
-degrades to "the first one" on a fresh install. Replace it wholesale when programs land; do not grow
-it. The card's kicker says `LAST RUN 6 DAYS AGO` off the same number, so the rule is visible on the
-screen rather than buried.
+**"Next" was a heuristic; it is the schedule now.** This shipped reading `pickNextRoutine` — the
+routine trained least recently — as an explicit stand-in for a plan nothing stored. Programs store
+one, so that function is **deleted rather than kept as a fallback**: two rules for what "next" means
+is how the card ends up disagreeing with the strip beside it. The card reads
+`nextScheduled(activeSchedule)`, its kicker says `TOMORROW · LAST RUN 6 DAYS AGO`, and with no
+program running it says *Nothing scheduled* and offers MAKE A PROGRAM. See "Programs — Lab 34 A3
+and A4".
 
 **The week strip is `src/lib/week.ts` plus `src/components/week-strip.tsx`.** Three whole Monday-first
 weeks ending on this Sunday — §0 bounds it to two weeks back, and whole weeks are what keep the
@@ -1078,8 +1171,10 @@ Scrolling to today needed no offset arithmetic. The strip ends on this week's Su
 most six cells from the right-hand end and always inside a 411pt screen — `scrollToEnd` on the first
 content-size change is the whole of it.
 
-**The strip has no missed state either**, for the reason the calendar has none: see the departure
-recorded under "Two tab roots got their screen" below. Every untrained past day is rest.
+**The strip draws missed days**, on the same rule as the calendar — a past day the running program
+put a routine on and you did not train rings its numeral; a day with no routine on it keeps its rest
+treatment. With nothing running, every untrained past day is rest again. One predicate
+(`isMissed` in `src/lib/program.ts`) serves the strip, the calendar and A3's own day strip.
 
 **SESSIONS ships without a meter, on purpose.** Lab 45 draws it as 3-of-4 against a weekly target.
 There is no weekly target stored anywhere, and §0 is explicit that a meter needs a real denominator —
@@ -1380,8 +1475,10 @@ used to say a migration failed without ever saying why. `src/app/_layout.tsx` pr
   poisoned in the database read correctly without a migration. Verified on the device: that session's
   TIME tile now shows `—`. Still undesigned: whether a stale session should be auto-abandoned at all,
   which is a prompt-on-resume question, not a storage one.
-- **Settings storage** is decided (`expo-sqlite/kv-store`) but not written. Everything the app
-  needs from it today is hardcoded: kg, the seeded rest defaults, the plate palette.
+- **Settings storage is written** — `expo-sqlite/kv-store` behind `src/data/settings.ts`
+  (`useSettings()` in React, `getSettings()` outside it), read synchronously at launch. The weight
+  unit reaches every reported number. What is still hardcoded is the plate palette, because
+  `PLATE_COLORS` has no renderer — see "Half the board is missing, deliberately".
 - Still open on the design side and not blocking: the calendar's plate, the body map, the IA.
 - **Supabase: schema, RLS and auth are done; sync is not.** Architecture unchanged and settled:
   **local-first** — SQLite is the source of truth so the app works in a basement gym, and Supabase is
