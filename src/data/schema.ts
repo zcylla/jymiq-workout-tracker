@@ -112,6 +112,53 @@ export const routineExercises = sqliteTable(
   (t) => [index('idx_rx_routine').on(t.routineId, t.position)],
 );
 
+/**
+ * A program is a weekly shape: seven weekday slots, each either a routine or
+ * rest. §0 also names a fixed cycle; nothing here stores one, because a cycle
+ * needs a length, a start and a position and none of those has a screen — see
+ * the build log. `startedAt` is what keeps the missed state honest: nothing
+ * before the day a program started can be a lapse.
+ */
+export const programs = sqliteTable(
+  'programs',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    note: text('note'),
+    status: text('status', { enum: ['active', 'paused'] })
+      .notNull()
+      .default('paused'),
+    /** First activation, and never reset. Null until it has run at all. */
+    startedAt: integer('started_at'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [
+    /** At most one program is running, enforced by the database (Lab 34 A3:
+     *  "one is running; the rest are not") rather than by app code. */
+    uniqueIndex('idx_programs_one_active').on(t.status).where(sql`status = 'active'`),
+  ],
+);
+
+/**
+ * One weekday slot. A weekday with no row is rest — absence is the rest state,
+ * so there is no nullable routine column to mean two different things.
+ */
+export const programDays = sqliteTable(
+  'program_days',
+  {
+    programId: text('program_id')
+      .notNull()
+      .references(() => programs.id, { onDelete: 'cascade' }),
+    /** Monday-first, 0-6, matching `mondayIndex` in src/lib/calendar.ts. */
+    weekday: integer('weekday').notNull(),
+    routineId: text('routine_id')
+      .notNull()
+      .references(() => routines.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.programId, t.weekday] })],
+);
+
 // -------------------------------------------------- what actually happened ----
 export const sessions = sqliteTable(
   'sessions',
@@ -259,6 +306,8 @@ export type Exercise = typeof exercises.$inferSelect;
 export type Equipment = Exercise['equipment'];
 export type ExerciseKind = Exercise['kind'];
 export type Routine = typeof routines.$inferSelect;
+export type Program = typeof programs.$inferSelect;
+export type ProgramDay = typeof programDays.$inferSelect;
 export type RoutineExercise = typeof routineExercises.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type SessionExercise = typeof sessionExercises.$inferSelect;

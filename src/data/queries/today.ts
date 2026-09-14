@@ -9,8 +9,8 @@ import { sessions } from '../schema';
  * `FROM sessions` on purpose. `useLiveQuery` subscribes only to the table named
  * in the query's `FROM`, so grouping the other way round — from `routines`,
  * joined out to sessions — would give a NEXT card that never notices you
- * finishing a workout. The routines themselves come from `routineListQuery`,
- * which is live on `routines`, and the two are married in JS by `pickNextRoutine`.
+ * finishing a workout. The routine the card names comes from the running
+ * program's schedule, and the two are married in JS on Today.
  */
 export function lastRunPerRoutineQuery() {
   return db
