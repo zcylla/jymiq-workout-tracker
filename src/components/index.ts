@@ -1,4 +1,5 @@
 export { ActionBar, useActionBarHeight } from './action-bar';
+export { Calendar } from './calendar';
 export { Chip, ChipStrip } from './chip';
 export { Delta } from './delta';
 export { ExercisesSheet } from './exercises-sheet';
