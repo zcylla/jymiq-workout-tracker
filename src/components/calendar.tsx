@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { IntensityStep, MonthCell, TrainedDay } from '@/lib/calendar';
+import { NO_SCHEDULE, type Schedule, isMissed } from '@/lib/program';
 import { color, type Ink, radius, text, wash } from '@/theme';
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -31,6 +32,8 @@ export type CalendarProps = {
   /** Keyed by `dayKey`. A day absent from the map was not trained. */
   trained: ReadonlyMap<string, TrainedDay>;
   todayKey: string;
+  /** The running program. With nothing running, nothing is missed. */
+  schedule?: Schedule;
   onPressDay: (day: TrainedDay) => void;
 };
 
@@ -40,7 +43,13 @@ export type CalendarProps = {
  * nothing. Adjacent-month days are dimmed, never omitted — the grid is always
  * whole weeks, and a missing leading cell reads as a bug.
  */
-export function Calendar({ weeks, trained, todayKey, onPressDay }: CalendarProps) {
+export function Calendar({
+  weeks,
+  trained,
+  todayKey,
+  schedule = NO_SCHEDULE,
+  onPressDay,
+}: CalendarProps) {
   return (
     <View style={{ gap: GAP }}>
       <View style={{ flexDirection: 'row', gap: GAP }}>
@@ -54,19 +63,28 @@ export function Calendar({ weeks, trained, todayKey, onPressDay }: CalendarProps
 
       {weeks.map((week) => (
         <View key={week[0]?.key} style={{ flexDirection: 'row', gap: GAP }}>
-          {week.map((cell) => (
-            <DayCell
-              key={cell.key}
-              cell={cell}
-              day={cell.adjacent ? undefined : trained.get(cell.key)}
-              today={cell.key === todayKey}
-              onPress={onPressDay}
-            />
-          ))}
+          {/* The cell's position in its week IS the Monday-first weekday index,
+              which is what the schedule is keyed by. */}
+          {week.map((cell, weekday) => {
+            const day = cell.adjacent ? undefined : trained.get(cell.key);
+            return (
+              <DayCell
+                key={cell.key}
+                cell={cell}
+                day={day}
+                today={cell.key === todayKey}
+                missed={
+                  !cell.adjacent &&
+                  isMissed(schedule, cell.key, weekday, day !== undefined, todayKey)
+                }
+                onPress={onPressDay}
+              />
+            );
+          })}
         </View>
       ))}
 
-      <Key />
+      <Key missed={schedule.days.size > 0} />
     </View>
   );
 }
@@ -75,11 +93,14 @@ function DayCell({
   cell,
   day,
   today,
+  missed,
   onPress,
 }: {
   cell: MonthCell;
   day: TrainedDay | undefined;
   today: boolean;
+  /** A past day the running program had a routine on, and you did not train. */
+  missed: boolean;
   onPress: (day: TrainedDay) => void;
 }) {
   const face = (
@@ -90,10 +111,16 @@ function DayCell({
         justifyContent: 'center',
         borderRadius: radius.cell,
         borderCurve: 'continuous',
-        // A rest day is a plate; an adjacent day is nothing at all but its numeral.
-        backgroundColor: cell.adjacent || day ? undefined : wash.field,
+        // A rest day is a plate; an adjacent day is nothing at all but its
+        // numeral; a missed day drops the plate and takes a ring instead, which
+        // is §0's rule and the only way the two stay different things.
+        backgroundColor: cell.adjacent || day || missed ? undefined : wash.field,
         opacity: cell.adjacent ? 0.4 : 1,
-        boxShadow: today ? `0 0 0 1.5px ${color.accent}` : undefined,
+        boxShadow: today
+          ? `0 0 0 1.5px ${color.accent}`
+          : missed
+            ? `0 0 0 1px ${color.tick2}`
+            : undefined,
       }}
     >
       {day ? (
@@ -104,7 +131,9 @@ function DayCell({
           ]}
         />
       ) : null}
-      <Text style={[text.numSm, { color: day ? INK[day.step] : color.dim }]}>{cell.day}</Text>
+      <Text style={[text.numSm, { color: day ? INK[day.step] : missed ? color.lo : color.dim }]}>
+        {cell.day}
+      </Text>
     </View>
   );
 
@@ -126,8 +155,10 @@ function DayCell({
   );
 }
 
-/** The ramp, written out. Three steps is a thing to read, not a thing to learn. */
-function Key() {
+/** The ramp, written out. Three steps is a thing to read, not a thing to learn.
+ *  The ring joins it only while a program is running, because that is the only
+ *  time a cell can carry one. */
+function Key({ missed }: { missed: boolean }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 7 }}>
       <Text style={text.label}>LIGHT</Text>
@@ -144,6 +175,21 @@ function Key() {
         />
       ))}
       <Text style={text.label}>HARD</Text>
+      {missed ? (
+        <>
+          <View
+            style={{
+              width: 15,
+              height: 11,
+              marginLeft: 5,
+              borderRadius: radius.pill,
+              borderWidth: 1,
+              borderColor: color.tick2,
+            }}
+          />
+          <Text style={text.label}>MISSED</Text>
+        </>
+      ) : null}
     </View>
   );
 }

@@ -57,7 +57,7 @@ function DayCell({
   const dateColor =
     day.state === 'today' || day.state === 'done'
       ? color.hi
-      : day.state === 'rest'
+      : day.state === 'rest' || day.state === 'missed'
         ? color.lo
         : color.dim;
 
@@ -82,7 +82,24 @@ function DayCell({
       }}
     >
       <Text style={[text.meta, { color: letterColor }]}>{day.letter}</Text>
-      <Text style={[text.numSm, { color: dateColor }]}>{day.date}</Text>
+      {/* §0: rest and missed must look different, and missed carries a ring
+          under its number. A ring rather than a fill, because a filled cell on
+          this strip already means "trained". */}
+      <View
+        style={{
+          minWidth: 22,
+          alignItems: 'center',
+          paddingHorizontal: 4,
+          paddingVertical: 1,
+          borderRadius: radius.pill,
+          // The ring is always in the layout and only sometimes visible, so a
+          // missed cell is not 2pt taller than the rest days beside it.
+          borderWidth: 1,
+          borderColor: day.state === 'missed' ? color.tick2 : 'transparent',
+        }}
+      >
+        <Text style={[text.numSm, { color: dateColor }]}>{day.date}</Text>
+      </View>
       <View style={{ width: 14, height: BAR_MAX, justifyContent: 'flex-end' }}>
         <View
           style={{
