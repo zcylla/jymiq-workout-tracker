@@ -19,8 +19,16 @@ import {
   useActionBarHeight,
 } from '@/components';
 import { readAllTables } from '@/data/queries/export';
+import { restoreBackup } from '@/data/queries/import';
 import { authCodeFromUrl, authRedirectTo, exchangeAuthCode, supabase } from '@/data/supabase';
 import { buildExport, exportFileName, totalRows } from '@/lib/export';
+import {
+  type BackupFile,
+  type ParsedBackup,
+  backupFiles,
+  describeBackup,
+  parseBackup,
+} from '@/lib/import';
 import { text } from '@/theme';
 
 /**
@@ -62,47 +70,58 @@ async function pickExportDirectory(): Promise<string | null> {
   return permission.granted ? permission.directoryUri : null;
 }
 
-function ExportSection() {
+/**
+ * Run something against the backup folder, asking for one if there is none or
+ * if the remembered grant no longer works. A revoked grant and a deleted folder
+ * are both expected rather than exceptional — fall back to asking, don't report
+ * it as an error. `null` means the user cancelled the picker.
+ */
+async function withDirectory<T>(fn: (dir: string) => Promise<T>): Promise<T | null> {
+  const saved = await Storage.getItem(EXPORT_DIR_KEY);
+  if (saved) {
+    try {
+      return await fn(saved);
+    } catch {}
+  }
+  const dir = await pickExportDirectory();
+  if (!dir) return null;
+  await Storage.setItem(EXPORT_DIR_KEY, dir);
+  return fn(dir);
+}
+
+/** The whole database into a new file in `dir`. Also the rollback before a restore. */
+async function writeBackup(dir: string): Promise<{ name: string; rows: number }> {
+  const envelope = buildExport(readAllTables(), {
+    now: Date.now(),
+    appVersion: Constants.expoConfig?.version ?? 'dev',
+  });
+  const name = exportFileName(envelope.exportedAt);
+  const uri = await FileSystem.StorageAccessFramework.createFileAsync(
+    dir,
+    name,
+    'application/json',
+  );
+  await FileSystem.writeAsStringAsync(uri, JSON.stringify(envelope));
+  return { name, rows: totalRows(envelope) };
+}
+
+function DataSection() {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [files, setFiles] = useState<BackupFile[] | null>(null);
 
   const runExport = async () => {
     if (busy) return;
     setBusy(true);
     setNote(null);
+    setFiles(null);
     try {
-      const envelope = buildExport(readAllTables(), {
-        now: Date.now(),
-        appVersion: Constants.expoConfig?.version ?? 'dev',
-      });
-      const name = exportFileName(envelope.exportedAt);
-      const saf = FileSystem.StorageAccessFramework;
-
-      // The remembered folder first. A grant can be revoked and a folder can be
-      // deleted, so a failure here is expected rather than exceptional — fall
-      // back to asking, don't report it as an error.
-      let uri: string | null = null;
-      const saved = await Storage.getItem(EXPORT_DIR_KEY);
-      if (saved) {
-        try {
-          uri = await saf.createFileAsync(saved, name, 'application/json');
-        } catch {
-          uri = null;
-        }
-      }
-
-      if (!uri) {
-        const dir = await pickExportDirectory();
-        if (!dir) {
-          setNote('Export cancelled. Nothing was written.');
-          return;
-        }
-        await Storage.setItem(EXPORT_DIR_KEY, dir);
-        uri = await saf.createFileAsync(dir, name, 'application/json');
-      }
-
-      await FileSystem.writeAsStringAsync(uri, JSON.stringify(envelope));
-      setNote(`Wrote ${name} — ${totalRows(envelope).toLocaleString()} rows.`);
+      const written = await withDirectory(writeBackup);
+      setNote(
+        written
+          ? `Wrote ${written.name} — ${written.rows.toLocaleString()} rows.`
+          : 'Export cancelled. Nothing was written.',
+      );
     } catch (e) {
       // A failed backup must say so loudly. Silence here reads as success, and
       // the whole point of the feature is that you can rely on it having run.
@@ -113,20 +132,114 @@ function ExportSection() {
     }
   };
 
+  /** Step one: what is in the folder. Nothing is read or written yet. */
+  const listBackups = async () => {
+    if (busy) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const found = await withDirectory(async (dir) =>
+        backupFiles(await FileSystem.StorageAccessFramework.readDirectoryAsync(dir)),
+      );
+      if (!found) return setNote('Restore cancelled. Nothing was written.');
+      setFiles(found);
+      if (found.length === 0) setNote('No Jymiq backups in that folder.');
+    } catch (e) {
+      Alert.alert('Could not read that folder', e instanceof Error ? e.message : 'Unknown error.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * Step two: read the file and ask. Restore is the one operation in this app
+   * that can cost training history, so the confirm names what the file holds —
+   * `describeBackup` — rather than asking "are you sure" about a filename.
+   */
+  const confirmRestore = async (file: BackupFile) => {
+    if (busy) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const parsed = parseBackup(await FileSystem.readAsStringAsync(file.uri));
+      if (!parsed.ok) {
+        setNote(parsed.reason);
+        return;
+      }
+      const { backup } = parsed;
+      Alert.alert(
+        'Replace everything?',
+        `${describeBackup(backup)}\n\nEverything on this phone is deleted and replaced with this file. ` +
+          'Your current database is written to the same folder as a rollback file first.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => setNote('Restore cancelled. Nothing was written.'),
+          },
+          { text: 'Replace', style: 'destructive', onPress: () => void applyRestore(backup) },
+        ],
+      );
+    } catch (e) {
+      Alert.alert('Could not read that file', e instanceof Error ? e.message : 'Unknown error.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Step three. The rollback file is written before the delete, never after. */
+  const applyRestore = async (backup: ParsedBackup) => {
+    setBusy(true);
+    try {
+      const rollback = await withDirectory(writeBackup);
+      if (!rollback)
+        return setNote('Restore cancelled — no rollback file, so nothing was written.');
+      const written = restoreBackup(backup.tables);
+      setFiles(null);
+      setNote(
+        `Restored ${written.toLocaleString()} rows. Your previous database is in ${rollback.name}.`,
+      );
+    } catch (e) {
+      // The write is one transaction, so a failure here left the database alone.
+      Alert.alert('Restore failed', e instanceof Error ? e.message : 'Nothing was written.');
+      setNote('Restore failed. Nothing was written — your data is untouched.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Section label="YOUR DATA" plated={false}>
       <RowPlates>
         <RowPlate onPress={runExport}>
           <ListRow
-            title={busy ? 'Exporting…' : 'Export everything'}
+            title={busy ? 'Working…' : 'Export everything'}
             meta="EVERY SESSION, SET AND ROUTINE, AS JSON"
           />
         </RowPlate>
+        <RowPlate onPress={files ? () => setFiles(null) : listBackups}>
+          <ListRow
+            title={files ? 'Cancel restore' : 'Restore from a backup'}
+            meta={files ? 'PICK A FILE BELOW' : 'REPLACES EVERYTHING ON THIS PHONE'}
+          />
+        </RowPlate>
       </RowPlates>
+      {/* Above the file list, not under it. This line is the only feedback the
+          screen gives, and a list of backups is tall enough to push it off the
+          bottom of the screen — which is exactly what a cancelled restore did. */}
       <Text style={text.prose}>
         {note ??
           'Pick a folder and the whole database is written there as one file. This phone is the only copy until you do.'}
       </Text>
+      {files && files.length > 0 ? (
+        <RowPlates>
+          {files.map((file) => (
+            <RowPlate key={file.uri} onPress={() => confirmRestore(file)}>
+              <ListRow title={file.name} meta="TAP TO SEE WHAT IS IN IT" />
+            </RowPlate>
+          ))}
+        </RowPlates>
+      ) : null}
     </Section>
   );
 }
@@ -153,7 +266,7 @@ export default function SignInScreen() {
             Sync is not configured on this build. Your workouts are on this phone and nowhere else.
           </Text>
         </Section>
-        <ExportSection />
+        <DataSection />
       </Screen>
     );
   }
@@ -217,7 +330,7 @@ export default function SignInScreen() {
               Signed in. Your workouts stay on this phone and back up when there is a connection.
             </Text>
           </Section>
-          <ExportSection />
+          <DataSection />
           {status ? (
             <Section plated={false}>{<Text style={text.prose}>{status}</Text>}</Section>
           ) : null}
@@ -263,7 +376,7 @@ export default function SignInScreen() {
           </Text>
         </Section>
 
-        <ExportSection />
+        <DataSection />
       </Screen>
       <ActionBar primary="Send magic link" onPrimary={sendMagicLink} />
     </>
