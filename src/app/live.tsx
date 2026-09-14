@@ -18,7 +18,7 @@ import {
 } from '@/components';
 import type { WorkoutParameter } from '@/components';
 import {
-  abandonSession,
+  discardSession,
   clearRest,
   completeSet,
   finishSession,
@@ -35,6 +35,7 @@ import { formatPrValue, type PrHit, PR_LABELS } from '@/lib/pr';
 import { LOAD_SCALE, REPS_SCALE, RPE_SCALE } from '@/lib/scale';
 import { elapsedSec, formatClock, formatRest, restRemainingSec } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
+import { countLoggedSets } from '@/lib/volume';
 import { color, hairline, size, space, text } from '@/theme';
 
 const TAPE_GUTTER = 62;
@@ -76,7 +77,11 @@ export default function LiveScreen() {
   const session = useLiveQuery(activeSessionQuery()).data?.[0];
   const sessionId = session?.id ?? '';
   const exercises = useLiveQuery(sessionExercisesQuery(sessionId), [sessionId]).data ?? [];
-  const allSets = useLiveQuery(sessionSetsQuery(sessionId), [sessionId]).data ?? [];
+  const setsResult = useLiveQuery(sessionSetsQuery(sessionId), [sessionId]);
+  const allSets = setsResult.data ?? [];
+  // `data` is `[]` both while loading and when genuinely empty; `updatedAt`
+  // is the only signal that separates them, and `leave` deletes on a zero count.
+  const setsLoaded = setsResult.updatedAt !== undefined;
 
   const exercise =
     exercises.find((e) => e.id === session?.currentSessionExerciseId) ?? exercises[0];
@@ -98,21 +103,89 @@ export default function LiveScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const discard = () => {
+  const logged = countLoggedSets(allSets);
+  /** Null until the sets are in — the dialogs must not print a count of "0" they
+   *  only believe because the query has not answered yet. */
+  const tally = setsLoaded
+    ? `${logged} logged ${logged === 1 ? 'set' : 'sets'}`
+    : 'Anything you logged';
+
+  /**
+   * Leaving the session, from the back chevron and from Finish alike.
+   *
+   * **Nothing logged means nothing to decide.** Every planned set exists as a
+   * row from the moment the session starts, so a session you opened by mistake
+   * looks identical to one you are three sets into until you read `completedAt`.
+   * With none of them logged there is nothing to keep, nothing to summarise and
+   * nothing to ask about, so it is deleted outright — otherwise a mis-tap leaves
+   * a permanent trained day on the calendar that only a database restore can
+   * remove.
+   *
+   * **One logged set and it becomes the user's call**, because now both answers
+   * are defensible: it happened and belongs in history, or it was a false start
+   * you would rather not see again. The dialog names the count, since discarding
+   * here really does delete those sets and the records they set.
+   *
+   * Leaving goes to Today rather than `back()`: every route into the live screen
+   * uses `replace`, so there is no entry behind it and `back()` strands you on
+   * the empty state with a "GO_BACK was not handled" warning.
+   *
+   * **The zero branch waits for the sets to load.** `useLiveQuery` hands back an
+   * empty array while the query is still in flight, which is indistinguishable
+   * from a session nobody has logged a set in — and taking the delete branch on
+   * that would destroy a real session's worth of work on an early tap. Until
+   * `updatedAt` arrives, leaving is treated as the decision it might be.
+   */
+  const leave = (intent: 'discard' | 'finish') => {
     if (!session) return false;
-    Alert.alert('Discard this session?', 'Sets you already logged are kept.', [
-      { text: 'Keep going', style: 'cancel' },
+
+    if (setsLoaded && logged === 0) {
+      discardSession(session.id);
+      router.replace('/');
+      return true;
+    }
+
+    if (intent === 'discard') {
+      Alert.alert(
+        'Discard this session?',
+        `${tally} will be deleted, along with any records from this session. This cannot be undone.`,
+        [
+          { text: 'Keep going', style: 'cancel' },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => {
+              discardSession(session.id);
+              router.replace('/');
+            },
+          },
+        ],
+      );
+      return true;
+    }
+
+    Alert.alert('Finish this session?', `${tally}.`, [
+      { text: 'Not yet', style: 'cancel' },
       {
         text: 'Discard',
         style: 'destructive',
         onPress: () => {
-          abandonSession(session.id);
-          router.back();
+          discardSession(session.id);
+          router.replace('/');
+        },
+      },
+      {
+        text: 'Finish',
+        onPress: () => {
+          finishSession(session.id);
+          router.replace(`/summary/${session.id}`);
         },
       },
     ]);
     return true;
   };
+
+  const discard = () => leave('discard');
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -136,7 +209,7 @@ export default function LiveScreen() {
   if (!session) {
     return (
       <Screen>
-        <ScreenHeader title="No session" kicker="LIVE" onBack={() => router.back()} />
+        <ScreenHeader title="No session" kicker="LIVE" onBack={() => router.replace('/')} />
         <Section first label="NOTHING RUNNING" plated={false}>
           <Text style={text.prose}>Start a routine and it takes over this screen.</Text>
         </Section>
@@ -147,7 +220,7 @@ export default function LiveScreen() {
   if (!exercise || !set) {
     return (
       <Screen>
-        <ScreenHeader title={session.name} kicker="LIVE" onBack={() => router.back()} />
+        <ScreenHeader title={session.name} kicker="LIVE" onBack={() => router.replace('/')} />
         <Section first label="EMPTY SESSION" plated={false}>
           <Text style={text.prose}>This session has no exercises in it yet.</Text>
         </Section>
@@ -201,17 +274,7 @@ export default function LiveScreen() {
     announce(hits, 'Logged');
   };
 
-  const finish = () =>
-    Alert.alert('Finish this session?', undefined, [
-      { text: 'Not yet', style: 'cancel' },
-      {
-        text: 'Finish',
-        onPress: () => {
-          finishSession(session.id);
-          router.replace(`/summary/${session.id}`);
-        },
-      },
-    ]);
+  const finish = () => leave('finish');
 
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
