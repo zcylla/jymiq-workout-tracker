@@ -21,6 +21,7 @@ import {
 } from './time.ts';
 import {
   countWorkingSets,
+  countLoggedSets,
   formatTonnage,
   isComparableSession,
   isLoggedSession,
@@ -404,4 +405,24 @@ test('rest resolves routine over exercise over the kind default', () => {
   assert.equal(resolveRestSec(undefined, undefined, 'isolation'), DEFAULT_REST_SEC.isolation);
   // Zero is a choice ("no rest"), not an absent value, so it must not fall through.
   assert.equal(resolveRestSec(0, 120, 'compound'), 0);
+});
+
+test('"did anything happen" counts a logged warm-up; "how much work" does not', () => {
+  const sets: SetLike[] = [
+    { weightKg: 20, reps: 10, kind: 'warmup', completedAt: 1 },
+    { weightKg: 100, reps: 5, kind: 'working', completedAt: null }, // dialled, not logged
+  ];
+  // A session whose only logged set was a warm-up must not be silently deleted.
+  assert.equal(countLoggedSets(sets), 1);
+  assert.equal(countWorkingSets(sets), 0);
+});
+
+test('a session where nothing was logged has nothing to lose', () => {
+  const planned: SetLike[] = [
+    { weightKg: 100, reps: 8, kind: 'working', completedAt: null },
+    { weightKg: 100, reps: 8, kind: 'working', completedAt: null },
+  ];
+  // startSession pre-fills every planned set, so a populated row is not evidence.
+  assert.equal(countLoggedSets(planned), 0);
+  assert.equal(countLoggedSets([]), 0);
 });

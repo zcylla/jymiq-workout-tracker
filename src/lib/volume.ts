@@ -40,6 +40,20 @@ export function countWorkingSets(sets: readonly SetLike[]): number {
   return sets.filter((s) => wasPerformed(s) && s.kind !== 'warmup').length;
 }
 
+/**
+ * Every set actually logged, warm-ups included — the question "did anything
+ * happen in this session", which decides whether leaving it is a discard or a
+ * decision.
+ *
+ * Deliberately not `countWorkingSets`: that one drops warm-ups because they
+ * inflate a volume delta, and a session whose only logged set was a warm-up is
+ * still a session you did something in. Confusing the two would silently delete
+ * it.
+ */
+export function countLoggedSets(sets: readonly SetLike[]): number {
+  return sets.filter(wasPerformed).length;
+}
+
 /** Heaviest completed working set; ties go to the one with more reps. */
 export function topSet(sets: readonly SetLike[]): SetLike | null {
   let best: SetLike | null = null;
