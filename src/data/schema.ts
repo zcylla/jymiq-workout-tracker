@@ -318,6 +318,25 @@ export const bodyWeights = sqliteTable(
   (t) => [index('idx_body_weights_measured').on(t.measuredAt)],
 );
 
+/**
+ * A readiness check-in: three taps, optional. Answers are stored as words, not
+ * numbers, because nothing scores them; the screen turns them into a sentence.
+ * One row per check-in, and answering again the same day updates that row.
+ */
+export const checkIns = sqliteTable(
+  'check_ins',
+  {
+    id: text('id').primaryKey(),
+    at: integer('at').notNull(),
+    sleep: text('sleep', { enum: ['poor', 'ok', 'good'] }).notNull(),
+    soreness: text('soreness', { enum: ['none', 'some', 'a_lot'] }).notNull(),
+    energy: text('energy', { enum: ['low', 'ok', 'good'] }).notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('idx_check_ins_at').on(t.at)],
+);
+
 export type Exercise = typeof exercises.$inferSelect;
 /** The library's filter vocabulary, derived from the column so the two cannot drift. */
 export type Equipment = Exercise['equipment'];
