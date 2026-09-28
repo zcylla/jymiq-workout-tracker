@@ -34,3 +34,4 @@ export { Tape } from './tape';
 export { Toggle } from './toggle';
 export { WeekStrip } from './week-strip';
 export { StartButton, TabBar, TabItem, useTabBarHeight } from './tab-bar';
+export { ZoneBar } from './zone-bar';
