@@ -54,6 +54,12 @@ export const space = {
   pad: 22,
 } as const;
 
+/** The bodyweight chart's fill: `accent` fading to nothing under the line. */
+export const trend = {
+  fillTop: 'rgba(228,198,140,0.26)',
+  fillBottom: 'rgba(228,198,140,0)',
+} as const;
+
 export const radius = {
   row: 12,
   plate: 14,

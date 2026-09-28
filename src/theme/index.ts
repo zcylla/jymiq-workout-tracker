@@ -12,5 +12,6 @@ export {
   radius,
   size,
   space,
+  trend,
   wash,
 } from './tokens';
