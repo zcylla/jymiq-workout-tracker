@@ -3,7 +3,12 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-28 (late). **Today's empty state was checked on an emulator and then built —
+Last updated 2026-09-28 (latest). **The body map shipped — Lab 35 B4.** It is the MuscleMap figure
+drawn with Skia and coloured by recent load relative to the most-worked muscle, with no invented
+threshold. **Every drawn screen is now built.** The app's background was checked against the design
+on the device and matches (see "Body map — Lab 35 B4"). **Next: Phase 8, sync.**
+
+Before that, the same day: **Today's empty state was checked on an emulator and then built —
 Lab 43 T3.** The check showed that a fresh install's only way forward was MAKE A PROGRAM, which
 needs a routine the user does not have yet. **The week strip no longer draws past its plate.** See
 **"Today, empty — Lab 43 T3"**.
@@ -48,21 +53,20 @@ session detail (C3). The history *list* was dropped — the IA never had one.
 ## Pick this up here
 
 **State:** clean on `main` (local commits not pushed — push only when asked), `pnpm check` exit 0,
-**175 tests**. Every tab root, the live session, routines, programs (with the A4 chart), library,
+**182 tests**. Every tab root, the live session, routines, programs (with the A4 chart), library,
 exercise detail (with the e1RM chart), bodyweight, readiness, session summary and detail, export,
-restore and Settings are on the device and verified there. **One drawn screen remains unbuilt**: the body map, which is
-unscheduled.
+restore, Settings and the body map are on the device and verified there. **Every drawn screen is
+built.**
 
-**Every scheduled screen is built.** The body map (Lab 35 B4) is the only drawn screen left, and
-it is the least resolved drawing in the set. Read `claudedocs/body-map.md` and **ask the owner
-before building it**. The other open work is Phase 8 (sync) and the UI pass described under
-"Smaller things".
+**The next thing is Phase 8 — sync.** Start from "The Supabase mirror". The mirror is missing four
+tables (`programs`, `program_days`, `body_weights`, `check_ins`). The other open work is the UI
+pass described under "Smaller things".
 
 ### What remains, in order
 
 | # | What | Board | Blocked on |
 |---|---|---|---|
-| 1 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
+| 1 | **Phase 8 — sync** | "The Supabase mirror" | owner decisions: what syncs, conflict rule, when |
 
 **Correction to the previous handoff:** D1 was listed as blocked on the chart. It never was — Lab 37
 records that the six-week volume chart was *cut* from Load to pay for the restyle. The chart
@@ -521,6 +525,41 @@ design wants one and the schema needs a column, or it does not — that is a des
 oversight.
 
 ---
+
+## Body map — Lab 35 B4
+
+**Built to `claudedocs/body-map.md`, with two owner decisions that override it:**
+- **Relative colouring, no threshold.** The spec's `FATIGUE_FULL_SETS = 12` ceiling and its
+  quartile words were invented. What ships instead: each muscle's recent working sets are decayed
+  on the research's 48 h half-life (assist sets count half), then coloured *relative to the
+  most-worked muscle*. The scale reads **LESS WORKED → MOST WORKED**, a fact, rather than §0's
+  FRESH → NEEDS REST, which is a readiness claim. This is the same call the owner made for
+  Readiness.
+- **The entry point is a BODY row at the top of the Strength root**, which pushes `/body`. Its meta
+  names the hardest-worked muscle.
+
+**The asset differed from the spec.** The spec says only the left side is authored and the right
+must be mirrored. The vendored `male-front/back.ts` already carry both sides (`*_LEFT` and `*_RIGHT`
+ids, all `side: "CENTER"`), symmetric about x=512 to within 12 units, so nothing is mirrored. The
+group names also differ from the spec's table (`RHOMBOIDS`, `LATS`, `BACK_LOWER`, …). The mapping in
+`scripts/build-bodymap.mjs` follows the real enum. To regenerate `src/components/body-map/paths.ts`,
+run `node --experimental-strip-types scripts/build-bodymap.mjs`.
+
+**Pieces.** The maths is in `src/lib/fatigue.ts` (tested). `heat()` lives in `src/theme/heat.ts`:
+it interpolates from `color.off` to `color.live` in OKLab, and derives both ends from the tokens
+rather than restating hex values. `fatigueSetsQuery` is `FROM sessions`. There is no schema change.
+
+**One thing that reads oddly, left as is.** WORKED HARDEST is *ordered* by decayed load, which
+counts assisting work and recency, but it *prints* prime-mover working sets. So "Shoulders · 2
+SETS" can rank above "Chest · 3 SETS" when push-ups load the shoulders as an assist. Both
+numbers are honest. Whether the list should sort by what it prints is a small call for the owner.
+
+**The app's background matches the design.** Asked by the owner. Sampled on the phone: the canvas
+is `#0a0908` in every corner and behind the status bar, and plates are `#221f19`. Those are exactly
+§0's palette and the kit's `--ground`. `app.json` and the splash screen use the same ground.
+(`#0a0a0b` in `kit.py` is only the lab boards' page background around the phone frames, not the
+app's.) **When sampling, first make sure the app is actually in the foreground**: the first attempt
+read the launcher, and the second read the dev client's own `#111111`.
 
 ## Today, empty — Lab 43 T3
 
