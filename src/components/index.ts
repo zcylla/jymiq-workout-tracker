@@ -22,6 +22,7 @@ export { Plate } from './plate';
 export { ProgramWeek } from './program-week';
 export { Rail, type RailItem } from './rail';
 export { RowPlate, RowPlates } from './row-plate';
+export { Scale } from './scale';
 export { Screen } from './screen';
 export { SearchField } from './search-field';
 export { ScreenHeader } from './screen-header';
