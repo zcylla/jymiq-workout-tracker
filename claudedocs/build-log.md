@@ -3,7 +3,11 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-28. **The column chart and the Load tab root shipped.** The chart
+Last updated 2026-09-28 (later). **Both charts are on their screens** — exercise detail's e1RM
+chart (Lab 35 B2′ / Lab 39 Q1) and Program detail's SESSIONS PER WEEK (Lab 34 A4). See **"The two
+charts on their screens"**.
+
+Before that, the same day: **the column chart and the Load tab root shipped.** The chart
 primitive (`ColumnChart`, from `kit.chart()`) is on the device against Lab 34 A4 and Lab 39 Q1, and
 Lab 37 D1 is now the real Load tab root — two tiles, weekly sets per muscle as zone bars, and a
 deload sentence, with the calendar moved below it. On the way, **every reported tonnage and top set
@@ -31,30 +35,33 @@ session detail (C3). The history *list* was dropped — the IA never had one.
 ## Pick this up here
 
 **State:** clean on `main` (local commits not pushed — push only when asked), `pnpm check` exit 0,
-**152 tests**. Every tab root, the live session, routines, programs, library, exercise detail,
-session summary and detail, export, restore and Settings are on the device and verified there.
-**Five drawn screens remain unbuilt.**
+**158 tests**. Every tab root, the live session, routines, programs (with the A4 chart), library,
+exercise detail (with the e1RM chart), session summary and detail, export, restore and Settings are
+on the device and verified there. **Three drawn screens remain unbuilt** (bodyweight, readiness,
+body map), plus one verification job.
 
-**The next thing to build is exercise detail, scrolled — Lab 35 B2′** (with Lab 39 Q1, which is the
-same screen restyled). The chart it needs now exists and is proven against Q1's own data on
-`/dev/chart`. After that, item 2 is a two-line drop-in.
+**The next thing to build is Bodyweight — Lab 37 D2.** It needs a table, so it starts with a schema
+change: read "A hand-edited migration timestamp and a warm Metro" first.
 
 ### What remains, in order
 
 | # | What | Board | Blocked on |
 |---|---|---|---|
-| 1 | **Exercise detail, scrolled** — the e1RM chart below the fold | Lab 35 B2′ · Lab 39 Q1 | nothing |
-| 2 | **A4's SESSIONS PER WEEK** — drop `ColumnChart` into Program detail | Lab 34 A4 | nothing |
-| 3 | **Bodyweight** | Lab 37 D2 | a bodyweight table — a schema change, so re-read the migration trap first. D2 is the app's *one line chart*, not `ColumnChart` |
-| 4 | **Readiness** | Lab 37 D3 | an input and a model; §0: the output is a *sentence*, never a score. `ZoneBar` is reusable here |
-| 5 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; a `jymiq-a` emulator job |
-| 6 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
+| 1 | **Bodyweight** | Lab 37 D2 | a bodyweight table — a schema change, so re-read the migration trap first. D2 is the app's *one line chart*, not `ColumnChart` |
+| 2 | **Readiness** | Lab 37 D3 | an input and a model; §0: the output is a *sentence*, never a score. `ZoneBar` is reusable here |
+| 3 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; a `jymiq-a` emulator job |
+| 4 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
 
 **Correction to the previous handoff:** D1 was listed as blocked on the chart. It never was — Lab 37
 records that the six-week volume chart was *cut* from Load to pay for the restyle. The chart
 unblocks items 1 and 2 only.
 
 ### Smaller things, none of them blocking
+
+- **Exercise detail's YOUR NUMBERS tiles, REP MAXES and WHAT TO DO NEXT are not built** (Q1 draws
+  them). Only the e1RM chart shipped. The "Nothing logged yet" sentence now shows only for a lift
+  with no history, because once there is history it would be false. WHAT TO DO NEXT is model output:
+  §0 makes it a sentence, never a number.
 
 - **Today's SESSIONS tile ships without its meter** — no weekly target is stored. Needs a target in
   Settings first; §0 forbids a meter without a real denominator.
@@ -475,6 +482,30 @@ design wants one and the schema needs a column, or it does not — that is a des
 oversight.
 
 ---
+
+## The two charts on their screens
+
+**Exercise detail — Lab 35 B2′ / Lab 39 Q1.** `exerciseE1rmQuery` (`src/data/queries/exercises.ts`)
+returns the best stored e1RM per logged session for one lift, newest ten, `FROM sessions` so that
+finishing a session refreshes it. `e1rmTakeaway` (`src/lib/e1rm.ts`) writes the label, e.g.
+`UP 18 KG OVER 10 SESSIONS`, `DOWN …` or `UNCHANGED …`. It works from the whole-number display
+values, so the label agrees with the numbers the chart prints. Two departures from the board:
+**the x labels are real dates** (`sessionDateLabel`: `TODAY` only if the latest session really
+was today) rather than `10 AGO`/`TODAY`, and **a lift with one session gets a sentence, not a
+single column** (§0: a spark needs a series). Verified on Ab Wheel Rollout with 4 sessions.
+
+**Program detail — Lab 34 A4.** The board draws `WK 1…WK 8` with future weeks at zero, but nothing
+stores a cycle length. Decided with the owner:
+- **Only elapsed weeks are drawn**, from week 1 to the current week, capped to the latest 8.
+- **A column counts trained days, not sessions**, so it can be compared with the `N of D` printed
+  above it, where D is the number of scheduled weekdays. Two sessions on one day are one day.
+- **Sessions from before `startedAt` are not counted**, even when they fall in week 1.
+- **It draws only for a running program in week 2 or later.** One column is not a series, and a
+  paused program's WEEK tile is already `—`.
+
+`trainedDaysPerWeek` (`src/lib/program.ts`) is pure and tested. One caveat: `programs.startedAt` is
+never reset and no pause history is stored, so weeks a program spent paused draw as zero.
+Verified on PPL 3-Day in week 4: `1 of 3`, with three empty weeks that draw no column.
 
 ## The column chart and the Load tab root
 
