@@ -6,6 +6,7 @@ import { type PrHit, detectSessionVolumePr, detectSetPrs } from '@/lib/pr';
 import { resolveRestSec } from '@/lib/rest';
 
 import { getSettings } from '../settings';
+import { syncSoon } from '../sync';
 import { resolveSessionDurationSec } from '@/lib/time';
 import { countWorkingSets, type SetLike, totalVolume } from '@/lib/volume';
 
@@ -248,6 +249,7 @@ export function completeSet(id: string): PrHit[] {
       .run();
   });
 
+  syncSoon();
   return hits;
 }
 
@@ -524,6 +526,7 @@ export function discardSession(sessionId: string): void {
     if (!session || session.status !== 'in_progress') return;
     tx.delete(sessions).where(eq(sessions.id, sessionId)).run();
   });
+  syncSoon();
 }
 
 /**
@@ -568,6 +571,7 @@ export function abandonSession(sessionId: string): void {
       .where(eq(sessions.id, sessionId))
       .run();
   });
+  syncSoon();
 }
 
 /**

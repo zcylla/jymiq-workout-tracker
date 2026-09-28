@@ -4,6 +4,8 @@ import * as Linking from 'expo-linking';
 import Storage from 'expo-sqlite/kv-store';
 import { AppState } from 'react-native';
 
+import { syncSoon } from './sync';
+
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_KEY;
 
@@ -11,9 +13,8 @@ const key = process.env.EXPO_PUBLIC_SUPABASE_KEY;
  * The sync client. Null when the project is not configured, which is a state
  * the app has to survive: SQLite is the source of truth and every screen works
  * with no account and no signal. Supabase is *intended* as backup and
- * multi-device, not as the database — but no code pushes or pulls a row yet
- * (Phase 8). Until it does, signing in backs nothing up, and the sign-in screen
- * must not say otherwise.
+ * multi-device, not as the database — `src/data/sync.ts` pushes what changed
+ * and can pull a full copy back for a restore.
  *
  * `expo-sqlite/kv-store` is the session store — already a dependency, and
  * AsyncStorage-shaped, so it needs no adapter.
@@ -51,8 +52,13 @@ export const supabase =
 // while the phone is in a pocket between sets.
 if (supabase) {
   AppState.addEventListener('change', (state) => {
-    if (state === 'active') supabase.auth.startAutoRefresh();
-    else supabase.auth.stopAutoRefresh();
+    if (state === 'active') {
+      supabase.auth.startAutoRefresh();
+      syncSoon();
+    } else supabase.auth.stopAutoRefresh();
+  });
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_IN') syncSoon();
   });
 }
 
