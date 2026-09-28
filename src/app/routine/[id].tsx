@@ -132,7 +132,7 @@ export default function RoutineScreen() {
       label: 'LAST VOLUME',
       value:
         lastSession && lastSession.totalVolumeKg != null
-          ? formatTonnage(lastSession.totalVolumeKg)
+          ? formatTonnage(lastSession.totalVolumeKg, settings.weightUnit)
           : '—',
     },
   ];
@@ -148,6 +148,7 @@ export default function RoutineScreen() {
         totalVolumeKg={session.totalVolumeKg}
         topSet={topSetsBySession.get(session.id) ?? null}
         hasRecord={recordedSessionIds.has(session.id)}
+        unit={settings.weightUnit}
       />
     ),
     onPress: () => router.push(`/history/${session.id}`),

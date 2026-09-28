@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 
 import { formatMinutes, isPlausibleDuration, sessionDateLabel } from '@/lib/time';
+import { formatWeight, type Unit } from '@/lib/units';
 import { formatTonnage } from '@/lib/volume';
 import { text } from '@/theme';
 
@@ -22,6 +23,7 @@ export function SessionRow({
   totalVolumeKg,
   topSet,
   hasRecord = false,
+  unit,
 }: {
   startedAt: number;
   /** Which routine this was. Omitted on a screen that is already one routine. */
@@ -31,12 +33,15 @@ export function SessionRow({
   totalVolumeKg: number | null;
   topSet?: { weightKg: number | null; reps: number | null } | null;
   hasRecord?: boolean;
+  /** The display unit; totals are stored in kg. */
+  unit: Unit;
 }) {
   const meta: string[] = [];
   if (name) meta.push(name.toUpperCase());
   if (isPlausibleDuration(durationSec)) meta.push(formatMinutes(durationSec));
   meta.push(`${totalSets ?? 0} SETS`);
-  if (topSet?.weightKg != null) meta.push(`TOP ${topSet.weightKg} × ${topSet.reps}`);
+  if (topSet?.weightKg != null)
+    meta.push(`TOP ${formatWeight(topSet.weightKg, unit)} × ${topSet.reps}`);
 
   return (
     <>
@@ -45,7 +50,7 @@ export function SessionRow({
         {hasRecord ? <Pill label="PR" /> : null}
         <View style={{ flex: 1 }} />
         {totalVolumeKg != null ? (
-          <Text style={text.numSm}>{formatTonnage(totalVolumeKg)}</Text>
+          <Text style={text.numSm}>{formatTonnage(totalVolumeKg, unit)}</Text>
         ) : null}
       </View>
       <Text style={text.meta}>{meta.join(' · ')}</Text>

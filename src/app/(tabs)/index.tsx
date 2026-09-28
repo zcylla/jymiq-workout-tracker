@@ -23,6 +23,7 @@ import {
 import { useRows } from '@/data/live';
 import { startSession } from '@/data/mutations/sessions';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
+import { useSettings } from '@/data/settings';
 import { routineExercisesQuery } from '@/data/queries/routines';
 import { recentSessionsQuery, sessionsWithRecordsQuery } from '@/data/queries/sessions';
 import { lastRunPerRoutineQuery } from '@/data/queries/today';
@@ -228,6 +229,7 @@ function NextCard({
  * wearing a meter against an invented denominator.
  */
 function WeekTiles({ week }: { week: ReturnType<typeof weekStrip> }) {
+  const { weightUnit } = useSettings();
   const { thisWeek, lastWeek } = week;
   const change =
     lastWeek.volumeKg > 0
@@ -238,7 +240,7 @@ function WeekTiles({ week }: { week: ReturnType<typeof weekStrip> }) {
     { label: 'SESSIONS', value: String(thisWeek.sessions) },
     {
       label: 'VOLUME',
-      value: thisWeek.volumeKg > 0 ? formatTonnage(thisWeek.volumeKg) : '—',
+      value: thisWeek.volumeKg > 0 ? formatTonnage(thisWeek.volumeKg, weightUnit) : '—',
       below:
         change === null ? undefined : (
           <Delta value={`${change >= 0 ? '+' : ''}${change}%`} positive={change >= 0} />
@@ -252,6 +254,7 @@ function WeekTiles({ week }: { week: ReturnType<typeof weekStrip> }) {
 /** §0 reserves the rail for anything chronological. Two, because the calendar
  *  and the week strip are the other two routes into history. */
 function RecentRail() {
+  const { weightUnit } = useSettings();
   const sessions = useRows(
     useMemo(() => recentSessionsQuery(2), []),
     [],
@@ -275,6 +278,7 @@ function RecentRail() {
         totalSets={session.totalSets}
         totalVolumeKg={session.totalVolumeKg}
         hasRecord={recordedIds.has(session.id)}
+        unit={weightUnit}
       />
     ),
     onPress: () => router.push(`/history/${session.id}`),

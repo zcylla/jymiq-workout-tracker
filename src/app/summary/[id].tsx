@@ -78,7 +78,7 @@ export default function SummaryScreen() {
     { label: 'TIME', value: durationLabel },
     {
       label: 'VOLUME',
-      value: formatTonnage(session?.totalVolumeKg ?? 0),
+      value: formatTonnage(session?.totalVolumeKg ?? 0, settings.weightUnit),
       tone: 'hi',
       below: volumeDelta ? (
         <Delta value={volumeDelta.label} positive={volumeDelta.positive} />
@@ -157,7 +157,7 @@ export default function SummaryScreen() {
               chevron={false}
               lead={String(i + 1).padStart(2, '0')}
               title={ex.name}
-              meta={`${ex.count} SETS${ex.top ? ` · TOP ${formatWeight(ex.top.weightKg ?? 0, settings.weightUnit)} × ${ex.top.reps}` : ''} · ${formatTonnage(ex.volumeKg)}`}
+              meta={`${ex.count} SETS${ex.top ? ` · TOP ${formatWeight(ex.top.weightKg ?? 0, settings.weightUnit)} × ${ex.top.reps}` : ''} · ${formatTonnage(ex.volumeKg, settings.weightUnit)}`}
             />
           ))}
         </Section>
