@@ -98,3 +98,33 @@ export function parseQueueKey(rowKey: string): RowKey {
   }
   return v;
 }
+
+/** PostgREST onConflict target: user_id then the local key columns' SQL names. */
+export function conflictTarget(keyNames: readonly string[]): string {
+  return ['user_id', ...keyNames].join(',');
+}
+
+export interface SyncStatus {
+  lastPushAt: number | null;
+  pending: number;
+  error: string | null;
+}
+
+function when(at: number, now: number): string {
+  const min = Math.floor((now - at) / 60_000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min} min ago`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} h ago`;
+  const d = new Date(at);
+  return `${d.getDate()} ${d.toLocaleDateString('en-US', { month: 'short' })}`;
+}
+
+/** One honest line for the Account screen. */
+export function describeSync(s: SyncStatus, now: number): string {
+  if (s.error) return `Last backup failed — ${s.error}`;
+  if (s.lastPushAt === null && s.pending === 0) return 'Not backed up yet.';
+  const base = s.lastPushAt === null ? 'Not backed up yet' : `Backed up ${when(s.lastPushAt, now)}`;
+  if (s.pending === 0) return base;
+  return `${base} · ${s.pending} ${s.pending === 1 ? 'change' : 'changes'} waiting`;
+}

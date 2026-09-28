@@ -4,6 +4,8 @@ import { test } from 'node:test';
 import {
   type Col,
   chunk,
+  conflictTarget,
+  describeSync,
   fromRemote,
   parseQueueKey,
   planPush,
@@ -101,4 +103,25 @@ test('parseQueueKey accepts string/number arrays and rejects everything else', (
   assert.throws(() => parseQueueKey('{}'));
   assert.throws(() => parseQueueKey('[{}]'));
   assert.throws(() => parseQueueKey('not json'));
+});
+
+test('conflictTarget puts user_id first', () => {
+  assert.equal(conflictTarget(['id']), 'user_id,id');
+  assert.equal(conflictTarget(['program_id', 'weekday']), 'user_id,program_id,weekday');
+});
+
+test('describeSync', () => {
+  const now = new Date(2026, 8, 20, 12, 0).getTime();
+  const at = (ms: number) => now - ms;
+  const d = (lastPushAt: number | null, pending = 0, error: string | null = null) =>
+    describeSync({ lastPushAt, pending, error }, now);
+  assert.equal(d(at(5), 0, 'offline'), 'Last backup failed — offline');
+  assert.equal(d(null), 'Not backed up yet.');
+  assert.equal(d(at(30_000)), 'Backed up just now');
+  assert.equal(d(at(5 * 60_000)), 'Backed up 5 min ago');
+  assert.equal(d(at(3 * 3_600_000)), 'Backed up 3 h ago');
+  assert.equal(d(new Date(2026, 8, 3, 9).getTime()), 'Backed up 3 Sep');
+  assert.equal(d(at(5 * 60_000), 1), 'Backed up 5 min ago · 1 change waiting');
+  assert.equal(d(at(5 * 60_000), 4), 'Backed up 5 min ago · 4 changes waiting');
+  assert.equal(d(null, 2), 'Not backed up yet · 2 changes waiting');
 });
