@@ -301,6 +301,23 @@ export const personalRecords = sqliteTable(
   ],
 );
 
+/**
+ * A weigh-in. Append-only, like `personal_records`: the chart reads the latest
+ * reading per local day, so logging again the same day corrects that day
+ * without an UPDATE, and the earlier reading stays in the log.
+ */
+export const bodyWeights = sqliteTable(
+  'body_weights',
+  {
+    id: text('id').primaryKey(),
+    measuredAt: integer('measured_at').notNull(),
+    weightKg: real('weight_kg').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [index('idx_body_weights_measured').on(t.measuredAt)],
+);
+
 export type Exercise = typeof exercises.$inferSelect;
 /** The library's filter vocabulary, derived from the column so the two cannot drift. */
 export type Equipment = Exercise['equipment'];
