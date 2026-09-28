@@ -8,6 +8,7 @@ import {
   nextScheduled,
   programWeek,
   programWeekNumber,
+  trainedDaysPerWeek,
   upcomingScheduled,
 } from './program.ts';
 
@@ -141,4 +142,37 @@ test('a program that has never run has no week number to report', () => {
 test('a clock behind the start date reads as week one, never as zero', () => {
   const started = new Date(2026, 8, 21).getTime();
   assert.equal(programWeekNumber(started, new Date(2026, 8, 17)), 1);
+});
+
+// ------------------------------------------------------ trained days a week --
+test('trainedDaysPerWeek: one entry per elapsed week', () => {
+  assert.equal(trainedDaysPerWeek(THU.getTime(), [], new Date(2026, 8, 28, 9, 0)).length, 3);
+});
+
+test('trainedDaysPerWeek: two sessions on one day count once', () => {
+  const a = new Date(2026, 8, 18, 8, 0).getTime();
+  const b = new Date(2026, 8, 18, 18, 0).getTime();
+  assert.deepEqual(trainedDaysPerWeek(THU.getTime(), [a, b], new Date(2026, 8, 19, 9, 0)), [1]);
+});
+
+test('trainedDaysPerWeek: a session before startedAt is not counted', () => {
+  const early = new Date(2026, 8, 15, 10, 0).getTime();
+  assert.deepEqual(trainedDaysPerWeek(THU.getTime(), [early], new Date(2026, 8, 19, 9, 0)), [0]);
+});
+
+test('trainedDaysPerWeek: Sunday stays in its week, Monday opens the next', () => {
+  const sun = new Date(2026, 8, 20, 10, 0).getTime();
+  const mon = new Date(2026, 8, 21, 10, 0).getTime();
+  assert.deepEqual(
+    trainedDaysPerWeek(THU.getTime(), [sun, mon], new Date(2026, 8, 22, 9, 0)),
+    [1, 1],
+  );
+});
+
+test('trainedDaysPerWeek: a week with no sessions is 0', () => {
+  const mon = new Date(2026, 8, 28, 10, 0).getTime();
+  assert.deepEqual(
+    trainedDaysPerWeek(THU.getTime(), [mon], new Date(2026, 8, 28, 12, 0)),
+    [0, 0, 1],
+  );
 });

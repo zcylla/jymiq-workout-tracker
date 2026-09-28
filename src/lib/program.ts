@@ -171,3 +171,23 @@ export function programWeekNumber(
   const weeks = Math.floor((nowMonday - startMonday) / (7 * 86_400_000));
   return weeks < 0 ? 1 : weeks + 1;
 }
+
+/**
+ * Trained days per program week, week 1 first, through the week `at` falls in.
+ * A day counts once however many sessions it holds, and a session before
+ * `startedAt` predates the program even when it shares week 1.
+ */
+export function trainedDaysPerWeek(
+  startedAt: number,
+  sessionStarts: readonly number[],
+  at: number | Date = Date.now(),
+): number[] {
+  const atMs = at instanceof Date ? at.getTime() : at;
+  const weeks = programWeekNumber(startedAt, atMs) ?? 1;
+  const days: Set<string>[] = Array.from({ length: weeks }, () => new Set());
+  for (const s of sessionStarts) {
+    if (s < startedAt || s > atMs) continue;
+    days[(programWeekNumber(startedAt, s) ?? 1) - 1]?.add(dayKey(s));
+  }
+  return days.map((d) => d.size);
+}
