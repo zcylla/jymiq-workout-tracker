@@ -337,6 +337,24 @@ export const checkIns = sqliteTable(
   (t) => [index('idx_check_ins_at').on(t.at)],
 );
 
+/**
+ * Rows changed since the last cloud push, filled by SQLite triggers (drizzle/0005).
+ * At most one entry per row — the newest op wins, because the row's current state is
+ * what gets pushed. Bookkeeping, not user data, so it is NOT in export/restore.
+ */
+export const syncQueue = sqliteTable(
+  'sync_queue',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    tableName: text('table_name').notNull(),
+    /** JSON array of the row's key values, e.g. ["abc"] or ["prog1",2]. */
+    rowKey: text('row_key').notNull(),
+    op: text('op', { enum: ['upsert', 'delete'] }).notNull(),
+    queuedAt: integer('queued_at').notNull(),
+  },
+  (t) => [uniqueIndex('idx_sync_queue_row').on(t.tableName, t.rowKey)],
+);
+
 export type Exercise = typeof exercises.$inferSelect;
 /** The library's filter vocabulary, derived from the column so the two cannot drift. */
 export type Equipment = Exercise['equipment'];
