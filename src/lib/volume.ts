@@ -1,4 +1,4 @@
-import type { Kg } from './units.ts';
+import { toDisplay, type Kg, type Unit } from './units.ts';
 
 export type SetKind = 'warmup' | 'working' | 'drop' | 'failure';
 
@@ -70,8 +70,13 @@ export function topSet(sets: readonly SetLike[]): SetLike | null {
   return best;
 }
 
-/** "8.6 T" above a tonne, "820 KG" below — the boards use both. */
-export function formatTonnage(kg: Kg): string {
+/** "8.6 T" above a tonne, "820 KG" below — the boards use both. Pounds: "18.9 K LB" / "820 LB". */
+export function formatTonnage(kg: Kg, unit: Unit = 'kg'): string {
+  if (unit === 'lb') {
+    const lb = toDisplay(kg, 'lb');
+    if (lb >= 1000) return `${(Math.round(lb / 100) / 10).toFixed(1)} K LB`;
+    return `${Math.round(lb)} LB`;
+  }
   if (kg >= 1000) return `${(Math.round(kg / 100) / 10).toFixed(1)} T`;
   return `${Math.round(kg)} KG`;
 }
