@@ -14,6 +14,8 @@ export const KNOWN_TABLES = [
   'exercise_muscles',
   'routines',
   'routine_exercises',
+  'programs',
+  'program_days',
   'sessions',
   'session_exercises',
   'sets',

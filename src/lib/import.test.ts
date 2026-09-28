@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { EXPORT_VERSION, buildExport } from './export.ts';
-import { backupFiles, describeBackup, parseBackup } from './import.ts';
+import { KNOWN_TABLES, backupFiles, describeBackup, parseBackup } from './import.ts';
 
 const meta = { now: Date.UTC(2026, 8, 13, 10, 42), appVersion: '1.0.0' };
 
@@ -186,4 +186,21 @@ test("a folder listing yields only this app's backups, newest first", () => {
 
 test('a folder with no backups in it is empty, not an error', () => {
   assert.deepEqual(backupFiles([doc('notes.json'), doc('photo.jpg')]), []);
+});
+
+test('restore order puts program_days after programs and routines', () => {
+  const at = (t: string) => (KNOWN_TABLES as readonly string[]).indexOf(t);
+  assert.ok(at('programs') >= 0);
+  assert.ok(at('program_days') > at('programs'));
+  assert.ok(at('program_days') > at('routines'));
+});
+
+test('a backup made before programs existed still parses', () => {
+  const envelope = buildExport({ routines: [{ id: 'a' }] }, meta);
+  const result = parseBackup(JSON.stringify(envelope));
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.backup.tables.programs, undefined);
+  assert.equal(result.backup.tables.program_days, undefined);
+  assert.deepEqual(result.backup.unknownTables, []);
 });

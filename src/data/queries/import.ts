@@ -6,6 +6,8 @@ import {
   exerciseMuscles,
   exercises,
   personalRecords,
+  programDays,
+  programs,
   routineExercises,
   routines,
   sessionExercises,
@@ -14,7 +16,7 @@ import {
 } from '../schema';
 
 /**
- * Writing a backup back in. Restore **replaces**: every row in all eight tables
+ * Writing a backup back in. Restore **replaces**: every row in every table
  * is deleted and the file's rows take their place. Merging was rejected — the
  * ids are the same on both sides, so a merge is either a no-op or a silent
  * pick-a-winner, and neither is something you can reason about at the moment
@@ -28,6 +30,8 @@ const TABLES = {
   exercise_muscles: exerciseMuscles,
   routines,
   routine_exercises: routineExercises,
+  programs,
+  program_days: programDays,
   sessions,
   session_exercises: sessionExercises,
   sets,
