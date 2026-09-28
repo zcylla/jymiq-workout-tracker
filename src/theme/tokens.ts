@@ -54,6 +54,21 @@ export const space = {
   pad: 22,
 } as const;
 
+/**
+ * kit `phone()`'s ground is not flat: a dot field fixed to the screen and two
+ * blurred blooms sit under every screen's content. The panels' "lit" quality
+ * comes from the bloom (design-exploration §6), so a flat ground loses it.
+ */
+export const field = {
+  dot: 'rgba(255,255,255,0.04)',
+  /** kit `.field` background-size. */
+  pitch: 18,
+  bloomGold: 'rgba(228,198,140,0.13)',
+  bloomGreen: 'rgba(159,174,58,0.07)',
+  /** CSS `filter: blur(88px)` — a Gaussian standard deviation, which is Skia's sigma too. */
+  bloomBlur: 88,
+} as const;
+
 /** The bodyweight chart's fill: `accent` fading to nothing under the line. */
 export const trend = {
   fillTop: 'rgba(228,198,140,0.26)',

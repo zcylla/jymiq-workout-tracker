@@ -6,6 +6,7 @@ export {
   color,
   containment,
   fabShadow,
+  field,
   hairline,
   type Ink,
   litEdge,
