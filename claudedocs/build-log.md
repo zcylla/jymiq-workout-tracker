@@ -3,12 +3,16 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-13. **Programs shipped** — Lab 34 A3 and A4 are on the device, and with them
-the three departures they were blocking: the calendar and Today's week strip draw a missed day
-differently from a rest day, and Today's next-routine card reads the schedule instead of
-`pickNextRoutine`'s heuristic, which is deleted. See **"Programs — Lab 34 A3 and A4"**, and read
-**"A hand-edited migration timestamp and a warm Metro"** before touching `drizzle/meta/_journal.json`
-again. **Start the next session at "Pick this up here"** immediately below.
+Last updated 2026-09-28. **The column chart and the Load tab root shipped.** The chart
+primitive (`ColumnChart`, from `kit.chart()`) is on the device against Lab 34 A4 and Lab 39 Q1, and
+Lab 37 D1 is now the real Load tab root — two tiles, weekly sets per muscle as zone bars, and a
+deload sentence, with the calendar moved below it. On the way, **every reported tonnage and top set
+now follows the weight unit** (it never had). See **"The column chart and the Load tab root"**.
+**Start the next session at "Pick this up here"** immediately below.
+
+Before that (2026-09-13): **Programs shipped** — Lab 34 A3 and A4 — see "Programs — Lab 34 A3 and
+A4", and read "A hand-edited migration timestamp and a warm Metro" before touching
+`drizzle/meta/_journal.json` again.
 
 Before that, in the same session: export and restore both shipped — export is device-verified
 at 1,223 rows, restore is pure and tested with the destructive path designed around a rollback
@@ -26,51 +30,45 @@ session detail (C3). The history *list* was dropped — the IA never had one.
 
 ## Pick this up here
 
-**State:** clean on `main`, `pnpm check` exit 0, **135 tests**. Every one of the four tabs, the live
-session, routines, programs, library, exercise detail, session summary and detail, export, restore
-and Settings are on the device and verified there. **Six drawn screens remain unbuilt.**
+**State:** clean on `main` (local commits not pushed — push only when asked), `pnpm check` exit 0,
+**152 tests**. Every tab root, the live session, routines, programs, library, exercise detail,
+session summary and detail, export, restore and Settings are on the device and verified there.
+**Five drawn screens remain unbuilt.**
 
-**The next thing to build is the column chart primitive**, not a screen. It is the only item that
-unblocks two others, and it was deliberately deferred out of A4 this session rather than invented in
-the wrong place — §0's chart rules are strict enough that the primitive deserves its own pass:
-
-> `kit.chart()` is the one column chart — never bare. Minimum: y min/max anchored to the chart, first
-> and last x labels, latest mark in the accent with the rest de-emphasised, its value printed, and a
-> title that states the takeaway. **Text never wears the series colour.** It takes no plate — a
-> baseline and two axes are already a frame.
-
-`claudedocs/design-labs/kit.py`'s `chart()` is that spec as code, and Lab 37 D1, Lab 35 B2′ and
-Lab 34 A4 are the three boards that draw it. Build it against `kit.chart()`, then D1 is mostly
-composition.
+**The next thing to build is exercise detail, scrolled — Lab 35 B2′** (with Lab 39 Q1, which is the
+same screen restyled). The chart it needs now exists and is proven against Q1's own data on
+`/dev/chart`. After that, item 2 is a two-line drop-in.
 
 ### What remains, in order
 
 | # | What | Board | Blocked on |
 |---|---|---|---|
-| 1 | **The column chart** | §0 *Charts* · `kit.chart()` | nothing — it is the unblocker |
-| 2 | **Volume and deload** — the real Load tab root | Lab 37 D1 | the chart |
-| 3 | **Exercise detail, scrolled** | Lab 35 B2′ | the chart |
-| 4 | **A4's SESSIONS PER WEEK** — drop it in | Lab 34 A4 | the chart |
-| 5 | **Bodyweight** | Lab 37 D2 | a bodyweight table — a schema change, so re-read the migration trap |
-| 6 | **Readiness** | Lab 37 D3 | an input and a model; §0 says the output is a *sentence*, never a score |
-| 7 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; this is a `jymiq-a` emulator job |
-| 8 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled by the plan; least resolved drawing in the set |
+| 1 | **Exercise detail, scrolled** — the e1RM chart below the fold | Lab 35 B2′ · Lab 39 Q1 | nothing |
+| 2 | **A4's SESSIONS PER WEEK** — drop `ColumnChart` into Program detail | Lab 34 A4 | nothing |
+| 3 | **Bodyweight** | Lab 37 D2 | a bodyweight table — a schema change, so re-read the migration trap first. D2 is the app's *one line chart*, not `ColumnChart` |
+| 4 | **Readiness** | Lab 37 D3 | an input and a model; §0: the output is a *sentence*, never a score. `ZoneBar` is reusable here |
+| 5 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; a `jymiq-a` emulator job |
+| 6 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
 
-**The Load tab root is still the calendar squatting on D1's slot.** That is item 2's real job, and
-the calendar moves down or into a month picker when D1 lands.
+**Correction to the previous handoff:** D1 was listed as blocked on the chart. It never was — Lab 37
+records that the six-week volume chart was *cut* from Load to pay for the restyle. The chart
+unblocks items 1 and 2 only.
 
 ### Smaller things, none of them blocking
 
-- **Today's SESSIONS tile ships without its meter** — the board draws `3 of 4` and no weekly target
-  is stored anywhere. Needs a target in Settings first; §0 forbids a meter without a real denominator.
+- **Today's SESSIONS tile ships without its meter** — no weekly target is stored. Needs a target in
+  Settings first; §0 forbids a meter without a real denominator.
 - **Settings deliberately omits half its board.** `solvePlates`, `warmupRamp` and `PLATE_COLORS` are
-  pure, tested and have **no caller** (the only mentions in `src/app` are comments saying so). The
-  switches that would configure them stay out until something renders them — do not ship the control
-  first.
-- **Three session mutations are written, tested and unused**: `addExerciseToSession` (wants the
-  library's `sessionId` picker mode), `reorderSets` / `reorderSessionExercises` (want the sheet
-  grips), `updateRoutineExercise` (wants target editing in the routine editor).
-- **Phase 8 — sync.** Schema, RLS and auth are in place and verified; nothing pushes or pulls a row.
+  pure, tested and have no caller. Do not ship their switches before something renders them.
+- **Four mutations are written, tested and unused**: `addExerciseToSession` (wants a library picker
+  mode), `reorderSets` / `reorderSessionExercises` (want the sheet grips), `updateRoutineExercise`
+  (wants target editing in the routine editor).
+- **Volume landmarks exist for five muscles only** (chest, back, quads, hamstrings, shoulders —
+  `src/lib/landmarks.ts`, the board's numbers). The other eleven show a count and no bar, on purpose.
+  Adding landmarks is a sourcing job, not a coding one — do not invent physiology.
+- **Four lint warnings predate all current work** (`strength.tsx`, `history/[id].tsx` useMemo deps;
+  `lib/pr.ts` duplicate import). `pnpm check` still exits 0. Fix them as their own commit if touched.
+- **Phase 8 — sync.** Schema, RLS and auth in place and verified; nothing pushes or pulls a row.
   Start from "The Supabase mirror".
 - **Still on Phase 7's list:** an error boundary and the Maestro flow over routine → session → summary.
 
@@ -78,25 +76,29 @@ the calendar moves down or into a month picker when D1 lands.
 
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk ANDROID_HOME=$HOME/Android/Sdk
-pnpm check                              # expect exit 0, 135 tests
+pnpm expo customize tsconfig.json       # FIRST on a fresh checkout: typed-route types are gitignored,
+                                        # and without this `pnpm check` fails with route errors
+pnpm check                              # expect exit 0, 152 tests, 4 pre-existing lint warnings
 pnpm expo start --dev-client            # add -c after ANY config or drizzle-journal edit
 adb reverse tcp:8081 tcp:8081           # re-run after every force-stop; it drops silently
 adb shell am start -a android.intent.action.VIEW \
   -d "jymiq://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
-adb shell am start -a android.intent.action.VIEW -d "jymiq://session/programs"   # once warm
+adb shell am start -a android.intent.action.VIEW -d "jymiq:///dev/chart"   # once warm
 adb exec-out screencap -p > shot.png
 ```
 
+**If a screenshot comes back solid black** the phone is dozing or locked, not the app failing —
+`adb shell dumpsys power | grep mWakefulness`. Never try to get past the lock; ask the owner.
+
 ### What is on the phone right now
 
-302 exercises, 1 routine (**Lower A**), 3 sessions, 42 sets, 18 records — and **one program,
-"PPL 3-Day", Lower A on Mon/Wed/Fri, running since 13 Sep**. That program is *test data made during
-the Programs build*; rename, reschedule or delete it freely. Export before anything destructive, and
-restoring the rollback file is still the fastest undo.
+302 exercises, 1 routine (**Lower A**), **4 sessions, 56 sets** — the fourth is a demo session run
+on 28 Sep so the Load tab's zone bars had this-week data to render. **One program, "PPL 3-Day"**,
+Lower A on Mon/Wed/Fri, running since 13 Sep. All of it is test data; rename, reschedule or delete
+freely. Export before anything destructive; restoring the rollback file is the fastest undo.
 
 **A missed day cannot appear until two days after a program is activated** — nothing before
-`started_at` is ever missed, and today is never missed. Verifying that rendering on the device meant
-back-dating `started_at` with a database swap; the emulator is the cheaper route next time.
+`started_at` is ever missed, and today is never missed.
 
 ---
 
@@ -471,6 +473,65 @@ value**, so a routine resting 0s must not fall through to 180.
 `pausedAt` column to accumulate *from*, and Lab 33's four states have no pause control. Either the
 design wants one and the schema needs a column, or it does not — that is a design question, not an
 oversight.
+
+---
+
+## The column chart and the Load tab root
+
+### `ColumnChart` — `kit.chart()` as a component
+
+`src/lib/chart.ts` (`chartGeometry`, tested) holds the height maths; `src/components/column-chart.tsx`
+draws it. Verified on the device against both boards that call `kit.chart()`, rendered side by side
+on `/dev/chart`: Lab 34 A4 (sessions per week, `2 of 6`, h 54) and Lab 39 Q1 (estimated 1RM).
+It takes no plate and no title — the `Section` label above it carries the takeaway.
+
+**Three departures from a literal port, each found on the device:**
+
+1. **A zero draws no column.** `kit.chart()` floors every column at 12% of the span, so on A4 the
+   five future weeks with zero sessions drew a ~13pt bar beside an axis labelled **0** — an empty
+   week reading as a light one. Decided with the owner: an exact `0` returns height 0, every non-zero
+   value keeps the floor and scale unchanged, so Q1 renders identically. `§0 — a visual only when
+   there is something real to draw.`
+2. **The y labels are top-aligned.** The board's `align-items:flex-end` bottom-aligns the label
+   column against a column that also holds the baseline and the x labels, which put the min label
+   *below* the baseline it names. Top-aligned, the labels span the plot alone.
+3. **Columns are `flex: 1`, not measured.** Measuring the plot with `onLayout` gave one frame of
+   zero-width columns; flex divides the width with no state.
+
+### Lab 37 D1 — the Load tab root
+
+`src/app/(tabs)/load.tsx`: two tiles (SETS, VOLUME with a delta against last week — **no delta when
+last week was 0**), WEEKLY SETS PER MUSCLE as `ZoneBar` rows, a DELOAD sentence, then the unchanged
+month calendar (now labelled with the month name, since the header says "Load"). Verified on the
+device on an empty week and on a week with one logged session.
+
+**Decisions, all deliberate:**
+
+- **Counting:** a muscle's weekly sets are completed, non-warm-up sets on exercises where it is the
+  **prime** mover. Assist does not count.
+- **Landmarks exist for five muscles** — chest 8/14/20, back 10/18/25, quads 8/16/20, hamstrings
+  6/14/18, shoulders 6/16/22 — the board's numbers, in `src/lib/landmarks.ts`. A trained muscle with
+  no landmark gets its count and **no bar and no verdict**: there is no denominator to draw against,
+  and inventing one would be inventing physiology.
+- **Verdicts are words**: TOO FEW / GOOD / HARD / TOO MUCH, never MEV/MAV/MRV. The marker is always
+  near-white; colour lives on the count.
+- **The deload rule is the design research's, not invented**: *"deload when weekly sets approach
+  RP's MRV and a stall coincides"*. Near the ceiling = a landmarked muscle past `high`; a stall = a
+  lift trained this week whose newest best e1RM does not beat the best of its two previous sessions
+  (needs three sessions with an e1RM; a set past 12 reps has none, so it is never judged).
+  Fewer than three sessions ever → *Too early to call.* The board's "probably week 5" is dropped —
+  it is a guess, and a guessed number must not look like a measured one.
+- **The reason never claims more than the data.** The first build said *"your lifts are progressing"*
+  on a week with no sets at all. It now names the lifts that are actually climbing, says when none has
+  three sessions of history, and says *Nothing to call yet* when nothing was logged. Tested.
+
+### Tonnage never followed the weight unit
+
+`formatTonnage` took kg and only ever printed `T`/`KG`, so Today, the summary, routine detail's
+LAST THREE, the session rows and the calendar total all ignored the setting — as did `SessionRow`'s
+`TOP` weight, which printed raw kilograms. It now takes the unit (`820 LB` / `18.9 K LB`; `T` means a
+tonne and is not reused), and every caller passes it. `SessionRow` takes `unit` as a prop, because
+components never read `src/data`. Only the dev database screen still prints kg.
 
 ---
 
