@@ -3,7 +3,11 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-28 (evening). **Bodyweight shipped — Lab 37 D2** — the app's first schema
+Last updated 2026-09-28 (night). **Readiness shipped — Lab 37 D3.** It is an optional check-in
+reached from Today, and the call it gives is a sentence built from the three answers plus facts from
+the log. There are no invented thresholds. See **"Readiness — Lab 37 D3"**.
+
+Before that, the same day: **Bodyweight shipped — Lab 37 D2** — the app's first schema
 change since programs, its first Skia drawing, and a backup bug fixed on the way: **programs were
 never in the backup file**. See **"Bodyweight — Lab 37 D2"**.
 
@@ -39,28 +43,35 @@ session detail (C3). The history *list* was dropped — the IA never had one.
 ## Pick this up here
 
 **State:** clean on `main` (local commits not pushed — push only when asked), `pnpm check` exit 0,
-**166 tests**. Every tab root, the live session, routines, programs (with the A4 chart), library,
-exercise detail (with the e1RM chart), bodyweight, session summary and detail, export, restore and
-Settings are on the device and verified there. **Two drawn screens remain unbuilt** (readiness, body
-map), plus one verification job.
+**175 tests**. Every tab root, the live session, routines, programs (with the A4 chart), library,
+exercise detail (with the e1RM chart), bodyweight, readiness, session summary and detail, export,
+restore and Settings are on the device and verified there. **One drawn screen remains unbuilt**
+(the body map, which is unscheduled), plus one verification job.
 
-**The next thing to build is Readiness — Lab 37 D3.** It needs an input and a model, and §0 makes
-its output a sentence, never a score. It will probably need a table too, so re-read the migration
-trap first.
+**The next thing to do is Today, empty — Lab 43 T3.** It is a verification job on the `jymiq-a`
+emulator, not a build: Today now has a READINESS row, so its empty state has changed since T3 was
+drawn. After that, the body map is the only drawn screen left, and it is the least resolved
+drawing in the set — read `claudedocs/body-map.md` and ask before building.
 
 ### What remains, in order
 
 | # | What | Board | Blocked on |
 |---|---|---|---|
-| 1 | **Readiness** | Lab 37 D3 | an input and a model; §0: the output is a *sentence*, never a score. `ZoneBar` is reusable here |
-| 2 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; a `jymiq-a` emulator job |
-| 3 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
+| 1 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; a `jymiq-a` emulator job |
+| 2 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
 
 **Correction to the previous handoff:** D1 was listed as blocked on the chart. It never was — Lab 37
 records that the six-week volume chart was *cut* from Load to pay for the restyle. The chart
 unblocks items 1 and 2 only.
 
 ### Smaller things, none of them blocking
+
+- **The readiness verdict has only been rendered by its tests**, not on the device. Verifying the
+  screen would have meant writing a check-in the owner did not give, so the device pass stopped at
+  two answers (nothing is saved until all three are set). The owner's first real check-in is the
+  first render. Worth one look: the one-bad-answer lead is long, and Today shows it uppercased in
+  the READINESS row's meta.
+- **`check_ins` is not in the Supabase mirror** either — add it with the other three in Phase 8.
 
 - **D2's RELATIVE STRENGTH is not built.** It needs strength-standard percentile tables, and finding
   those is a sourcing job, like the volume landmarks. Weigh-ins now exist for it to divide by.
@@ -494,6 +505,34 @@ design wants one and the schema needs a column, or it does not — that is a des
 oversight.
 
 ---
+
+## Readiness — Lab 37 D3
+
+**Decided with the owner.**
+- **It is optional, not a gate.** A READINESS row under Today's next-session card pushes
+  `/check-in`. The row reads `3 TAPS · OPTIONAL`, or today's lead once answered. D3's action bar
+  offers `Start <routine>`, using the same logic as Today's Start button, and `SKIP`, which goes
+  back. Starting a session from Today is still one tap.
+- **Answers are stored.** `check_ins` (`drizzle/0004_rare_warhawk.sql`, journal `when`
+  1790632508687) holds one row per check-in, with enum text columns. Once all three answers are
+  set the row is written, and later changes update that same row. It is backed up.
+- **The model is facts plus a stated rule** (`src/lib/readiness.ts`, tested). The lead comes from
+  the number of bad answers (POOR sleep, A LOT of soreness, LOW energy). 0 → *Train as planned.*
+  1 → *…and ease off if the warm-ups feel slow.* 2 → *Go lighter today.* 3 → *Consider resting
+  today.* The reason only repeats what the user said, plus which of the next routine's prime
+  muscles were trained in the last 48 hours, with their working-set counts. It uses no decay
+  maths, no thresholds, no kg amounts and no score.
+
+**What the board was not followed on, and why.** D3's sample verdict prescribes "drop the top set
+by 2.5 kg", and its caveat claims volume "decayed on a 48-hour half-life". Both would be invented:
+the research names the ingredients but gives no rule. The caveat is rewritten to say what the call
+actually uses. Lab 48's catalog note mentions a zone bar on this screen, but D3 as drawn has none,
+and nothing here has a real range to draw.
+
+**Verified on the device.** Migration 0004 applied under a cold Metro, and both journal
+timestamps are recorded in `__drizzle_migrations`. The Today row, the screen, the scales'
+selected state and the empty "Answer all three…" state were all checked. After two answers and a
+SKIP, `check_ins` still had 0 rows.
 
 ## Bodyweight — Lab 37 D2
 
