@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { color, space } from '@/theme';
+
+import { Backdrop } from './backdrop';
 
 /**
  * The screen shell — kit's `.scr`. Ground, the 22pt side margin, and the real
@@ -21,16 +23,19 @@ export function Screen({
 }) {
   const insets = useSafeAreaInsets();
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: color.ground }}
-      contentContainerStyle={{
-        paddingHorizontal: space.pad,
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom + space.between + bottomInset,
-      }}
-      showsVerticalScrollIndicator={false}
-    >
-      {children}
-    </ScrollView>
+    <View style={{ flex: 1, backgroundColor: color.ground }}>
+      <Backdrop />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: space.pad,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom + space.between + bottomInset,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        {children}
+      </ScrollView>
+    </View>
   );
 }
