@@ -1,4 +1,4 @@
-import type { Kg } from './units.ts';
+import { type Kg, toDisplay, type Unit } from './units.ts';
 
 export type E1rmFormula = 'epley' | 'brzycki';
 
@@ -32,4 +32,14 @@ export function loadForReps(oneRmKg: Kg, reps: number, formula: E1rmFormula = 'e
 export function percentOf1RM(weightKg: Kg, oneRmKg: Kg): number {
   if (oneRmKg <= 0) return 0;
   return Math.round((weightKg / oneRmKg) * 100);
+}
+
+/** The chart's label, from whole-number values so it matches what the columns print. `bestsKg` is oldest first, length 2 or more. */
+export function e1rmTakeaway(bestsKg: readonly number[], unit: Unit): string {
+  const delta =
+    Math.round(toDisplay(bestsKg[bestsKg.length - 1], unit)) -
+    Math.round(toDisplay(bestsKg[0], unit));
+  const over = `OVER ${bestsKg.length} SESSIONS`;
+  if (delta === 0) return `UNCHANGED ${over}`;
+  return `${delta > 0 ? 'UP' : 'DOWN'} ${Math.abs(delta)} ${unit.toUpperCase()} ${over}`;
 }

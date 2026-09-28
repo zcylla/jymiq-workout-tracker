@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { estimate1RM, loadForReps, percentOf1RM } from './e1rm.ts';
+import { e1rmTakeaway, estimate1RM, loadForReps, percentOf1RM } from './e1rm.ts';
 import { detectSessionVolumePr, detectSetPrs, formatPrValue, type PrBaseline } from './pr.ts';
 import { DEFAULT_INVENTORY, solvePlates, warmupRamp } from './plates.ts';
 import { DEFAULT_REST_SEC, resolveRestSec } from './rest.ts';
@@ -34,6 +34,13 @@ import {
 import { formatWeight, fromDisplay, roundToStep, toDisplay, weightKey } from './units.ts';
 
 // ---------------------------------------------------------------- e1RM ----
+test('e1rmTakeaway names the direction and the whole-number change', () => {
+  assert.equal(e1rmTakeaway([112, 120, 130], 'kg'), 'UP 18 KG OVER 3 SESSIONS');
+  assert.equal(e1rmTakeaway([130, 120, 127, 127], 'kg'), 'DOWN 3 KG OVER 4 SESSIONS');
+  assert.equal(e1rmTakeaway([100, 90, 100.2, 100, 100.4], 'kg'), 'UNCHANGED OVER 5 SESSIONS');
+  assert.equal(e1rmTakeaway([100, 110], 'lb'), 'UP 23 LB OVER 2 SESSIONS');
+});
+
 test('e1RM is the weight itself at one rep', () => {
   assert.equal(estimate1RM(100, 1), 100);
   assert.equal(estimate1RM(100, 1, 'brzycki'), 100);
