@@ -4,18 +4,23 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Screen, ScreenHeader, Section } from '@/components';
+import { ColumnChart, Screen, ScreenHeader, Section } from '@/components';
 import { exerciseArt } from '@/data/exercise-art';
-import { exerciseMusclesQuery, exerciseQuery } from '@/data/queries/exercises';
+import { useRows } from '@/data/live';
+import { exerciseE1rmQuery, exerciseMusclesQuery, exerciseQuery } from '@/data/queries/exercises';
+import { useSettings } from '@/data/settings';
+import { e1rmTakeaway } from '@/lib/e1rm';
 import { sameProse } from '@/lib/prose';
+import { sessionDateLabel } from '@/lib/time';
+import { toDisplay } from '@/lib/units';
 import { color, motion, space, text } from '@/theme';
 
 /**
  * Lab 35 B2 (= Lab 39 Q1). A pushed detail screen: sibling of `(tabs)`, so it
  * loses the tab bar and the primary action takes that plane.
  *
- * The board's numbers, chart and rep maxes are all session-derived and land in
- * Phase 7 once there is history to draw.
+ * The estimated-1RM chart is here; the board's number tiles and rep maxes are
+ * not built yet.
  */
 export default function ExerciseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,7 +32,16 @@ export default function ExerciseScreen() {
     useMemo(() => exerciseMusclesQuery(id), [id]),
     [id],
   );
+  const rows = useRows(
+    useMemo(() => exerciseE1rmQuery(id), [id]),
+    [id],
+  );
+  const unit = useSettings().weightUnit;
   const exercise = found?.[0];
+  const sessionsNewestFirst = rows ?? [];
+  const bests = sessionsNewestFirst
+    .flatMap((r) => (r.bestE1rmKg === null ? [] : [r.bestE1rmKg]))
+    .reverse();
 
   const frames = exerciseArt(id);
   const cues: string[] = Array.isArray(exercise?.cues) ? exercise.cues : [];
@@ -82,11 +96,32 @@ export default function ExerciseScreen() {
         </Section>
       ) : null}
 
-      <Section label="YOUR NUMBERS" plated={false}>
-        <Text style={text.prose}>
-          Nothing logged yet. Your best set and estimated 1RM appear here after the first session.
-        </Text>
-      </Section>
+      {rows?.length === 0 ? (
+        <Section label="YOUR NUMBERS" plated={false}>
+          <Text style={text.prose}>
+            Nothing logged yet. Your best set and estimated 1RM appear here after the first session.
+          </Text>
+        </Section>
+      ) : null}
+
+      {bests.length === 1 ? (
+        <Section label="ESTIMATED 1RM" plated={false}>
+          <Text style={text.prose}>One session logged. The trend draws from the second.</Text>
+        </Section>
+      ) : null}
+
+      {bests.length >= 2 ? (
+        <Section label={`ESTIMATED 1RM · ${e1rmTakeaway(bests, unit)}`} plated={false}>
+          <ColumnChart
+            values={bests.map((kg) => toDisplay(kg, unit))}
+            format={(v) => String(Math.round(v))}
+            xFirst={sessionDateLabel(sessionsNewestFirst[sessionsNewestFirst.length - 1].at, {
+              upper: true,
+            })}
+            xLast={sessionDateLabel(sessionsNewestFirst[0].at, { upper: true })}
+          />
+        </Section>
+      ) : null}
 
       {/* CC BY-SA asks for credit wherever the work is distributed, and the
             app is where this app distributes it. */}
