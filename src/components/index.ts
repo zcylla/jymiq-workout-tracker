@@ -1,6 +1,7 @@
 export { ActionBar, useActionBarHeight } from './action-bar';
 export { Calendar } from './calendar';
 export { Chip, ChipStrip } from './chip';
+export { ColumnChart } from './column-chart';
 export { Delta } from './delta';
 export {
   DialogProvider,
