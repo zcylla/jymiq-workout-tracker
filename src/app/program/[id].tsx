@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 import {
   ActionBar,
   Chip,
+  ColumnChart,
   Field,
   ListRow,
   Pill,
@@ -30,7 +31,7 @@ import { programDaysQuery, programQuery } from '@/data/queries/programs';
 import { routineListQuery } from '@/data/queries/routines';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { dayKey, mondayIndex, trainedDays } from '@/lib/calendar';
-import { type Schedule, programWeek, programWeekNumber } from '@/lib/program';
+import { type Schedule, programWeek, programWeekNumber, trainedDaysPerWeek } from '@/lib/program';
 import { space, text } from '@/theme';
 
 /**
@@ -39,13 +40,12 @@ import { space, text } from '@/theme';
  *
  * **Three departures from the board, all recorded in the build log.** The two
  * tiles lose their denominators — no cycle length is stored, so WEEK has no
- * "/ 8" and §0 forbids a meter without one. The SESSIONS PER WEEK chart is not
- * here: `kit.chart()` has no React counterpart yet, and §0's chart rules are
- * strict enough that inventing one for this screen would be the wrong place to
- * settle them. And the weekday rows carry no grip: seven weekdays do not
- * reorder, so the grip would be a control that does nothing. Tapping a row
- * opens a routine picker inside the row's own plate, the same idiom the
- * custom-exercise form uses.
+ * "/ 8" and §0 forbids a meter without one. The SESSIONS PER WEEK chart draws
+ * elapsed weeks only, since no cycle length is stored to draw future ones, and
+ * counts trained days against the scheduled days. And the weekday rows carry
+ * no grip: seven weekdays do not reorder, so the grip would be a control that
+ * does nothing. Tapping a row opens a routine picker inside the row's own
+ * plate, the same idiom the custom-exercise form uses.
  */
 export default function ProgramScreen() {
   const actionBar = useActionBarHeight();
@@ -71,6 +71,14 @@ export default function ProgramScreen() {
     [range.from, range.to],
   );
 
+  const historyTo = useMemo(() => nowExclusive(), []);
+  const started = found?.[0]?.startedAt ?? null;
+  const startedAt = started ?? 0;
+  const history = useRows(
+    useMemo(() => sessionsInRangeQuery(startedAt, historyTo), [startedAt, historyTo]),
+    [startedAt, historyTo],
+  );
+
   const [open, setOpen] = useState<number | null>(null);
 
   const program = found?.[0];
@@ -83,6 +91,17 @@ export default function ProgramScreen() {
   const trained = useMemo(() => new Set(trainedDays(sessions ?? []).keys()), [sessions]);
   const week = useMemo(() => programWeek(schedule, trained), [schedule, trained]);
 
+  const perWeek = useMemo(
+    () =>
+      started === null
+        ? []
+        : trainedDaysPerWeek(
+            started,
+            (history ?? []).map((row) => row.startedAt),
+          ),
+    [started, history],
+  );
+
   if (!program) {
     return (
       <Screen>
@@ -94,6 +113,10 @@ export default function ProgramScreen() {
   const active = program.status === 'active';
   const today = schedule.days.get(mondayIndex(new Date()));
   const scheduled = schedule.days.size;
+
+  const shown = perWeek.slice(-8);
+  const weekNo = perWeek.length;
+  const firstWeek = weekNo - shown.length + 1;
 
   // Two tiles, not four (A4). Both ship plain: neither has a denominator that
   // is stored anywhere, and §0 is explicit that a meter needs a real one.
@@ -145,6 +168,18 @@ export default function ProgramScreen() {
         <Section first pad={13}>
           <StatTiles items={tiles} surface="raised" />
         </Section>
+
+        {active && program.startedAt != null && scheduled > 0 && weekNo >= 2 ? (
+          <Section label={`SESSIONS PER WEEK · WEEK ${weekNo} IS UNDER WAY`} plated={false}>
+            <ColumnChart
+              values={shown}
+              xFirst={`WK ${firstWeek}`}
+              xLast={`WK ${weekNo}`}
+              value={`${shown[shown.length - 1]} of ${scheduled}`}
+              h={54}
+            />
+          </Section>
+        ) : null}
 
         <Section label="SCHEDULE" plated={false}>
           <RowPlates>
@@ -239,4 +274,9 @@ export default function ProgramScreen() {
 function startOfWeek(): number {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate() - mondayIndex(now)).getTime();
+}
+
+/** The exclusive upper bound that includes a session started this millisecond. */
+function nowExclusive(): number {
+  return Date.now() + 1;
 }
