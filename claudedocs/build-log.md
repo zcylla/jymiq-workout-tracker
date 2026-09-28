@@ -3,7 +3,11 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-28 (later). **Both charts are on their screens** — exercise detail's e1RM
+Last updated 2026-09-28 (evening). **Bodyweight shipped — Lab 37 D2** — the app's first schema
+change since programs, its first Skia drawing, and a backup bug fixed on the way: **programs were
+never in the backup file**. See **"Bodyweight — Lab 37 D2"**.
+
+Before that, the same day: **both charts are on their screens** — exercise detail's e1RM
 chart (Lab 35 B2′ / Lab 39 Q1) and Program detail's SESSIONS PER WEEK (Lab 34 A4). See **"The two
 charts on their screens"**.
 
@@ -35,28 +39,36 @@ session detail (C3). The history *list* was dropped — the IA never had one.
 ## Pick this up here
 
 **State:** clean on `main` (local commits not pushed — push only when asked), `pnpm check` exit 0,
-**158 tests**. Every tab root, the live session, routines, programs (with the A4 chart), library,
-exercise detail (with the e1RM chart), session summary and detail, export, restore and Settings are
-on the device and verified there. **Three drawn screens remain unbuilt** (bodyweight, readiness,
-body map), plus one verification job.
+**166 tests**. Every tab root, the live session, routines, programs (with the A4 chart), library,
+exercise detail (with the e1RM chart), bodyweight, session summary and detail, export, restore and
+Settings are on the device and verified there. **Two drawn screens remain unbuilt** (readiness, body
+map), plus one verification job.
 
-**The next thing to build is Bodyweight — Lab 37 D2.** It needs a table, so it starts with a schema
-change: read "A hand-edited migration timestamp and a warm Metro" first.
+**The next thing to build is Readiness — Lab 37 D3.** It needs an input and a model, and §0 makes
+its output a sentence, never a score. It will probably need a table too, so re-read the migration
+trap first.
 
 ### What remains, in order
 
 | # | What | Board | Blocked on |
 |---|---|---|---|
-| 1 | **Bodyweight** | Lab 37 D2 | a bodyweight table — a schema change, so re-read the migration trap first. D2 is the app's *one line chart*, not `ColumnChart` |
-| 2 | **Readiness** | Lab 37 D3 | an input and a model; §0: the output is a *sentence*, never a score. `ZoneBar` is reusable here |
-| 3 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; a `jymiq-a` emulator job |
-| 4 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
+| 1 | **Readiness** | Lab 37 D3 | an input and a model; §0: the output is a *sentence*, never a score. `ZoneBar` is reusable here |
+| 2 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; a `jymiq-a` emulator job |
+| 3 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
 
 **Correction to the previous handoff:** D1 was listed as blocked on the chart. It never was — Lab 37
 records that the six-week volume chart was *cut* from Load to pay for the restyle. The chart
 unblocks items 1 and 2 only.
 
 ### Smaller things, none of them blocking
+
+- **D2's RELATIVE STRENGTH is not built.** It needs strength-standard percentile tables, and finding
+  those is a sourcing job, like the volume landmarks. Weigh-ins now exist for it to divide by.
+- **A weigh-in cannot be edited or deleted.** Logging again the same day corrects that day, because
+  each day's latest reading wins. A wrong reading from an earlier day stays until an edit exists.
+- **`body_weights` is not in the Supabase mirror.** The mirror has eight tables and the local schema
+  now has eleven. `programs` and `program_days` were never mirrored either. Phase 8 has to add all
+  three with the same `user_id`/`deleted_at` treatment.
 
 - **Exercise detail's YOUR NUMBERS tiles, REP MAXES and WHAT TO DO NEXT are not built** (Q1 draws
   them). Only the e1RM chart shipped. The "Nothing logged yet" sentence now shows only for a lift
@@ -482,6 +494,51 @@ design wants one and the schema needs a column, or it does not — that is a des
 oversight.
 
 ---
+
+## Bodyweight — Lab 37 D2
+
+**Where it lives (decided with the owner):** Lab 34's IA puts bodyweight under Load, and it stays
+there. It is a pushed `/bodyweight` screen, reached from one BODYWEIGHT row on the Load root above the
+calendar. The owner asked why other apps keep it in Settings. The answer: apps keep a single
+bodyweight *value* in Settings (an input to calculations), and the weigh-in *log with a trend*
+somewhere of its own, which is what D2 is.
+
+**Data.** `body_weights` (`drizzle/0003_conscious_ink.sql`, journal `when` 1790627049213, above
+0002's 1789361811503) is append-only and stores kilograms. The migration was applied on the phone
+under a cold `pnpm expo start -c`, following the trap below. `logBodyweight` refuses anything outside
+20–350 kg. That check sits at the trust boundary, since one stray digit would wreck every average and
+the chart's y range. The table is in export and restore.
+
+**Maths — `src/lib/bodyweight.ts`, tested.** One value per local day, where the latest reading wins.
+The 7-day average covers today and the six days before it. The 30-day change is today's 7-day average
+minus the 7-day average as of 30 days ago, and it is null when either side is empty (§0: a delta
+needs a previous value). BY MONTH compares each month with the previous month that has readings.
+
+**Departures from the board:**
+- **Changes are drawn neutral, not green/red.** The 30-day change and the month changes are plain
+  `color.mid` text, not `Delta`. Whether gaining weight is good depends on a goal the app does not
+  know.
+- **BY MONTH rows are unplated.** They are read-only, and §0 puts read-only rows on the canvas; the
+  board plates them.
+- **RELATIVE STRENGTH is omitted** (see the smaller-things list).
+- **The board draws no way to log a weigh-in.** A "Log weight" action bar opens a sheet with one
+  decimal field, in the unit the owner chose.
+
+**`TrendChart`** (`src/components/trend-chart.tsx`) is the first Skia drawing in `src/`. Skia had
+been in the native build since day one, unused. Use **`Skia.PathBuilder`**: `SkPath.moveTo/lineTo/
+close` are deprecated in the installed version and log a warning per call. It is verified against
+D2's own fourteen readings on `/dev/chart`. **The phone's real data has no weigh-ins**, and none were
+invented to test it: the owner's first real weigh-in is the first real render.
+
+**`Sheet` had no keyboard handling.** This is the first sheet with a text field, and on edge-to-edge
+Android the keyboard covered the sheet completely. `Sheet` is now a `KeyboardAvoidingView` with
+`behavior="padding"`, so every future sheet with a field gets the fix too.
+
+**Backups were missing programs.** `programs` and `program_days` were in neither the export nor
+`KNOWN_TABLES`, so a restore deleted routines, which cascaded away every program day, and left the
+program rows orphaned. Both tables are now exported and restored in FK order. Older files still
+parse, because a missing table means no rows. `EXPORT_VERSION` stays at 1, since bumping it would
+make older builds refuse new files for no reason.
 
 ## The two charts on their screens
 
