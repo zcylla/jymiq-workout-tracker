@@ -1791,6 +1791,34 @@ used to say a migration failed without ever saying why. `src/app/_layout.tsx` pr
 
 ## The Supabase mirror
 
+> **The project changed on 2026-09-28. Everything below that names `apmzkqejwmhctaldbzgv` is the old
+> project.** It was paused and its URL stopped resolving; the owner's live project is now
+> **`hrmxlijtdldcmljkhwhf`** (`https://hrmxlijtdldcmljkhwhf.supabase.co`), and `.mcp.json` points at it.
+> **The new project was empty** — no tables, no migrations, so nothing from this section had carried
+> over. The four original migrations had only ever lived in the old project's database, never in the
+> repo. The schema was rebuilt from `src/data/schema.ts` under the rules below and is now
+> **committed at `supabase/migrations/`**, so it can be replayed if this happens again. It covers all
+> **twelve** tables, including the four the old mirror never had (`programs`, `program_days`,
+> `body_weights`, `check_ins`).
+>
+> **Verified on the new project:** RLS on with one owner policy per table, `anon` has no privileges,
+> TRUNCATE revoked from `authenticated`. A two-user probe (run in a transaction that aborts, so it
+> leaves nothing behind) confirmed: the `user_id` default resolves to `auth.uid()`; two users may
+> reuse the same id; each sees only their own rows; attaching a row to another user's session is
+> refused by the composite foreign key; reassigning `user_id` is refused by `with check`; deleting
+> another user's row affects nothing; `anon` is refused. Advisors report only two warnings: GraphQL
+> schema visibility for signed-in users, and leaked-password protection, which is moot because sign-in
+> is Google or magic link.
+>
+> **Not carried over, and the owner must redo in the new project's dashboard:** the Google provider
+> (a Google Cloud OAuth Web client whose redirect URI is the new project's
+> `/auth/v1/callback`) and the `jymiq:///sign-in` entry under Additional Redirect URLs. **The app's
+> `.env`** now points at the new project (it is gitignored, and the file was missing on this machine).
+> No sign-in has been completed against the new project.
+>
+> Two departures from the old schema: the "one active program" and "one live session" unique indexes
+> ignore tombstoned rows (`deleted_at is null`), so a deleted row cannot block a live one.
+
 Project `apmzkqejwmhctaldbzgv`, reached through the Supabase MCP. `.env` holds
 `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` (the publishable key — **never** the
 `service_role` key, which would ship inside the bundle) and is gitignored.
