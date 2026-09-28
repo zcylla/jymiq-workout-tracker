@@ -23,9 +23,11 @@ import {
 import { useRows } from '@/data/live';
 import { startSession } from '@/data/mutations/sessions';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
+import { exerciseCountQuery } from '@/data/queries/exercises';
+import { loggedSessionIdsQuery } from '@/data/queries/load';
 import { useSettings } from '@/data/settings';
 import { latestCheckInQuery } from '@/data/queries/readiness';
-import { routineExercisesQuery } from '@/data/queries/routines';
+import { routineExercisesQuery, routineListQuery } from '@/data/queries/routines';
 import { recentSessionsQuery, sessionsWithRecordsQuery } from '@/data/queries/sessions';
 import { lastRunPerRoutineQuery } from '@/data/queries/today';
 import { useActiveSchedule } from '@/data/schedule';
@@ -88,6 +90,18 @@ export default function TodayScreen() {
     return row?.lastRunAt ?? null;
   }, [next, lastRuns]);
 
+  const routines = useRows(
+    useMemo(() => routineListQuery(), []),
+    [],
+  );
+  const logged = useRows(
+    useMemo(() => loggedSessionIdsQuery(), []),
+    [],
+  );
+  // Lab 43 T3: a fresh install has nothing to schedule, so "make a program" is
+  // a route it cannot take yet. Both answers must be in before claiming it.
+  const fresh = routines?.length === 0 && logged?.length === 0;
+
   return (
     <Screen bottomInset={tabBar}>
       {/* Settings is not a tab (§0) — it is this gear. */}
@@ -101,7 +115,11 @@ export default function TodayScreen() {
         }
       />
 
-      <NextCard next={next} lastRunAt={lastRunAt} loading={active === null} />
+      {fresh ? (
+        <FirstSteps />
+      ) : (
+        <NextCard next={next} lastRunAt={lastRunAt} loading={active === null} />
+      )}
 
       <ReadinessRow />
 
@@ -229,6 +247,56 @@ function NextCard({
   );
 }
 
+/** Lab 43 T3 — the empty state is a set of actions, not an apology. */
+function FirstSteps() {
+  const show = useDialog();
+  const count = useRows(
+    useMemo(() => exerciseCountQuery(), []),
+    [],
+  );
+  const exercises = count?.[0]?.n;
+
+  const startEmpty = () => {
+    try {
+      startSession();
+      router.replace('/live');
+    } catch {
+      show({
+        title: 'A session is already running',
+        message: 'Finish or discard it before starting another.',
+      });
+    }
+  };
+
+  return (
+    <>
+      <Section first plated={false}>
+        <Text style={text.lead}>Nothing logged yet.</Text>
+        <Text style={text.prose}>
+          The week strip, your records and the recent list fill in as you train. Start with a
+          routine or just open a session and log as you go.
+        </Text>
+      </Section>
+      <Section label="FIRST STEPS" plated={false}>
+        <RowPlates>
+          <RowPlate onPress={() => router.push('/routine/new')}>
+            <ListRow title="Build a routine" meta="PICK LIFTS, SETS AND REST" />
+          </RowPlate>
+          <RowPlate onPress={() => router.push('/session/library')}>
+            <ListRow
+              title="Browse the library"
+              meta={exercises ? `${exercises} EXERCISES, OR ADD YOUR OWN` : 'OR ADD YOUR OWN'}
+            />
+          </RowPlate>
+          <RowPlate onPress={startEmpty}>
+            <ListRow title="Start an empty session" meta="DECIDE AS YOU GO" />
+          </RowPlate>
+        </RowPlates>
+      </Section>
+    </>
+  );
+}
+
 /** Optional, and only a link: the lead depends on the answers alone, so no routine or set query runs here. */
 function ReadinessRow() {
   const today = useMemo(() => dayStart(nowMs()), []);
@@ -274,7 +342,7 @@ function WeekTiles({ week }: { week: ReturnType<typeof weekStrip> }) {
       : null;
 
   const tiles: Tile[] = [
-    { label: 'SESSIONS', value: String(thisWeek.sessions) },
+    { label: 'SESSIONS', value: String(thisWeek.sessions), tone: thisWeek.sessions ? 'hi' : 'lo' },
     {
       label: 'VOLUME',
       value: thisWeek.volumeKg > 0 ? formatTonnage(thisWeek.volumeKg, weightUnit) : '—',
