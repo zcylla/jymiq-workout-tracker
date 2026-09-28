@@ -204,3 +204,7 @@ test('a backup made before programs existed still parses', () => {
   assert.equal(result.backup.tables.program_days, undefined);
   assert.deepEqual(result.backup.unknownTables, []);
 });
+
+test('body weights are a known table', () => {
+  assert.ok((KNOWN_TABLES as readonly string[]).includes('body_weights'));
+});
