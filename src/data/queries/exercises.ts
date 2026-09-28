@@ -1,7 +1,14 @@
-import { and, asc, eq, like, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, like, max, ne, sql } from 'drizzle-orm';
 
 import { db } from '../db';
-import { type Equipment, exerciseMuscles, exercises } from '../schema';
+import {
+  type Equipment,
+  exerciseMuscles,
+  exercises,
+  sessionExercises,
+  sessions,
+  sets,
+} from '../schema';
 
 /**
  * Query builders, not results: they are handed to `useLiveQuery`, which
@@ -43,4 +50,25 @@ export function exerciseCountQuery() {
     .select({ n: sql<number>`count(*)`.as('n') })
     .from(exercises)
     .where(sql`${exercises.archivedAt} is null`);
+}
+
+/** Best stored e1RM of one lift per logged session, newest ten. `FROM sessions`: finishing one is the write that refreshes it. */
+export function exerciseE1rmQuery(exerciseId: string) {
+  return db
+    .select({ at: sessions.startedAt, bestE1rmKg: max(sets.e1rmKg) })
+    .from(sessions)
+    .innerJoin(sessionExercises, eq(sessionExercises.sessionId, sessions.id))
+    .innerJoin(sets, eq(sets.sessionExerciseId, sessionExercises.id))
+    .where(
+      and(
+        ne(sessions.status, 'in_progress'),
+        eq(sessionExercises.exerciseId, exerciseId),
+        isNotNull(sets.completedAt),
+        isNotNull(sets.e1rmKg),
+        ne(sets.kind, 'warmup'),
+      ),
+    )
+    .groupBy(sessions.id)
+    .orderBy(desc(sessions.startedAt))
+    .limit(10);
 }
