@@ -13,10 +13,12 @@ export function RowPlate({
   children,
   onPress,
   tone = 'raised',
+  disabled = false,
 }: {
   children: ReactNode;
   onPress?: () => void;
   tone?: 'raised' | 'panel';
+  disabled?: boolean;
 }) {
   const style = [
     containment.rowPlate,
@@ -27,7 +29,11 @@ export function RowPlate({
   if (!onPress) return <View style={style}>{children}</View>;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [style, pressed && { opacity: 0.7 }]}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [style, (pressed || disabled) && { opacity: 0.7 }]}
+    >
       {children}
     </Pressable>
   );
