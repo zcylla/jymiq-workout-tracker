@@ -4,6 +4,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 import Storage from 'expo-sqlite/kv-store';
 import * as WebBrowser from 'expo-web-browser';
+import { count } from 'drizzle-orm';
 import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 
@@ -21,7 +22,12 @@ import {
 } from '@/components';
 import { readAllTables } from '@/data/queries/export';
 import { restoreBackup } from '@/data/queries/import';
+import { db } from '@/data/db';
+import { syncQueue } from '@/data/schema';
+import { pushNow, restoreFromCloud, useSyncState } from '@/data/sync';
+import { useRows } from '@/data/live';
 import { authCodeFromUrl, authRedirectTo, exchangeAuthCode, supabase } from '@/data/supabase';
+import { describeSync } from '@/lib/sync';
 import { buildExport, exportFileName, totalRows } from '@/lib/export';
 import {
   type BackupFile,
@@ -104,6 +110,85 @@ async function writeBackup(dir: string): Promise<{ name: string; rows: number }>
   );
   await FileSystem.writeAsStringAsync(uri, JSON.stringify(envelope));
   return { name, rows: totalRows(envelope) };
+}
+
+const nowMs = () => Date.now();
+
+function SyncSection() {
+  const show = useDialog();
+  const sync = useSyncState();
+  const pending = useRows(db.select({ n: count() }).from(syncQueue))?.[0]?.n ?? 0;
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  const backUp = async () => {
+    if (busy) return;
+    setBusy(true);
+    const r = await pushNow();
+    setBusy(false);
+    if (r.status === 'error')
+      show({ title: 'Backup failed', message: r.message ?? 'Unknown error.' });
+  };
+
+  const applyCloudRestore = async () => {
+    setBusy(true);
+    try {
+      const r = await restoreFromCloud(async () => withDirectory(writeBackup));
+      setNote(
+        'cancelled' in r
+          ? `Restore cancelled — ${r.cancelled}.`
+          : `Restored ${r.written.toLocaleString()} rows from the cloud. Your previous database is in ${r.rollbackName}.`,
+      );
+    } catch (e) {
+      show({
+        title: 'Restore failed',
+        message: e instanceof Error ? e.message : 'Nothing was written.',
+      });
+      setNote('Restore failed. Your data is untouched.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmCloudRestore = () => {
+    if (busy) return;
+    setNote(null);
+    show({
+      title: 'Replace everything?',
+      message:
+        'Everything on this phone is deleted and replaced with your cloud copy. ' +
+        'Your current database is written to a rollback file first.',
+      actions: [
+        { label: 'Replace', tone: 'destructive', onPress: () => void applyCloudRestore() },
+        {
+          label: 'Cancel',
+          tone: 'cancel',
+          onPress: () => setNote('Restore cancelled. Nothing was written.'),
+        },
+      ],
+    });
+  };
+
+  return (
+    <Section label="SYNC" plated={false}>
+      <Text style={text.prose}>
+        {note ??
+          describeSync({ lastPushAt: sync.lastPushAt, pending, error: sync.lastError }, nowMs())}
+      </Text>
+      <RowPlates>
+        <RowPlate onPress={backUp} disabled={busy}>
+          <ListRow title={busy ? 'Working…' : 'Back up now'} meta="SENDS ONLY WHAT CHANGED" />
+        </RowPlate>
+        <RowPlate onPress={confirmCloudRestore} disabled={busy}>
+          <ListRow title="Restore from cloud" meta="REPLACES EVERYTHING ON THIS PHONE" />
+        </RowPlate>
+      </RowPlates>
+      <Text style={text.prose}>
+        One phone at a time: a second phone that backs up here would overwrite this phone&apos;s
+        copy.
+      </Text>
+    </Section>
+  );
 }
 
 function DataSection() {
@@ -340,11 +425,7 @@ export default function SignInScreen() {
               </RowPlate>
             </RowPlates>
           </Section>
-          <Section label="SYNC" plated={false}>
-            <Text style={text.prose}>
-              Signed in. Your workouts stay on this phone and back up when there is a connection.
-            </Text>
-          </Section>
+          <SyncSection />
           <DataSection />
           {status ? (
             <Section plated={false}>{<Text style={text.prose}>{status}</Text>}</Section>
@@ -384,10 +465,8 @@ export default function SignInScreen() {
 
         <Section label="WHY" plated={false}>
           <Text style={text.prose}>
-            {/* Sync is not built (Phase 8), so this must not promise backup —
-                the phone is still the only copy of every session. */}
             {status ??
-              'Signing in claims the account that sync will use. It does not back anything up yet — this phone is still the only copy. Everything works without it.'}
+              'Signing in backs your workouts up to your account, sending only what changed. This phone stays the source of truth and everything works without an account.'}
           </Text>
         </Section>
 
