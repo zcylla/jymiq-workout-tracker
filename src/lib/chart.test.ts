@@ -38,3 +38,12 @@ test('chart with a single value renders one active column', () => {
 test('chart with no values has no columns', () => {
   assert.deepEqual(chartGeometry([], 76).columns, []);
 });
+
+test('an exact zero draws no column, and non-zero values keep the floor', () => {
+  const { columns } = chartGeometry([6, 6, 2, 0, 0], 54);
+  assert.equal(columns[3].height, 0);
+  assert.equal(columns[4].height, 0);
+  assert.ok(Math.abs(columns[0].height - 54) < 1e-9);
+  // 2 of a 0..6 span still sits above the 8pt floor rather than collapsing.
+  assert.ok(columns[2].height > 8);
+});
