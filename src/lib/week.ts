@@ -136,3 +136,14 @@ export function weekStrip(
     lastWeek: totals((WEEKS_BACK - 1) * 7),
   };
 }
+
+/**
+ * This week and last week as `[from, to)` local-ms ranges, derived from the
+ * strip so the Load tab and Today share one definition of "this week".
+ */
+export function weekBounds(at: number | Date = Date.now()) {
+  const strip = weekStrip(new Map(), at);
+  const d = new Date(strip.from);
+  const at7 = (n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n).getTime();
+  return { lastFrom: at7(7), thisFrom: at7(14), to: strip.to, at: strip.todayAt };
+}

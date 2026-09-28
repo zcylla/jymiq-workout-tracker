@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { TrainedDay } from './calendar.ts';
-import { weekStrip } from './week.ts';
+import { weekBounds, weekStrip } from './week.ts';
 
 /** Thursday 4 September 2026, local. The board's own date. */
 const THU = new Date(2026, 8, 4, 10, 0);
@@ -128,4 +128,11 @@ test('a scheduled day ahead of today is ahead, never missed', () => {
   assert.equal(days[18]?.key, '2026-09-04');
   assert.equal(days[18]?.state, 'today');
   assert.equal(days[19]?.state, 'ahead');
+});
+
+test('weekBounds: this week is the Monday-first week the strip puts today in', () => {
+  const b = weekBounds(THU);
+  assert.deepEqual(new Date(b.thisFrom), new Date(2026, 7, 31));
+  assert.deepEqual(new Date(b.lastFrom), new Date(2026, 7, 24));
+  assert.deepEqual(new Date(b.to), new Date(2026, 8, 7));
 });
