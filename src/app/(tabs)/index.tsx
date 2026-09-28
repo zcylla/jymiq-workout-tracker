@@ -299,6 +299,7 @@ function DevLinks() {
         {[
           ['/dev/kitchen-sink', 'Kitchen sink', 'every primitive, every state'],
           ['/dev/lab34-a1', 'Lab 34 A1', 'routines, from the primitives'],
+          ['/dev/chart', 'Column chart', 'Lab 34 A4 and Lab 39 Q1'],
           ['/dev/lab33', 'Lab 33', 'live workout inputs'],
           ['/dev/fonts', 'Type ramp', "phase 1's gate"],
           ['/dev/gestures', 'Gestures', "phase 6's gate"],
