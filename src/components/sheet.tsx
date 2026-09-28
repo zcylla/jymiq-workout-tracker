@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { color, hairline, radius, space, wash } from '@/theme';
@@ -35,7 +41,12 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+    // Edge-to-edge Android never resizes the window for the keyboard, so a sheet
+    // holding a field has to lift itself or the keyboard covers it.
+    <KeyboardAvoidingView
+      behavior="padding"
+      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Close"
@@ -66,6 +77,6 @@ export function Sheet({
           {children}
         </ScrollView>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
