@@ -208,3 +208,7 @@ test('a backup made before programs existed still parses', () => {
 test('body weights are a known table', () => {
   assert.ok((KNOWN_TABLES as readonly string[]).includes('body_weights'));
 });
+
+test('check-ins are a known table', () => {
+  assert.ok((KNOWN_TABLES as readonly string[]).includes('check_ins'));
+});

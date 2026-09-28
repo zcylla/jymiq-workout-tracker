@@ -3,6 +3,7 @@ import type { ExportTables } from '@/lib/export';
 import { db } from '../db';
 import {
   bodyWeights,
+  checkIns,
   exerciseMuscles,
   exercises,
   personalRecords,
@@ -38,5 +39,6 @@ export function readAllTables(): ExportTables {
     sets: db.select().from(sets).all(),
     personal_records: db.select().from(personalRecords).all(),
     body_weights: db.select().from(bodyWeights).all(),
+    check_ins: db.select().from(checkIns).all(),
   };
 }

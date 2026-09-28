@@ -21,6 +21,7 @@ export const KNOWN_TABLES = [
   'sets',
   'personal_records',
   'body_weights',
+  'check_ins',
 ] as const;
 
 export interface ParsedBackup {

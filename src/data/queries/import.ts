@@ -4,6 +4,7 @@ import { RESTORE_ORDER } from '@/lib/import';
 import { db } from '../db';
 import {
   bodyWeights,
+  checkIns,
   exerciseMuscles,
   exercises,
   personalRecords,
@@ -38,6 +39,7 @@ const TABLES = {
   sets,
   personal_records: personalRecords,
   body_weights: bodyWeights,
+  check_ins: checkIns,
 } as const;
 
 /**
