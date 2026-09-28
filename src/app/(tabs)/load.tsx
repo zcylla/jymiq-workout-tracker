@@ -6,6 +6,9 @@ import { Text, View } from 'react-native';
 import {
   Calendar,
   Delta,
+  ListRow,
+  RowPlate,
+  RowPlates,
   Screen,
   ScreenHeader,
   Section,
@@ -13,6 +16,7 @@ import {
   useTabBarHeight,
   ZoneBar,
 } from '@/components';
+import { bodyWeightsQuery } from '@/data/queries/bodyweight';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { useRows } from '@/data/live';
 import {
@@ -23,6 +27,8 @@ import {
 } from '@/data/queries/load';
 import { useActiveSchedule } from '@/data/schedule';
 import { useSettings } from '@/data/settings';
+import { daysSince } from '@/lib/bodyweight';
+import { formatWeight } from '@/lib/units';
 import { monthGrid, type TrainedDay, trainedDays } from '@/lib/calendar';
 import { deloadCall, type LiftHistory, liftsThisWeek } from '@/lib/deload';
 import { muscleRows } from '@/lib/landmarks';
@@ -88,6 +94,15 @@ export default function LoadScreen() {
     useMemo(() => loggedSessionIdsQuery(), []),
     [],
   );
+
+  const weighIns = useRows(
+    useMemo(() => bodyWeightsQuery(), []),
+    [],
+  );
+  const lastWeighIn = weighIns?.[weighIns.length - 1];
+  const weighInMeta = lastWeighIn
+    ? `${formatWeight(lastWeighIn.weightKg, unit)} ${unit.toUpperCase()} · ${ago(daysSince(lastWeighIn.measuredAt, nowMs()))}`
+    : 'NOT LOGGED YET';
 
   const totals = useMemo(() => {
     if (!rangeSets) return null;
@@ -167,6 +182,14 @@ export default function LoadScreen() {
         ) : null}
       </Section>
 
+      <Section label="BODYWEIGHT" plated={false}>
+        <RowPlates>
+          <RowPlate onPress={() => router.push('/bodyweight')}>
+            <ListRow title="Bodyweight" meta={weighInMeta} />
+          </RowPlate>
+        </RowPlates>
+      </Section>
+
       <Section label={grid.title.toUpperCase()}>
         <Calendar
           weeks={grid.weeks}
@@ -197,4 +220,10 @@ export default function LoadScreen() {
       </Section>
     </Screen>
   );
+}
+
+const ago = (days: number) => (days <= 0 ? 'TODAY' : `${days} DAY${days === 1 ? '' : 'S'} AGO`);
+
+function nowMs(): number {
+  return Date.now();
 }
