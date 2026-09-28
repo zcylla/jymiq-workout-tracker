@@ -5,8 +5,10 @@ state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.
 
 Last updated 2026-09-28 (latest). **The body map shipped — Lab 35 B4.** It is the MuscleMap figure
 drawn with Skia and coloured by recent load relative to the most-worked muscle, with no invented
-threshold. **Every drawn screen is now built.** The app's background was checked against the design
-on the device and matches (see "Body map — Lab 35 B4"). **Next: Phase 8, sync.**
+threshold. **Every drawn screen is now built.** **The ground was flat, and the design's is not.** The owner
+spotted it: every board draws a dot field and two blurred blooms under the content, and the app
+had never built either. Both are now in `Screen` (see "The ground's field and blooms").
+**Next: Phase 8, sync.**
 
 Before that, the same day: **Today's empty state was checked on an emulator and then built —
 Lab 43 T3.** The check showed that a fresh install's only way forward was MAKE A PROGRAM, which
@@ -554,12 +556,27 @@ counts assisting work and recency, but it *prints* prime-mover working sets. So 
 SETS" can rank above "Chest · 3 SETS" when push-ups load the shoulders as an assist. Both
 numbers are honest. Whether the list should sort by what it prints is a small call for the owner.
 
-**The app's background matches the design.** Asked by the owner. Sampled on the phone: the canvas
-is `#0a0908` in every corner and behind the status bar, and plates are `#221f19`. Those are exactly
-§0's palette and the kit's `--ground`. `app.json` and the splash screen use the same ground.
-(`#0a0a0b` in `kit.py` is only the lab boards' page background around the phone frames, not the
-app's.) **When sampling, first make sure the app is actually in the foreground**: the first attempt
-read the launcher, and the second read the dev client's own `#111111`.
+## The ground's field and blooms
+
+**The first check was wrong, and it is recorded so it is not repeated.** Asked whether the
+background matched the design, a pixel sample of the canvas returned `#0a0908`, which is §0's ground
+exactly, and the answer given was "matches". It did not. The owner compared a board to the phone
+and saw a plain black screen. `kit.phone()` draws **three layers above the ground on every board**:
+- a `.field` dot grid: 1px dots at 4% white on an 18pt pitch, fixed to the frame;
+- a gold bloom: `rgba(228,198,140,0.13)`, 300×280 at the top right, blurred 88;
+- a green bloom: `rgba(159,174,58,0.07)`, 280×220 at the bottom left, blurred 88.
+
+No board passes `bloom=False`, and nothing in the design docs drops them. §6 of
+`design-exploration.md` says the panels' "lit" quality comes from the bloom. **A single pixel
+sample checks a token, not a design: compare the whole frame.**
+
+**What shipped.** `field` tokens were added to `tokens.ts`. `Backdrop`
+(`src/components/backdrop.tsx`) is one Skia canvas behind the scroll view, with no pointer events.
+It draws the dot grid as a single path of circles, built once per window size, and the two blooms
+as `Oval`s with a `BlurMask` (CSS `blur()` and Skia's `blur` are both a Gaussian sigma). `Screen`
+draws it, so every screen gets it, the live session included. Only `dev/fonts` and `dev/db` bypass
+`Screen`. On the phone the top-right corner now samples `#161410` against `#0a0908` in the dark
+corner.
 
 ## Today, empty — Lab 43 T3
 
