@@ -102,9 +102,11 @@ back-dating `started_at` with a database swap; the emulator is the cheaper route
 
 ## The plan
 
-`~/.claude/plans/start-by-making-a-rippling-fog.md` — approved, and still accurate. Phases, stack
-rationale, data model, risks, and the verification checklist live there. The corrections applied
-after the architecture review are appended at the end of it.
+The original plan file (`~/.claude/plans/start-by-making-a-rippling-fog.md`) **no longer exists** —
+it was a local agent artifact and was never committed. Nothing depends on it any more: the phases
+and what remains live in "Pick this up here" and "Next, in order" above, the data model is
+`src/data/schema.ts`, and the stack rationale and risks are recorded where each was settled, in the
+phase sections below.
 
 **Decisions that shape everything:** Android first (no iOS device to verify against), core loop
 first (library → routines → live session → summary → history), e1RM and PR detection as the only

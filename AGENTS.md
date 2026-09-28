@@ -20,7 +20,8 @@ next, and the environment facts that break the build if missed (Gradle needs **J
   per function.
 - The boards (`lab*.py`, published to the Claude Design project) are the reference renders.
   Earlier labs are reasoning, not state; do not build from them.
-- The implementation plan is at `~/.claude/plans/start-by-making-a-rippling-fog.md`.
+- What to build next is "Pick this up here" at the top of `claudedocs/build-log.md`. (The original
+  plan file under `~/.claude/plans/` is gone; nothing depends on it.)
 - `claudedocs/body-map.md` is the spec for the Strength tab's muscle figure — unscheduled, built later.
 
 ## Conventions that are not obvious
