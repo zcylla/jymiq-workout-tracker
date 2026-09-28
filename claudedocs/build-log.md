@@ -3,7 +3,12 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-28 (latest). **The body map shipped — Lab 35 B4.** It is the MuscleMap figure
+Last updated 2026-09-28 (end of day). **Phase 8's cloud backup shipped, and its first push was
+verified on the device.** Changes are queued by SQLite triggers and only changed rows are pushed. The
+first push landed all eleven synced tables, matching the phone row for row. See **"Cloud backup —
+Phase 8"**. Not yet verified: an incremental push after an edit, and restore from the cloud.
+
+Before that, the same day: **the body map shipped — Lab 35 B4.** It is the MuscleMap figure
 drawn with Skia and coloured by recent load relative to the most-worked muscle, with no invented
 threshold. **Every drawn screen is now built.** **The ground was flat, and the design's is not.** The owner
 spotted it: every board draws a dot field and two blurred blooms under the content, and the app
@@ -60,15 +65,15 @@ exercise detail (with the e1RM chart), bodyweight, readiness, session summary an
 restore, Settings and the body map are on the device and verified there. **Every drawn screen is
 built.**
 
-**The next thing is Phase 8 — sync.** Start from "The Supabase mirror". The mirror is missing four
-tables (`programs`, `program_days`, `body_weights`, `check_ins`). The other open work is the UI
-pass described under "Smaller things".
+**Nothing is scheduled.** The open work is: verifying an incremental push and restore-from-cloud on the
+device (see "Cloud backup — Phase 8"), the UI pass described under "Smaller things", and full
+multi-device sync if it is ever wanted.
 
 ### What remains, in order
 
 | # | What | Board | Blocked on |
 |---|---|---|---|
-| 1 | **Phase 8 — sync** | "The Supabase mirror" | owner decisions: what syncs, conflict rule, when |
+| 1 | **Verify incremental push and restore-from-cloud** | "Cloud backup — Phase 8" | the owner making an edit; a second signed-in device or a wiped one |
 
 **Correction to the previous handoff:** D1 was listed as blocked on the chart. It never was — Lab 37
 records that the six-week volume chart was *cut* from Load to pay for the restyle. The chart
@@ -1788,6 +1793,57 @@ used to say a migration failed without ever saying why. `src/app/_layout.tsx` pr
   dataset the cues come from) is licensed per use and was ruled too expensive.
 
 ---
+
+## Cloud backup — Phase 8
+
+**Scope, decided with the owner:** cloud *backup and restore*, not multi-device sync. The phone stays
+the source of truth. **Not pushing the whole database each time was the owner's requirement**, so
+the design records changes as they happen.
+
+**Local (migration 0005, `when` 1790638682525).**
+- `sync_queue` holds at most one entry per row (unique on table and key, `INSERT OR REPLACE`), so the
+  newest operation wins and every re-queue gets a fresh autoincrement id.
+- 36 triggers (insert, update and delete on each of the 12 synced tables) fill it. Built-in
+  exercises and their muscles are excluded, since every install already has them.
+- The queue is bookkeeping and is **not** in export or restore. Existing data predates the triggers,
+  so the very first push calls `enqueueEverything()` once.
+- Cascade deletes fire the child triggers, so a deleted routine queues its children's deletes too.
+
+**Push (`src/data/sync.ts`).** `pushNow()` is single-flight. It reads up to 500 queue entries,
+`planPush` orders them (upserts parents first, deletes children first), rows are read fresh from
+SQLite, upserted in chunks of 200 with `onConflict user_id,<key>`, and **only the entry ids it sent
+are cleared**, so an edit made mid-push keeps its fresh-id entry. An error leaves the queue intact and
+records `lastError`. It never throws. Deletes are hard deletes remotely; `deleted_at` stays null.
+`syncSoon()` (a 3 s trailing debounce) runs when the app returns to the foreground, after a session is
+finished, abandoned or discarded, and on sign-in.
+
+**Pull and restore.** `pullAll()` pages each table (PostgREST caps at 1000 rows) and adds the local
+**built-in exercises back in**, because `restoreBackup` replaces every table and the cloud holds no
+built-ins. `restoreFromCloud` downloads first, then writes the rollback file, then restores, so a
+failed download or a failed rollback changes nothing. It clears the queue afterwards, because the
+restore's own trigger writes just re-queue rows that already match.
+
+**Account screen.** A status line (`Backed up just now`, `N changes waiting`, or the last error), a
+**Back up now** row and a **Restore from cloud** row. The old copy saying signing in backs nothing up
+was replaced, and so were the two stale code comments that said the same.
+
+**Verified on the phone, 2026-09-28:** migration 0005 applied and all 36 triggers exist. A real Google
+sign-in completed (**the return leg is confirmed working**). The first push then wrote every row:
+routines 1, routine_exercises 4, programs 1, program_days 3, sessions 4, session_exercises 16, sets
+56, personal_records 18, body_weights 1, check_ins 1, custom exercises 0 — **every count identical to
+the phone**, the queue left at 0, total lifted volume identical (33,080 kg), and the weigh-in and
+check-in identical.
+
+**Not verified.** (1) An *incremental* push: nothing was edited afterwards, so only the full first
+push has been observed. (2) **Restore from cloud** — it is destructive, and the phone's real data is
+the only copy of some state. The safe way to test it is a wiped phone or the emulator after signing in.
+
+**Known limits.** One phone at a time: two phones pushing would overwrite each other's rows, and
+nothing detects it. Pushes are per-row, so the remote can hold rows the phone deleted before its
+triggers existed. Composite-key deletes (`program_days`, `exercise_muscles`) are one request per row.
+**A 25 kg weigh-in from 2026-09-28 is in the phone's data and now the cloud.** There is no way to
+delete or edit a weigh-in in the app (a "smaller thing" already listed), so it will skew the 7-day
+average until there is.
 
 ## The Supabase mirror
 
