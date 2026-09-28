@@ -3,7 +3,12 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-28 (night). **Readiness shipped — Lab 37 D3.** It is an optional check-in
+Last updated 2026-09-28 (late). **Today's empty state was checked on an emulator and then built —
+Lab 43 T3.** The check showed that a fresh install's only way forward was MAKE A PROGRAM, which
+needs a routine the user does not have yet. **The week strip no longer draws past its plate.** See
+**"Today, empty — Lab 43 T3"**.
+
+Before that, the same day: **Readiness shipped — Lab 37 D3.** It is an optional check-in
 reached from Today, and the call it gives is a sentence built from the three answers plus facts from
 the log. There are no invented thresholds. See **"Readiness — Lab 37 D3"**.
 
@@ -45,26 +50,37 @@ session detail (C3). The history *list* was dropped — the IA never had one.
 **State:** clean on `main` (local commits not pushed — push only when asked), `pnpm check` exit 0,
 **175 tests**. Every tab root, the live session, routines, programs (with the A4 chart), library,
 exercise detail (with the e1RM chart), bodyweight, readiness, session summary and detail, export,
-restore and Settings are on the device and verified there. **One drawn screen remains unbuilt**
-(the body map, which is unscheduled), plus one verification job.
+restore and Settings are on the device and verified there. **One drawn screen remains unbuilt**: the body map, which is
+unscheduled.
 
-**The next thing to do is Today, empty — Lab 43 T3.** It is a verification job on the `jymiq-a`
-emulator, not a build: Today now has a READINESS row, so its empty state has changed since T3 was
-drawn. After that, the body map is the only drawn screen left, and it is the least resolved
-drawing in the set — read `claudedocs/body-map.md` and ask before building.
+**Every scheduled screen is built.** The body map (Lab 35 B4) is the only drawn screen left, and
+it is the least resolved drawing in the set. Read `claudedocs/body-map.md` and **ask the owner
+before building it**. The other open work is Phase 8 (sync) and the UI pass described under
+"Smaller things".
 
 ### What remains, in order
 
 | # | What | Board | Blocked on |
 |---|---|---|---|
-| 1 | **Today, empty** — verify, probably do not build | Lab 43 T3 | nothing; a `jymiq-a` emulator job |
-| 2 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
+| 1 | **Body map** | Lab 35 B4 · `claudedocs/body-map.md` | unscheduled; least resolved drawing in the set |
 
 **Correction to the previous handoff:** D1 was listed as blocked on the chart. It never was — Lab 37
 records that the six-week volume chart was *cut* from Load to pay for the restyle. The chart
 unblocks items 1 and 2 only.
 
 ### Smaller things, none of them blocking
+
+- **The "missed" marker is not legible — this is for a future UI pass, not a fix to make now.** The
+  owner could not tell what the outlined squares on the week strip and the calendar meant. They
+  mean *scheduled by the running program and not logged*. The strip has no key at all, and the
+  calendar's `MISSED` key draws a pill-shaped outline where the cells draw a rounded square. The
+  owner's direction is **visual feedback over text**, as part of a broader UI refactor:
+  - grey out the missed days;
+  - mark each day the program assigns a workout to;
+  - keep trained days painted as they are now.
+
+  That touches §0's Calendar row ("missed carries a ring"), so it is a design decision to make with
+  the owner, not a patch.
 
 - **The readiness verdict has only been rendered by its tests**, not on the device. Verifying the
   screen would have meant writing a check-in the owner did not give, so the device pass stopped at
@@ -505,6 +521,36 @@ design wants one and the schema needs a column, or it does not — that is a des
 oversight.
 
 ---
+
+## Today, empty — Lab 43 T3
+
+**Checked on an emulator with an empty database, then built.** The fresh-install Today showed
+"Nothing scheduled" with MAKE A PROGRAM as its only way forward, but a program needs a routine
+and a fresh install has none. T3's three first steps did not exist, and SESSIONS `0` was drawn
+bright where T3 draws it dim.
+
+Now, when there are **no routines and no logged sessions**, Today leads with *Nothing logged yet.*
+and a FIRST STEPS group:
+- **Build a routine** goes to `/routine/new`.
+- **Browse the library** goes to `/session/library`. Its meta uses the real count (302), not the
+  board's 214.
+- **Start an empty session** calls `startSession()` with no routine.
+
+Once a routine exists, the "Nothing scheduled" card comes back. A zero SESSIONS tile is dim
+everywhere, not only on a fresh install. READINESS stays, because it works without history. All
+three routes were tapped through on the emulator, and the phone's normal Today is unchanged.
+
+**The week strip drew past its plate.** `WeekStrip` hard-coded a `-space.pad` (22pt) bleed from
+the days when it sat unplated on the canvas, but it lives in a plated Section with `pad={13}`. So
+its scroll viewport overhung the plate by 9pt on each side, and scrolled cells drew over the
+plate's edge. The bleed is now a required prop that Today sets from the same constant it gives
+the Section.
+
+**The `jymiq-a` AVD no longer exists.** Use **`Medium_Phone_API_36.1`**. It is also 1080×2400 at
+420 dpi, so it matches the phone. It **must boot with `-no-snapshot`**: its saved snapshot fails
+to load (`goldfish_pipe` state error), and the cold boot then hangs at about 0% CPU while adb
+reports the device `offline` indefinitely. With `-no-snapshot` it boots in about 25 s. The x86_64
+debug APK takes about 3 min to build.
 
 ## Readiness — Lab 37 D3
 
