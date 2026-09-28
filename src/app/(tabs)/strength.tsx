@@ -1,18 +1,25 @@
+import { router } from 'expo-router';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
 import {
+  ListRow,
   Rail,
   type RailItem,
+  RowPlate,
+  RowPlates,
   Screen,
   ScreenHeader,
   Section,
   StatTiles,
   type Tile,
 } from '@/components';
+import { useRows } from '@/data/live';
+import { fatigueSetsQuery } from '@/data/queries/fatigue';
 import { recordsQuery } from '@/data/queries/records';
 import { useSettings } from '@/data/settings';
+import { hardest, WINDOW_DAYS } from '@/lib/fatigue';
 import { PR_LABELS, type PrCategory, formatPrValue } from '@/lib/pr';
 import { sessionDateLabel, sessionDotTone } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
@@ -44,6 +51,14 @@ export default function StrengthScreen() {
     return { monthCount: month, yearCount: year };
   }, [records]);
 
+  const now = useMemo(() => nowMs(), []);
+  const fatigueRows = useRows(
+    useMemo(() => fatigueSetsQuery(now - WINDOW_DAYS * 86_400_000), [now]),
+    [now],
+  );
+  const top = useMemo(() => hardest(fatigueRows ?? [], now, 1)[0], [fatigueRows, now]);
+  const bodyMeta = top ? `${top.name.toUpperCase()} WORKED HARDEST` : 'NOTHING IN 7 DAYS';
+
   const tiles: Tile[] = [
     { label: 'THIS MONTH', value: loading ? '—' : String(monthCount) },
     { label: 'THIS YEAR', value: loading ? '—' : String(yearCount) },
@@ -58,7 +73,15 @@ export default function StrengthScreen() {
     <Screen>
       <ScreenHeader title="Records" kicker="STRENGTH" />
 
-      <Section first pad={13}>
+      <Section first label="BODY" plated={false}>
+        <RowPlates>
+          <RowPlate onPress={() => router.push('/body')}>
+            <ListRow title="Body map" meta={fatigueRows === null ? undefined : bodyMeta} />
+          </RowPlate>
+        </RowPlates>
+      </Section>
+
+      <Section pad={13}>
         <StatTiles items={tiles} surface="raised" />
       </Section>
 
@@ -104,4 +127,8 @@ function RecordRow({ record }: { record: PrRow }) {
       </View>
     </>
   );
+}
+
+function nowMs(): number {
+  return Date.now();
 }
