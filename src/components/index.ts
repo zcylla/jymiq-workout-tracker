@@ -1,4 +1,5 @@
 export { ActionBar, useActionBarHeight } from './action-bar';
+export { BodyMap } from './body-map';
 export { Calendar } from './calendar';
 export { Chip, ChipStrip } from './chip';
 export { ColumnChart } from './column-chart';
