@@ -41,6 +41,8 @@ export const hairline = {
   ruled: 'rgba(255,255,255,0.10)',
   /** Separators between rows inside one plate (start at the text margin). */
   inset: 'rgba(255,255,255,0.07)',
+  /** A chart's baseline. */
+  baseline: 'rgba(255,255,255,0.15)',
 } as const;
 
 /** Spacing law: between-section space >= 3x within-section space. */
@@ -125,6 +127,8 @@ export const motion = {
  */
 export const wash = {
   track: 'rgba(255,255,255,0.08)',
+  /** A chart column that is not the active one. */
+  column: 'rgba(255,255,255,0.16)',
   /** A field's ground, and a chip that is off. Not a plate — no lit edge. */
   field: 'rgba(255,255,255,0.05)',
   /** A toggle's track when off. */
