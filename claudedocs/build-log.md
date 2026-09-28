@@ -1791,33 +1791,39 @@ used to say a migration failed without ever saying why. `src/app/_layout.tsx` pr
 
 ## The Supabase mirror
 
-> **The project changed on 2026-09-28. Everything below that names `apmzkqejwmhctaldbzgv` is the old
-> project.** It was paused and its URL stopped resolving; the owner's live project is now
-> **`hrmxlijtdldcmljkhwhf`** (`https://hrmxlijtdldcmljkhwhf.supabase.co`), and `.mcp.json` points at it.
-> **The new project was empty** — no tables, no migrations, so nothing from this section had carried
-> over. The four original migrations had only ever lived in the old project's database, never in the
-> repo. The schema was rebuilt from `src/data/schema.ts` under the rules below and is now
-> **committed at `supabase/migrations/`**, so it can be replayed if this happens again. It covers all
-> **twelve** tables, including the four the old mirror never had (`programs`, `program_days`,
-> `body_weights`, `check_ins`).
+> **A wrong project was built by mistake on 2026-09-28, and this is what happened.** The project for
+> this app is **`apmzkqejwmhctaldbzgv`** and it never changed. Its paused URL failed to resolve, and a
+> URL for a *different* app's project (`hrmxlijtdldcmljkhwhf`) was offered as its replacement and
+> believed. The MCP was pointed at it, found it empty, and the full mirror was rebuilt there. **That
+> was wrong, and it left 12 empty tables and two migrations on the other app's project** — see the
+> cleanup SQL in the note below. **Lesson: when a project URL "changes", check the project ref against
+> this file before trusting it.** The MCP's project ref lives in `.mcp.json`.
 >
-> **Verified on the new project:** RLS on with one owner policy per table, `anon` has no privileges,
-> TRUNCATE revoked from `authenticated`. A two-user probe (run in a transaction that aborts, so it
-> leaves nothing behind) confirmed: the `user_id` default resolves to `auth.uid()`; two users may
-> reuse the same id; each sees only their own rows; attaching a row to another user's session is
-> refused by the composite foreign key; reassigning `user_id` is refused by `with check`; deleting
-> another user's row affects nothing; `anon` is refused. Advisors report only two warnings: GraphQL
-> schema visibility for signed-in users, and leaked-password protection, which is moot because sign-in
-> is Google or magic link.
+> **What is true on the real project.** It already held the original eight tables, with RLS and all
+> five of their migrations, all empty. Only the four tables added locally since (`programs`,
+> `program_days`, `body_weights`, `check_ins`) were missing, and they are now applied. The SQL is
+> committed at `supabase/migrations/20260928000001_jymiq_mirror_new_tables.sql`. The original
+> eight came from migrations applied straight to the database, never kept in the repo.
 >
-> **Not carried over, and the owner must redo in the new project's dashboard:** the Google provider
-> (a Google Cloud OAuth Web client whose redirect URI is the new project's
-> `/auth/v1/callback`) and the `jymiq:///sign-in` entry under Additional Redirect URLs. **The app's
-> `.env`** now points at the new project (it is gitignored, and the file was missing on this machine).
-> No sign-in has been completed against the new project.
+> **Verified on the real project.** RLS on with an owner policy each, `anon` refused, TRUNCATE
+> revoked. A two-user probe (in a transaction that aborts, leaving nothing behind) confirmed: a user
+> can write all four tables, a second active program is refused, another user sees none of those
+> rows, attaching to another user's program is refused by the composite foreign key, deleting another
+> user's weigh-in affects nothing, reassigning `user_id` is refused, and `anon` is refused. The only
+> advisor warning is leaked-password protection, which is moot because sign-in is Google or magic link.
 >
-> Two departures from the old schema: the "one active program" and "one live session" unique indexes
-> ignore tombstoned rows (`deleted_at is null`), so a deleted row cannot block a live one.
+> **Google sign-in is already configured on the real project.** `/auth/v1/authorize?provider=google`
+> answers `302` to `accounts.google.com` with `redirect_to=jymiq:///sign-in` intact, and the settings
+> endpoint reports Google enabled. **The return leg has still never been completed on the phone.**
+>
+> The new `programs` unique index ignores tombstoned rows (`deleted_at is null`), so a deleted program
+> cannot block a live one. The original `sessions_one_live_idx` does not.
+>
+> **Cleanup owed on `hrmxlijtdldcmljkhwhf` (another app's project; not touched since):** it now
+> holds `exercises`, `exercise_muscles`, `routines`, `routine_exercises`, `programs`, `program_days`,
+> `sessions`, `session_exercises`, `sets`, `personal_records`, `body_weights`, `check_ins`, all empty,
+> plus the migrations `jymiq_mirror_tables` and `jymiq_mirror_rls`. Before dropping, check it holds
+> nothing else you want in `public`.
 
 Project `apmzkqejwmhctaldbzgv`, reached through the Supabase MCP. `.env` holds
 `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` (the publishable key — **never** the
