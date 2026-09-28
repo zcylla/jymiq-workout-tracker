@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { Pressable, type ScrollView as RNScrollView, ScrollView, Text, View } from 'react-native';
 
 import type { StripDay } from '@/lib/week';
-import { color, radius, size, space, text, wash } from '@/theme';
+import { color, radius, size, text, wash } from '@/theme';
 
 const CELL_WIDTH = 46;
 const BAR_MAX = 26;
@@ -16,11 +16,15 @@ export function WeekStrip({
   days,
   maxVolumeKg,
   onPressDay,
+  bleed,
 }: {
   days: readonly StripDay[];
   /** The tallest bar in view. The fill is a RELATIVE scale, not an absolute one. */
   maxVolumeKg: number;
   onPressDay: (day: StripDay) => void;
+  /** The padding of whatever holds the strip. It scrolls out to that edge and no
+   *  further — past it, cells draw over the plate's own border. */
+  bleed: number;
 }) {
   const scroll = useRef<RNScrollView>(null);
 
@@ -33,8 +37,8 @@ export function WeekStrip({
       // today in view — six cells at most, inside a 411pt screen. That makes
       // "scroll to the end" the whole of the scroll-to-today logic.
       onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
-      style={{ marginHorizontal: -space.pad }}
-      contentContainerStyle={{ gap: 5, paddingHorizontal: space.pad }}
+      style={{ marginHorizontal: -bleed }}
+      contentContainerStyle={{ gap: 5, paddingHorizontal: bleed }}
     >
       {days.map((day) => (
         <DayCell key={day.key} day={day} maxVolumeKg={maxVolumeKg} onPress={onPressDay} />

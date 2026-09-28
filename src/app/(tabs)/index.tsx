@@ -51,6 +51,8 @@ import { color, fabShadow, radius, size, text } from '@/theme';
  * nothing stored; programs store one, so the heuristic is gone rather than kept
  * as a fallback. With no program running there is no next, and the card says so.
  */
+const WEEK_PAD = 13;
+
 export default function TodayScreen() {
   const tabBar = useTabBarHeight();
 
@@ -103,8 +105,9 @@ export default function TodayScreen() {
 
       <ReadinessRow />
 
-      <Section label="THIS WEEK" pad={13}>
+      <Section label="THIS WEEK" pad={WEEK_PAD}>
         <WeekStrip
+          bleed={WEEK_PAD}
           days={week.days}
           maxVolumeKg={week.maxVolumeKg}
           onPressDay={(day: StripDay) => router.push(`/history/${day.sessionId}`)}
