@@ -34,7 +34,7 @@ export function Field({
   prompt?: string;
   autoFocus?: boolean;
   /** An email must not be title-cased, and wants the keyboard with the @ on it. */
-  keyboard?: 'text' | 'email';
+  keyboard?: 'text' | 'email' | 'decimal';
 }) {
   const body = (
     <View style={{ gap: 6, paddingVertical: 7 }}>
@@ -49,7 +49,13 @@ export function Field({
             autoFocus={autoFocus}
             autoCapitalize={keyboard === 'email' ? 'none' : 'words'}
             autoCorrect={keyboard !== 'email'}
-            keyboardType={keyboard === 'email' ? 'email-address' : 'default'}
+            keyboardType={
+              keyboard === 'email'
+                ? 'email-address'
+                : keyboard === 'decimal'
+                  ? 'decimal-pad'
+                  : 'default'
+            }
             style={[text.field, { flex: 1, padding: 0 }]}
           />
         ) : (

@@ -31,6 +31,7 @@ export { Sheet } from './sheet';
 export { SetsSheet } from './sets-sheet';
 export { StatTiles, type Tile } from './tiles';
 export { Tape } from './tape';
+export { TrendChart } from './trend-chart';
 export { Toggle } from './toggle';
 export { WeekStrip } from './week-strip';
 export { StartButton, TabBar, TabItem, useTabBarHeight } from './tab-bar';
