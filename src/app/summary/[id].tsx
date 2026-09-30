@@ -30,6 +30,8 @@ import { formatWeight, type Unit } from '@/lib/units';
 import { countWorkingSets, formatTonnage, topSet, totalVolume } from '@/lib/volume';
 import { color, text } from '@/theme';
 
+const SUMMARY_STILL = 80;
+
 /** Lab 36 C2. VS LAST was its own tile and is now the delta on VOLUME. */
 export default function SummaryScreen() {
   const actionBar = useActionBarHeight();
@@ -153,11 +155,11 @@ export default function SummaryScreen() {
         ) : null}
 
         <Section label="LIFTS" plated={false}>
-          {lifted.map((ex, i) => (
+          {lifted.map((ex) => (
             <ListRow
               key={ex.id}
               chevron={false}
-              thumb={<ExerciseStill exerciseId={ex.exerciseId} size={44} />}
+              thumb={<ExerciseStill exerciseId={ex.exerciseId} size={SUMMARY_STILL} />}
               title={ex.name}
               meta={`${ex.count} SETS${ex.top ? ` · TOP ${formatWeight(ex.top.weightKg ?? 0, settings.weightUnit)} × ${ex.top.reps}` : ''} · ${formatTonnage(ex.volumeKg, settings.weightUnit)}`}
             />
