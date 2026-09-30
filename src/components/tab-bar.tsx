@@ -1,9 +1,10 @@
 import type { TabTriggerSlotProps } from 'expo-router/ui';
-import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { type ReactNode, useEffect } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { chromeShadow, color, fabShadow, radius, text } from '@/theme';
+import { chromeShadow, color, fabShadow, type Ink, motion, radius, text } from '@/theme';
 
 import { tick } from './haptics';
 import { Icon, type IconName } from './icon';
@@ -58,7 +59,8 @@ export function TabBar({ children }: { children: ReactNode }) {
  * One tab. Active state is carried by colour alone — the icons are font glyphs
  * with the stroke baked in, so kit's 1.9-vs-1.5 weight shift has no runtime
  * equivalent. The label changes colour with the icon, which is the louder half
- * of that signal anyway.
+ * of that signal anyway. A glyph's colour is not animatable, so the accent
+ * copy sits over the dim one and only its opacity moves.
  */
 export function TabItem({
   icon,
@@ -70,7 +72,12 @@ export function TabItem({
   style: _style,
   ...rest
 }: TabTriggerSlotProps & { icon: IconName; label: string }) {
-  const tone = isFocused ? color.accent : color.lo;
+  const focusSV = useSharedValue(isFocused ? 1 : 0);
+  useEffect(() => {
+    focusSV.set(withTiming(isFocused ? 1 : 0, { duration: motion.fast }));
+  }, [isFocused, focusSV]);
+  const lit = useAnimatedStyle(() => ({ opacity: focusSV.get() }));
+
   return (
     <Pressable
       {...rest}
@@ -80,9 +87,24 @@ export function TabItem({
       // style by object spread, so an array passed in from outside is silently lost.
       style={{ flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', gap: 3 }}
     >
+      <TabFace icon={icon} label={label} tone={color.lo} />
+      <Animated.View
+        pointerEvents="none"
+        importantForAccessibility="no-hide-descendants"
+        style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }, lit]}
+      >
+        <TabFace icon={icon} label={label} tone={color.accent} />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+function TabFace({ icon, label, tone }: { icon: IconName; label: string; tone: Ink }) {
+  return (
+    <View style={{ alignItems: 'center', gap: 3 }}>
       <Icon name={icon} tone={tone} />
       <Text style={[text.tab, { color: tone }]}>{label}</Text>
-    </Pressable>
+    </View>
   );
 }
 

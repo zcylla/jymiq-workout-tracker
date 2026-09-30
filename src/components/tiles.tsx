@@ -3,6 +3,9 @@ import { Text, View } from 'react-native';
 
 import { color, radius, space, text } from '@/theme';
 
+import { RollingNumber } from './rolling-number';
+import { Waiting } from './waiting';
+
 export type Tile = {
   label: string;
   value: string;
@@ -12,6 +15,8 @@ export type Tile = {
   visual?: ReactNode;
   /** A comparison under the number — a Delta, usually. */
   below?: ReactNode;
+  /** The value is a placeholder for a query that has not answered; it breathes until it does. */
+  pending?: boolean;
 };
 
 /** The one absent value in the app, and §0 draws an absent value dim. */
@@ -71,7 +76,7 @@ export function StatTiles({
             >
               <Text style={text.label}>{tile.label}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={[text.numTile, { color: color[toneOf(tile)] }]}>{tile.value}</Text>
+                <TileValue tile={tile} />
                 <View style={{ flex: 1 }} />
                 {tile.visual}
               </View>
@@ -87,4 +92,13 @@ export function StatTiles({
       ))}
     </View>
   );
+}
+
+/** A plain integer rolls when it changes; anything with units or decimals is text. */
+function TileValue({ tile }: { tile: Tile }) {
+  const style = { ...text.numTile, color: color[toneOf(tile)] };
+  if (/^\d+$/.test(tile.value) && !tile.pending)
+    return <RollingNumber value={tile.value} style={style} />;
+  const value = <Text style={style}>{tile.value}</Text>;
+  return tile.pending ? <Waiting>{value}</Waiting> : value;
 }

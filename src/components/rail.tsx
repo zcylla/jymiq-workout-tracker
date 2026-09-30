@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import type { DotTone } from '@/lib/time';
 import { color, hairline } from '@/theme';
+
+import { listMotion } from './listed';
 
 type RailItem = {
   tone: DotTone;
@@ -23,10 +26,13 @@ export function Rail({
   items,
   air,
   onPlate = false,
+  animate = false,
 }: {
   items: RailItem[];
   air: number;
   onPlate?: boolean;
+  /** Rows fade in (the first eight, staggered) and reflow when the list changes. */
+  animate?: boolean;
 }) {
   const segColor = onPlate ? hairline.onPlate : hairline.onGround;
 
@@ -40,7 +46,11 @@ export function Rail({
           </View>
         );
         return (
-          <View key={i} style={{ flexDirection: 'row', gap: 14 }}>
+          <Animated.View
+            key={i}
+            style={{ flexDirection: 'row', gap: 14 }}
+            {...(animate ? listMotion(i) : null)}
+          >
             <View style={{ width: 11, flex: 0, alignItems: 'center' }}>
               <View
                 style={{
@@ -67,7 +77,7 @@ export function Rail({
             ) : (
               body
             )}
-          </View>
+          </Animated.View>
         );
       })}
     </View>
