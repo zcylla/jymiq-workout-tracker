@@ -1,5 +1,6 @@
 import { type TrainedDay, dayKey, mondayIndex } from './calendar.ts';
-import { NO_SCHEDULE, type Schedule, isMissed } from './program.ts';
+import { type DayMark, dayState } from './day-state.ts';
+import { NO_SCHEDULE, type Schedule } from './program.ts';
 
 /**
  * The week strip on Today (Lab 45 W3), as arithmetic.
@@ -16,16 +17,16 @@ import { NO_SCHEDULE, type Schedule, isMissed } from './program.ts';
  * — asserting a lapse the app cannot know about is worse than not drawing one.
  */
 
-export type DayState = 'done' | 'today' | 'missed' | 'rest' | 'ahead';
-
 export interface StripDay {
   key: string;
   /** One character. Sunday is 'S' and so is Saturday — the position disambiguates. */
   letter: string;
   date: string;
-  state: DayState;
+  /** The shared grammar (`dayState`): the strip and the calendar cannot disagree. */
+  mark: DayMark;
+  today: boolean;
   volumeKg: number;
-  /** The session the cell opens. Null unless `state` is 'done'. */
+  /** The session the cell opens. Null unless `mark` is 'done'. */
   sessionId: string | null;
 }
 
@@ -48,6 +49,12 @@ export interface WeekStrip {
   /** This week's totals, and last week's, for the tiles under the strip. */
   thisWeek: WeekTotals;
   lastWeek: WeekTotals;
+  /**
+   * Workout days the running program plans in a week. Zero when nothing is
+   * running, which is also the answer to "does the sessions tile get a meter":
+   * a meter needs a real denominator (§0).
+   */
+  plannedPerWeek: number;
 }
 
 export interface WeekTotals {
@@ -85,20 +92,9 @@ export function weekStrip(
     const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
     const key = dayKey(d);
     const day = trained.get(key);
-    const isToday = key === todayKey;
-    if (isToday) todayIndex = i;
+    if (key === todayKey) todayIndex = i;
 
-    // "today" outranks "done": the cell's job is to say where you are, and a
-    // today you have already trained keeps its session through `sessionId`.
-    const state: DayState = isToday
-      ? 'today'
-      : day
-        ? 'done'
-        : key > todayKey
-          ? 'ahead'
-          : isMissed(schedule, key, i % 7, false, todayKey)
-            ? 'missed'
-            : 'rest';
+    const { mark, today } = dayState(schedule, key, i % 7, day !== undefined, todayKey);
 
     const volumeKg = day?.volumeKg ?? 0;
     if (volumeKg > maxVolumeKg) maxVolumeKg = volumeKg;
@@ -107,7 +103,8 @@ export function weekStrip(
       key,
       letter: LETTERS[i % 7] as string,
       date: String(d.getDate()),
-      state,
+      mark,
+      today,
       volumeKg,
       sessionId: day?.sessionId ?? null,
     });
@@ -134,6 +131,7 @@ export function weekStrip(
     maxVolumeKg,
     thisWeek: totals(WEEKS_BACK * 7),
     lastWeek: totals((WEEKS_BACK - 1) * 7),
+    plannedPerWeek: schedule.since === null ? 0 : schedule.days.size,
   };
 }
 

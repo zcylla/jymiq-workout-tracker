@@ -1,7 +1,5 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
-
 import {
   ActionBar,
   RowPlate,
@@ -11,29 +9,24 @@ import {
   ScreenHeader,
   Section,
   useActionBarHeight,
-  useDialog,
 } from '@/components';
+import { ReadinessPill } from '@/components/pill';
 import { useRows } from '@/data/live';
 import { saveCheckIn } from '@/data/mutations/readiness';
 import { startSession } from '@/data/mutations/sessions';
-import {
-  latestCheckInQuery,
-  recentPrimeSetsQuery,
-  routinePrimeMusclesQuery,
-} from '@/data/queries/readiness';
+import { latestCheckInQuery } from '@/data/queries/readiness';
 import { routineExercisesQuery } from '@/data/queries/routines';
+import { useSessionRunning } from '@/data/running';
 import { useActiveSchedule } from '@/data/schedule';
 import { nextScheduled } from '@/lib/program';
 import {
   type Answers,
   dayStart,
-  readinessCall,
-  recentMuscles,
   type Energy,
+  readinessStep,
   type Sleep,
   type Soreness,
 } from '@/lib/readiness';
-import { text } from '@/theme';
 
 const SLEEP: { value: Sleep; label: string }[] = [
   { value: 'poor', label: 'POOR' },
@@ -51,16 +44,13 @@ const ENERGY: { value: Energy; label: string }[] = [
   { value: 'good', label: 'GOOD' },
 ];
 
-const RECENT_MS = 48 * 3_600_000;
-
 /**
  * Lab 37 D3. Optional and never a gate on Start. Answers save as soon as all
- * three are set, and the call is a sentence: a guess is not drawn like a
- * measurement (§0).
+ * three are set, and the call is a chip: a word on a tint, not a score, so a
+ * guess is not drawn like a measurement (§0).
  */
 export default function CheckInScreen() {
   const actionBar = useActionBarHeight();
-  const show = useDialog();
   const now = useMemo(() => nowMs(), []);
 
   const stored = useRows(
@@ -87,62 +77,40 @@ export default function CheckInScreen() {
   const next = useMemo(() => (active === null ? null : nextScheduled(active.schedule)), [active]);
   const routineId = next?.routine.id ?? '';
 
-  const prime = useRows(
-    useMemo(() => routinePrimeMusclesQuery(routineId), [routineId]),
-    [routineId],
-  );
-  const recentRows = useRows(
-    useMemo(() => recentPrimeSetsQuery(now - RECENT_MS), [now]),
-    [now],
-  );
   const lifts = useRows(
     useMemo(() => routineExercisesQuery(routineId), [routineId]),
     [routineId],
   );
+  const running = useSessionRunning();
 
-  const answered = draft.sleep && draft.soreness && draft.energy;
-  const call = useMemo(() => {
-    if (!draft.sleep || !draft.soreness || !draft.energy) return null;
-    return readinessCall({
-      answers: { sleep: draft.sleep, soreness: draft.soreness, energy: draft.energy },
-      routineName: next ? next.routine.name : null,
-      recent: recentMuscles(
-        recentRows ?? [],
-        (prime ?? []).map((p) => p.muscle),
-        now,
-      ),
-      now,
-    });
-  }, [draft.sleep, draft.soreness, draft.energy, next, recentRows, prime, now]);
+  const step =
+    draft.sleep && draft.soreness && draft.energy
+      ? readinessStep({ sleep: draft.sleep, soreness: draft.soreness, energy: draft.energy })
+      : null;
+
+  // Unloaded is not empty: `lifts` and `running` are null until they answer, and
+  // an empty routine has nothing to start, so it gets the plain Done bar.
+  const resume = running === true;
+  const canStart = next !== null && (resume || (lifts !== null && lifts.length > 0));
 
   const start = () => {
-    if (!next || lifts === null) return;
-    if (lifts.length === 0) {
-      show({
-        title: 'Add an exercise first',
-        message: 'A routine needs at least one lift before it can start.',
-      });
+    if (!next) return;
+    if (resume) {
+      router.push('/live');
       return;
     }
     try {
       startSession({ routineId: next.routine.id });
       router.replace('/live');
     } catch {
-      show({
-        title: 'A session is already running',
-        message: 'Finish or discard it before starting another.',
-      });
+      router.push('/live');
     }
   };
 
   return (
     <>
       <Screen bottomInset={actionBar}>
-        <ScreenHeader
-          title="How are you today?"
-          kicker="CHECK-IN · 3 TAPS"
-          onBack={() => router.back()}
-        />
+        <ScreenHeader title="Check-in" onBack={() => router.back()} />
 
         <Section first plated={false}>
           <RowPlates>
@@ -173,29 +141,14 @@ export default function CheckInScreen() {
           </RowPlates>
         </Section>
 
-        <Section label="WHAT THAT MEANS" plated={false}>
-          {call && answered ? (
-            <View style={{ gap: 8 }}>
-              <Text style={text.lead}>{call.lead}</Text>
-              <Text style={text.prose}>{call.reason}</Text>
-            </View>
-          ) : (
-            <Text style={text.prose}>Answer all three and the call appears here.</Text>
-          )}
-        </Section>
-
-        <Section label="THIS IS A GUESS, NOT A MEASUREMENT" plated={false}>
-          <Text style={text.prose}>
-            Three taps and which of today&apos;s muscles you trained in the last two days. No
-            wearable, no HRV, no sleep tracking — so it is worth exactly what you put into it, and
-            it is written as a sentence rather than a score for that reason.
-          </Text>
+        <Section plated={false}>
+          <ReadinessPill step={step} />
         </Section>
       </Screen>
 
-      {next ? (
+      {canStart ? (
         <ActionBar
-          primary={`Start ${next.routine.name}`}
+          primary={resume ? 'Resume' : 'Start'}
           onPrimary={start}
           secondary="SKIP"
           onSecondary={() => router.back()}

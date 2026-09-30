@@ -14,12 +14,13 @@ import {
   ScreenHeader,
   Section,
   SessionRow,
+  Meter,
   StatTiles,
   type Tile,
   WeekStrip,
-  useDialog,
   useTabBarHeight,
 } from '@/components';
+import { ReadinessPill } from '@/components/pill';
 import { useRows } from '@/data/live';
 import { startSession } from '@/data/mutations/sessions';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
@@ -30,11 +31,12 @@ import { latestCheckInQuery } from '@/data/queries/readiness';
 import { routineExercisesQuery, routineListQuery } from '@/data/queries/routines';
 import { recentSessionsQuery, sessionsWithRecordsQuery } from '@/data/queries/sessions';
 import { lastRunPerRoutineQuery } from '@/data/queries/today';
+import { useSessionRunning } from '@/data/running';
 import { useActiveSchedule } from '@/data/schedule';
 import { trainedDays } from '@/lib/calendar';
 import { dueLabel, lastRunLabel } from '@/lib/next';
 import { type ScheduledDay, nextScheduled } from '@/lib/program';
-import { dayStart, readinessCall } from '@/lib/readiness';
+import { dayStart, readinessStep } from '@/lib/readiness';
 import { dateLabel, sessionDotTone } from '@/lib/time';
 import { formatTonnage } from '@/lib/volume';
 import { type StripDay, weekStrip } from '@/lib/week';
@@ -51,7 +53,7 @@ import { color, fabShadow, radius, size, text } from '@/theme';
  * "Next" is the running program's schedule and nothing else. It used to be a
  * heuristic — the routine trained least recently — standing in for a schedule
  * nothing stored; programs store one, so the heuristic is gone rather than kept
- * as a fallback. With no program running there is no next, and the card says so.
+ * as a fallback. With no program running there is no next, and the card is just MAKE A PROGRAM.
  */
 const WEEK_PAD = 13;
 
@@ -155,7 +157,7 @@ function NextCard({
   lastRunAt: number | null;
   loading: boolean;
 }) {
-  const show = useDialog();
+  const running = useSessionRunning();
   const lifts = useRows(
     useMemo(() => routineExercisesQuery(next?.routine.id ?? ''), [next?.routine.id]),
     [next?.routine.id],
@@ -169,10 +171,6 @@ function NextCard({
   if (!next) {
     return (
       <Section first pad={15}>
-        <Text style={text.lead}>Nothing scheduled</Text>
-        <Text style={text.prose}>
-          A program puts your routines on weekdays, and this card then says which one is next.
-        </Text>
         <Pressable
           onPress={() => router.push('/session/programs')}
           accessibilityRole="button"
@@ -188,6 +186,29 @@ function NextCard({
   const meta = lifts ? [`${rows.length} ${rows.length === 1 ? 'LIFT' : 'LIFTS'}`] : ['\u2014'];
   const sets = rows.reduce((n, lift) => n + lift.targetSets, 0);
   if (sets > 0) meta.push(`${sets} SETS`);
+
+  // `running` and `lifts` are null until they answer; acting on that is telling
+  // the user their routine is empty, or that nothing runs, because the app has
+  // not looked yet. An empty routine cannot start, so its button is dim.
+  const resume = running === true;
+  const disabled = running === null || lifts === null || (!resume && lifts.length === 0);
+
+  const press = () => {
+    if (disabled) return;
+    if (resume) {
+      router.push('/live');
+      return;
+    }
+    try {
+      startSession({ routineId: next.routine.id });
+      // Replace, not push: going "back" to the card that started a running
+      // session is not a state this screen should be able to return to.
+      router.replace('/live');
+    } catch {
+      // Another start won the race. What is running is the place to be.
+      router.push('/live');
+    }
+  };
 
   return (
     <Section first pad={15}>
@@ -206,42 +227,22 @@ function NextCard({
       ))}
 
       <Pressable
-        onPress={() => {
-          // `lifts` is null until the query answers; refusing on that is
-          // telling the user their routine is empty because the app has not
-          // looked yet.
-          if (lifts === null) return;
-          if (lifts.length === 0) {
-            show({
-              title: 'Add an exercise first',
-              message: 'A routine needs at least one lift before it can start.',
-            });
-            return;
-          }
-          try {
-            startSession({ routineId: next.routine.id });
-            // Replace, not push: going "back" to the card that started a running
-            // session is not a state this screen should be able to return to.
-            router.replace('/live');
-          } catch {
-            show({
-              title: 'A session is already running',
-              message: 'Finish or discard it before starting another.',
-            });
-          }
-        }}
+        onPress={press}
+        disabled={disabled}
         accessibilityRole="button"
+        accessibilityState={{ disabled }}
         style={{
           minHeight: 50,
           borderRadius: radius.plate,
           borderCurve: 'continuous',
-          backgroundColor: color.accent,
+          backgroundColor: resume ? color.done : color.accent,
           alignItems: 'center',
           justifyContent: 'center',
           boxShadow: fabShadow,
+          opacity: disabled ? 0.4 : 1,
         }}
       >
-        <Text style={text.action}>Start {next.routine.name}</Text>
+        <Text style={text.action}>{resume ? 'Resume' : 'Start'}</Text>
       </Pressable>
     </Section>
   );
@@ -249,7 +250,7 @@ function NextCard({
 
 /** Lab 43 T3 — the empty state is a set of actions, not an apology. */
 function FirstSteps() {
-  const show = useDialog();
+  const running = useSessionRunning();
   const count = useRows(
     useMemo(() => exerciseCountQuery(), []),
     [],
@@ -257,47 +258,37 @@ function FirstSteps() {
   const exercises = count?.[0]?.n;
 
   const startEmpty = () => {
+    if (running === null) return;
+    if (running) {
+      router.push('/live');
+      return;
+    }
     try {
       startSession();
       router.replace('/live');
     } catch {
-      show({
-        title: 'A session is already running',
-        message: 'Finish or discard it before starting another.',
-      });
+      router.push('/live');
     }
   };
 
   return (
-    <>
-      <Section first plated={false}>
-        <Text style={text.lead}>Nothing logged yet.</Text>
-        <Text style={text.prose}>
-          The week strip, your records and the recent list fill in as you train. Start with a
-          routine or just open a session and log as you go.
-        </Text>
-      </Section>
-      <Section label="FIRST STEPS" plated={false}>
-        <RowPlates>
-          <RowPlate onPress={() => router.push('/routine/new')}>
-            <ListRow title="Build a routine" meta="PICK LIFTS, SETS AND REST" />
-          </RowPlate>
-          <RowPlate onPress={() => router.push('/session/library')}>
-            <ListRow
-              title="Browse the library"
-              meta={exercises ? `${exercises} EXERCISES, OR ADD YOUR OWN` : 'OR ADD YOUR OWN'}
-            />
-          </RowPlate>
-          <RowPlate onPress={startEmpty}>
-            <ListRow title="Start an empty session" meta="DECIDE AS YOU GO" />
-          </RowPlate>
-        </RowPlates>
-      </Section>
-    </>
+    <Section first plated={false}>
+      <RowPlates>
+        <RowPlate onPress={() => router.push('/routine/new')}>
+          <ListRow title="Build a routine" />
+        </RowPlate>
+        <RowPlate onPress={() => router.push('/session/library')}>
+          <ListRow title="Browse the library" meta={exercises ? String(exercises) : undefined} />
+        </RowPlate>
+        <RowPlate onPress={startEmpty}>
+          <ListRow title={running ? 'Resume' : 'Empty session'} />
+        </RowPlate>
+      </RowPlates>
+    </Section>
   );
 }
 
-/** Optional, and only a link: the lead depends on the answers alone, so no routine or set query runs here. */
+/** Optional, and only a link. No chip until a check-in has been taken today. */
 function ReadinessRow() {
   const today = useMemo(() => dayStart(nowMs()), []);
   const rows = useRows(
@@ -305,22 +296,15 @@ function ReadinessRow() {
     [today],
   );
   const row = rows?.[0];
-  const meta = row
-    ? readinessCall({
-        answers: { sleep: row.sleep, soreness: row.soreness, energy: row.energy },
-        routineName: null,
-        recent: [],
-        now: row.at,
-      })
-        .lead.replace(/\.$/, '')
-        .toUpperCase()
-    : '3 TAPS · OPTIONAL';
+  const step = row
+    ? readinessStep({ sleep: row.sleep, soreness: row.soreness, energy: row.energy })
+    : null;
 
   return (
-    <Section label="READINESS" plated={false}>
+    <Section plated={false}>
       <RowPlates>
         <RowPlate onPress={() => router.push('/check-in')}>
-          <ListRow title="How are you today?" meta={meta} />
+          <ListRow title="Check-in" right={step ? <ReadinessPill step={step} /> : undefined} />
         </RowPlate>
       </RowPlates>
     </Section>
@@ -330,19 +314,28 @@ function ReadinessRow() {
 /**
  * A number gets a visual only when there is something real to draw (§0). The
  * volume has last week to compare against, so it takes a delta; the session
- * count has no weekly target stored anywhere, so it ships plain rather than
- * wearing a meter against an invented denominator.
+ * count takes a meter only when a running program plans a number of workout days
+ * to be measured against, and is a plain number otherwise. Two tiles, as the
+ * board draws them — the volume can run past five characters.
  */
 function WeekTiles({ week }: { week: ReturnType<typeof weekStrip> }) {
   const { weightUnit } = useSettings();
-  const { thisWeek, lastWeek } = week;
+  const { thisWeek, lastWeek, plannedPerWeek } = week;
   const change =
     lastWeek.volumeKg > 0
       ? Math.round(((thisWeek.volumeKg - lastWeek.volumeKg) / lastWeek.volumeKg) * 100)
       : null;
 
   const tiles: Tile[] = [
-    { label: 'SESSIONS', value: String(thisWeek.sessions), tone: thisWeek.sessions ? 'hi' : 'lo' },
+    {
+      label: 'SESSIONS',
+      value: String(thisWeek.sessions),
+      tone: thisWeek.sessions ? 'hi' : 'lo',
+      visual:
+        plannedPerWeek > 0 ? (
+          <Meter value={thisWeek.sessions / plannedPerWeek} width={44} />
+        ) : undefined,
+    },
     {
       label: 'VOLUME',
       value: thisWeek.volumeKg > 0 ? formatTonnage(thisWeek.volumeKg, weightUnit) : '—',
@@ -389,13 +382,11 @@ function RecentRail() {
     onPress: () => router.push(`/history/${session.id}`),
   }));
 
+  if (!rows.length) return null;
+
   return (
     <Section label="RECENT" plated={false}>
-      {rows.length ? (
-        <Rail items={items} air={22} />
-      ) : sessions === null ? null : (
-        <Text style={text.prose}>Nothing logged yet. Your first session lands here.</Text>
-      )}
+      <Rail items={items} air={22} />
     </Section>
   );
 }

@@ -6,15 +6,15 @@ import { dueLabel, lastRunLabel } from './next.ts';
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 8, 13, 12, 0);
 
-test('the kicker counts whole days and names the near ones', () => {
-  assert.equal(lastRunLabel(null, NOW), 'NEVER RUN');
-  assert.equal(lastRunLabel(NOW - 2 * 3600_000, NOW), 'LAST RUN TODAY');
-  assert.equal(lastRunLabel(NOW - 1 * DAY, NOW), 'LAST RUN YESTERDAY');
-  assert.equal(lastRunLabel(NOW - 5 * DAY, NOW), 'LAST RUN 5 DAYS AGO');
+test('the last run is whole days, and NEW before the first', () => {
+  assert.equal(lastRunLabel(null, NOW), 'NEW');
+  assert.equal(lastRunLabel(NOW - 2 * 3600_000, NOW), '0D');
+  assert.equal(lastRunLabel(NOW - 1 * DAY, NOW), '1D');
+  assert.equal(lastRunLabel(NOW - 5 * DAY, NOW), '5D');
 });
 
-test('a clock that has gone backwards reads as today, never as negative days', () => {
-  assert.equal(lastRunLabel(NOW + 3600_000, NOW), 'LAST RUN TODAY');
+test('a clock that has gone backwards reads as 0D, never as negative days', () => {
+  assert.equal(lastRunLabel(NOW + 3600_000, NOW), '0D');
 });
 
 test('the due label names the two near days and dates everything else', () => {

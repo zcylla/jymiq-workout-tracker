@@ -35,18 +35,20 @@ test('the query range spans exactly the days drawn', () => {
   assert.equal(days.length, Math.round((to - from) / 86_400_000));
 });
 
-test('past, present and future are three different states', () => {
+test('today is a flag on a mark, and only one day carries it', () => {
   const { days, todayIndex } = weekStrip(none, THU);
   assert.equal(days[todayIndex]?.key, '2026-09-04');
-  assert.equal(days[todayIndex]?.state, 'today');
-  assert.equal(days[todayIndex - 1]?.state, 'rest');
-  assert.equal(days[todayIndex + 1]?.state, 'ahead');
+  assert.deepEqual(
+    days.filter((d) => d.today).map((d) => d.key),
+    ['2026-09-04'],
+  );
+  assert.equal(days[todayIndex]?.mark, 'rest');
 });
 
 test('a trained past day is done and carries the session it opens', () => {
   const trained = new Map([['2026-09-01', day('s1', 6200)]]);
   const cell = weekStrip(trained, THU).days.find((d) => d.key === '2026-09-01');
-  assert.equal(cell?.state, 'done');
+  assert.equal(cell?.mark, 'done');
   assert.equal(cell?.sessionId, 's1');
   assert.equal(cell?.volumeKg, 6200);
 });
@@ -57,11 +59,11 @@ test('an untrained day is never a target', () => {
   }
 });
 
-test('today outranks done, but a trained today stays openable', () => {
+test('a trained today is done and flagged today, and stays openable', () => {
   const trained = new Map([['2026-09-04', day('s9', 5000)]]);
   const { days, todayIndex } = weekStrip(trained, THU);
-  // The cell's job is to say where you are; the session rides along.
-  assert.equal(days[todayIndex]?.state, 'today');
+  assert.equal(days[todayIndex]?.mark, 'done');
+  assert.equal(days[todayIndex]?.today, true);
   assert.equal(days[todayIndex]?.sessionId, 's9');
 });
 
@@ -104,30 +106,54 @@ test('a week boundary at a month end does not lose a day', () => {
 test('an untrained past day is rest when no program is running', () => {
   const { days } = weekStrip(none, THU);
   // Wednesday of this week — yesterday.
-  assert.equal(days[16]?.state, 'rest');
+  assert.equal(days[16]?.mark, 'rest');
 });
 
+const push = { id: 'push', name: 'Push' };
+const pull = { id: 'pull', name: 'Pull' };
+
 test('a past day the running program scheduled and you skipped is missed', () => {
-  const schedule = { days: new Map([[2, { id: 'push', name: 'Push' }]]), since: '2026-08-17' };
+  const schedule = { days: new Map([[2, push]]), since: '2026-08-17' };
   const { days } = weekStrip(none, THU, schedule);
   assert.equal(days[16]?.key, '2026-09-02');
-  assert.equal(days[16]?.state, 'missed');
+  assert.equal(days[16]?.mark, 'missed');
   // Tuesday has nothing on it, so it stays rest — §0 wants the two different.
-  assert.equal(days[15]?.state, 'rest');
+  assert.equal(days[15]?.mark, 'rest');
 });
 
 test('a scheduled day you trained is done, not missed', () => {
-  const schedule = { days: new Map([[2, { id: 'push', name: 'Push' }]]), since: '2026-08-17' };
+  const schedule = { days: new Map([[2, push]]), since: '2026-08-17' };
   const { days } = weekStrip(new Map([['2026-09-02', day('s1', 4000)]]), THU, schedule);
-  assert.equal(days[16]?.state, 'done');
+  assert.equal(days[16]?.mark, 'done');
 });
 
-test('a scheduled day ahead of today is ahead, never missed', () => {
-  const schedule = { days: new Map([[4, { id: 'pull', name: 'Pull' }]]), since: '2026-08-17' };
+test('a planned today is planned and flagged; scheduled days ahead are planned', () => {
+  const schedule = {
+    days: new Map([
+      [3, push],
+      [4, pull],
+    ]),
+    since: '2026-08-17',
+  };
   const { days } = weekStrip(none, THU, schedule);
   assert.equal(days[18]?.key, '2026-09-04');
-  assert.equal(days[18]?.state, 'today');
-  assert.equal(days[19]?.state, 'ahead');
+  assert.equal(days[18]?.mark, 'planned');
+  assert.equal(days[18]?.today, true);
+  assert.equal(days[19]?.mark, 'rest');
+});
+
+test("the meter denominator is the running program's planned days, or zero", () => {
+  const schedule = {
+    days: new Map([
+      [0, push],
+      [2, pull],
+      [4, push],
+    ]),
+    since: '2026-08-17',
+  };
+  assert.equal(weekStrip(none, THU, schedule).plannedPerWeek, 3);
+  assert.equal(weekStrip(none, THU).plannedPerWeek, 0);
+  assert.equal(weekStrip(none, THU, { days: schedule.days, since: null }).plannedPerWeek, 0);
 });
 
 test('weekBounds: this week is the Monday-first week the strip puts today in', () => {

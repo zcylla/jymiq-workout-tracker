@@ -4,13 +4,16 @@ import { Pressable, type ScrollView as RNScrollView, ScrollView, Text, View } fr
 import type { StripDay } from '@/lib/week';
 import { color, radius, size, text, wash } from '@/theme';
 
+import { DayMarkGlyph } from './day-mark';
+
 const CELL_WIDTH = 46;
 const BAR_MAX = 26;
+const MARK_HEIGHT = 18;
 
 /**
- * lab45 W3 — "the calendar and the graph are one element". Every cell reserves
- * a bar-height box, filled or stubbed, so the strip is a bar chart before it is
- * a set of dates.
+ * lab45 W3 — "the calendar and the graph are one element" — in Lab 49's day-state
+ * grammar, with no key. Every cell reserves a bar-height box, so the strip is a
+ * bar chart before it is a set of dates.
  */
 export function WeekStrip({
   days,
@@ -56,17 +59,10 @@ function DayCell({
   maxVolumeKg: number;
   onPress: (day: StripDay) => void;
 }) {
-  const letterColor =
-    day.state === 'today' ? color.accent : day.state === 'done' ? color.lo : color.dim;
-  const dateColor =
-    day.state === 'today' || day.state === 'done'
-      ? color.hi
-      : day.state === 'rest' || day.state === 'missed'
-        ? color.lo
-        : color.dim;
+  const { mark, today } = day;
+  const letterColor = today ? color.accent : mark === 'missed' ? color.dim : color.lo;
+  const dateColor = mark === 'missed' ? color.dim : color.hi;
 
-  const barColor =
-    day.volumeKg > 0 ? (day.state === 'today' ? color.accent : color.done) : wash.track;
   const barHeight =
     day.volumeKg > 0 && maxVolumeKg > 0
       ? Math.max(4, Math.round(BAR_MAX * (day.volumeKg / maxVolumeKg)))
@@ -82,37 +78,27 @@ function DayCell({
         gap: 6,
         paddingVertical: 7,
         borderRadius: radius.row,
-        backgroundColor: day.state === 'today' ? wash.chip : undefined,
+        backgroundColor: today ? wash.chip : undefined,
+        boxShadow: today ? `0 0 0 1.5px ${color.accent}` : undefined,
       }}
     >
       <Text style={[text.meta, { color: letterColor }]}>{day.letter}</Text>
-      {/* §0: rest and missed must look different, and missed carries a ring
-          under its number. A ring rather than a fill, because a filled cell on
-          this strip already means "trained". */}
-      <View
-        style={{
-          minWidth: 22,
-          alignItems: 'center',
-          paddingHorizontal: 4,
-          paddingVertical: 1,
-          borderRadius: radius.pill,
-          // The ring is always in the layout and only sometimes visible, so a
-          // missed cell is not 2pt taller than the rest days beside it.
-          borderWidth: 1,
-          borderColor: day.state === 'missed' ? color.tick2 : 'transparent',
-        }}
-      >
-        <Text style={[text.numSm, { color: dateColor }]}>{day.date}</Text>
-      </View>
+      <Text style={[text.numSm, { color: dateColor }]}>{day.date}</Text>
+      {/* The mark is the calendar's grammar in one 14pt slot:
+          solid bar is trained, dashed is planned, hatched is missed, a stub is rest. */}
       <View style={{ width: 14, height: BAR_MAX, justifyContent: 'flex-end' }}>
-        <View
-          style={{
-            width: 14,
-            height: barHeight,
-            borderRadius: day.volumeKg > 0 ? 3 : 2,
-            backgroundColor: barColor,
-          }}
-        />
+        {mark === 'planned' || mark === 'missed' ? (
+          <DayMarkGlyph mark={mark} width={14} height={MARK_HEIGHT} corner={3} />
+        ) : (
+          <View
+            style={{
+              width: 14,
+              height: mark === 'done' ? barHeight : 4,
+              borderRadius: mark === 'done' ? 3 : 2,
+              backgroundColor: mark === 'done' ? (today ? color.accent : color.done) : wash.track,
+            }}
+          />
+        )}
       </View>
     </View>
   );
