@@ -91,14 +91,18 @@ export function LivePager({ pageKey, can, disabled, onSwipe, children }: Props) 
     .onBegin((e) => {
       ignoredSV.set(inEdgeBand(e.absoluteX, width));
     })
-    .onStart((e) => {
-      if (ignoredSV.get()) return;
-      axisSV.set(Math.abs(e.translationX) >= Math.abs(e.translationY) ? 1 : 2);
-      scheduleOnRN(gestureStart);
+    .onStart(() => {
+      if (!ignoredSV.get()) scheduleOnRN(gestureStart);
     })
     .onUpdate((e) => {
-      const axis = axisSV.get();
-      if (axis === 0) return;
+      if (ignoredSV.get()) return;
+      let axis = axisSV.get();
+      // Decided on the first move, not in onStart: its event reports a zero translation on Android.
+      if (axis === 0) {
+        if (e.translationX === 0 && e.translationY === 0) return;
+        axis = Math.abs(e.translationX) >= Math.abs(e.translationY) ? 1 : 2;
+        axisSV.set(axis);
+      }
       const t = axis === 1 ? e.translationX : e.translationY;
       const moved = can[heading(axis === 1 ? 'x' : 'y', t)] ? t * RESIST : rubberBand(t, width);
       if (axis === 1) xSV.set(moved);

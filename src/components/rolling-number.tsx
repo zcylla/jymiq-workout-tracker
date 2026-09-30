@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-const STRIP = '0\n1\n2\n3\n4\n5\n6\n7\n8\n9';
+const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 type RollingStyle = TextStyle & { lineHeight: number };
 
@@ -25,7 +25,13 @@ function Digit({ digit, style }: { digit: number; style: RollingStyle }) {
   return (
     <View style={{ height: style.lineHeight, overflow: 'hidden' }}>
       <Animated.View style={animated}>
-        <Text style={style}>{STRIP}</Text>
+        {/* One Text per cell: a single multi-line Text is measured against the clip's height
+            on Android and lays out only its first line. */}
+        {DIGITS.map((d) => (
+          <Text key={d} style={[style, { height: style.lineHeight }]}>
+            {d}
+          </Text>
+        ))}
       </Animated.View>
     </View>
   );

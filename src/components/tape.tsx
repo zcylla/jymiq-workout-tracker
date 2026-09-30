@@ -107,7 +107,7 @@ export function Tape({ scale, value, unit, onDetent }: Props) {
 
   return (
     <GestureDetector gesture={pan}>
-      <View style={{ width: 62 }}>
+      <View style={{ width: 72 }}>
         <Text style={[text.label, { marginBottom: 8, textAlign: 'right' }]}>{unit}</Text>
         <View style={{ height: size.tapeRow * ROWS, overflow: 'hidden' }}>
           <Animated.View style={strip}>
