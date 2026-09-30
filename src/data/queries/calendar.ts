@@ -20,6 +20,7 @@ export function sessionsInRangeQuery(from: number, to: number) {
       name: sessions.name,
       startedAt: sessions.startedAt,
       totalVolumeKg: sessions.totalVolumeKg,
+      durationSec: sessions.durationSec,
     })
     .from(sessions)
     .where(
