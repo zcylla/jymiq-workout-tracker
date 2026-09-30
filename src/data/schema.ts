@@ -302,9 +302,9 @@ export const personalRecords = sqliteTable(
 );
 
 /**
- * A weigh-in. Append-only, like `personal_records`: the chart reads the latest
- * reading per local day, so logging again the same day corrects that day
- * without an UPDATE, and the earlier reading stays in the log.
+ * A weigh-in. The chart reads the latest reading per local day, so logging
+ * again the same day corrects that day and the earlier reading stays in the
+ * log. A wrong reading can also have its weight edited or be deleted outright.
  */
 export const bodyWeights = sqliteTable(
   'body_weights',
