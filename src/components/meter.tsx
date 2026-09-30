@@ -1,6 +1,9 @@
 import { View } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
 import { color, type Ink, wash } from '@/theme';
+
+import { useTween } from './tween';
 
 export function Meter({
   value,
@@ -18,6 +21,8 @@ export function Meter({
   // NaN survives Math.min/max, and a `NaN%` width renders wrong rather than
   // throwing. An empty state divides by zero often enough to matter.
   const filled = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
+  const fillSV = useTween(filled);
+  const fill = useAnimatedStyle(() => ({ width: `${fillSV.get() * 100}%` }));
   return (
     <View
       style={[
@@ -33,14 +38,7 @@ export function Meter({
         width === 'full' ? { width: '100%' } : { width, flexShrink: 0 },
       ]}
     >
-      <View
-        style={{
-          height,
-          width: `${filled * 100}%`,
-          borderRadius: height / 2,
-          backgroundColor: tone,
-        }}
-      />
+      <Animated.View style={[{ height, borderRadius: height / 2, backgroundColor: tone }, fill]} />
     </View>
   );
 }

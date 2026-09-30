@@ -1,7 +1,10 @@
 import { Text, View } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
 import { lh, ls, mono, color, text, wash } from '@/theme';
 import { type Landmark, barPct, verdict as verdictOf } from '@/lib/landmarks';
+
+import { useTween } from './tween';
 
 /**
  * kit's zone-bar row. The marker is always near-white, never tinted to the
@@ -19,6 +22,8 @@ export function ZoneBar({
 }) {
   const v = landmark ? verdictOf(sets, landmark) : null;
   const tone = v ? color[v.tone] : color.hi;
+  const markerSV = useTween(landmark ? barPct(sets, landmark.cap) : 0);
+  const marker = useAnimatedStyle(() => ({ left: `${markerSV.get()}%` }));
 
   return (
     <View style={{ paddingVertical: 7, gap: 6 }}>
@@ -62,18 +67,20 @@ export function ZoneBar({
             />
             <View style={{ flex: 1, backgroundColor: wash.live }} />
           </View>
-          <View
-            style={{
-              position: 'absolute',
-              left: `${barPct(sets, landmark.cap)}%`,
-              top: -3,
-              bottom: -3,
-              width: 2,
-              marginLeft: -1,
-              borderRadius: 1,
-              backgroundColor: color.hi,
-              boxShadow: `0 0 0 1.5px ${color.ground}`,
-            }}
+          <Animated.View
+            style={[
+              {
+                position: 'absolute',
+                top: -3,
+                bottom: -3,
+                width: 2,
+                marginLeft: -1,
+                borderRadius: 1,
+                backgroundColor: color.hi,
+                boxShadow: `0 0 0 1.5px ${color.ground}`,
+              },
+              marker,
+            ]}
           />
         </View>
       ) : null}
