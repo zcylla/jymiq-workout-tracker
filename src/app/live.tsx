@@ -6,8 +6,12 @@ import { BackHandler, Pressable, Text, View } from 'react-native';
 import {
   ActionBar,
   ExercisesSheet,
+  ExerciseStill,
   Icon,
   KeypadSheet,
+  ListRow,
+  RowPlate,
+  RowPlates,
   Screen,
   ScreenHeader,
   Section,
@@ -22,7 +26,12 @@ import {
   completeSet,
   extendRest,
   finishSession,
+  removeSessionExercise,
+  removeSet,
+  reorderSessionExercises,
+  reorderSets,
   setSessionCursor,
+  skipSessionExercise,
   updateSet,
 } from '@/data/mutations/sessions';
 import { useRows } from '@/data/live';
@@ -33,6 +42,7 @@ import {
   sessionExercisesQuery,
   sessionSetsQuery,
 } from '@/data/queries/sessions';
+import { exerciseStill } from '@/data/exercise-art';
 import { estimate1RM } from '@/lib/e1rm';
 import { nextExercise, nextSet, prevExercise, prevSet } from '@/lib/live-nav';
 import type { Swipe } from '@/lib/pager';
@@ -42,6 +52,7 @@ import { formatWeight } from '@/lib/units';
 import { countLoggedSets } from '@/lib/volume';
 import { ExerciseLadder } from '@/components/exercise-ladder';
 import { LiveFooter } from '@/components/live-footer';
+import { LiveActions } from '@/components/live-actions';
 import { LiveInstrument } from '@/components/live-instrument';
 import { LivePager } from '@/components/live-pager';
 import { pop } from '@/components/haptics';
@@ -74,6 +85,28 @@ function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: stri
  * training back in your own unit.
  */
 export default function LiveScreen() {
+  const id = useLiveQuery(activeSessionQuery()).data?.[0]?.id;
+  if (!id) {
+    return (
+      <Screen>
+        <ScreenHeader title="" onBack={() => router.replace('/')} />
+      </Screen>
+    );
+  }
+  // Keyed, so the session queries below are born with the real id: a live query
+  // keeps its last rows when its deps change, and an id-less first answer of
+  // `[]` would otherwise read as an empty session.
+  return <LiveSession key={id} sessionId={id} />;
+}
+
+/** A new array with the item at `from` moved to `to`. */
+function moved<T>(items: readonly T[], from: number, to: number): T[] {
+  const next = [...items];
+  next.splice(to, 0, ...next.splice(from, 1));
+  return next;
+}
+
+function LiveSession({ sessionId }: { sessionId: string }) {
   const [editing, setEditing] = useState<WorkoutParameter | null>(null);
   const [sheet, setSheet] = useState<'sets' | 'exercises' | null>(null);
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
@@ -89,13 +122,15 @@ export default function LiveScreen() {
   // here starts life with an empty id, so omitting the deps renders an empty
   // session forever — and it fails as plausible data, not as an error.
   const session = useLiveQuery(activeSessionQuery()).data?.[0];
-  const sessionId = session?.id ?? '';
   const sessionExerciseRows = useRows(sessionExercisesQuery(sessionId), [sessionId]);
   const sessionSets = useRows(sessionSetsQuery(sessionId), [sessionId]);
   const exercises = sessionExerciseRows ?? [];
   const allSets = sessionSets ?? [];
   const setsLoaded = sessionSets !== null;
 
+  const exercisesLoaded = sessionExerciseRows !== null;
+
+  // A cursor at nothing, or at an exercise that is gone, lands on the first one.
   const exercise =
     exercises.find((e) => e.id === session?.currentSessionExerciseId) ?? exercises[0];
   const sets = allSets.filter((s) => s.sessionExerciseId === exercise?.id);
@@ -182,6 +217,11 @@ export default function LiveScreen() {
 
   const discard = () => leave('discard');
 
+  const pick = (params: { sessionId: string } | { replace: string }) => {
+    setSheet(null);
+    router.push({ pathname: '/pick-exercise', params });
+  };
+
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (keypadParam !== null) {
@@ -209,10 +249,23 @@ export default function LiveScreen() {
     );
   }
 
+  if (exercisesLoaded && exercises.length === 0) {
+    return (
+      <Screen>
+        <ScreenHeader title={session.name} onBack={discard} />
+        <Section first plated={false}>
+          <RowPlates>
+            <RowPlate onPress={() => pick({ sessionId: session.id })}>
+              <ListRow title="Add exercise" />
+            </RowPlate>
+          </RowPlates>
+        </Section>
+      </Screen>
+    );
+  }
+
   if (!exercise || !set) {
-    // "No exercises in it" is a claim about the session, and both queries are
-    // still in flight on the frame this screen takes over. Say nothing until
-    // they have answered, rather than accusing a full session of being empty.
+    // Both queries are still in flight on the frame this screen takes over.
     return (
       <Screen>
         <ScreenHeader title={session.name} onBack={() => router.replace('/')} />
@@ -233,6 +286,7 @@ export default function LiveScreen() {
     name: e.name,
     setsTotal: setsOf[i].length,
     setsDone: setsOf[i].filter((s) => s.completedAt != null).length,
+    exerciseId: e.exerciseId,
   }));
 
   // The query already drops skipped exercises, so nothing here is `removed`.
@@ -284,6 +338,8 @@ export default function LiveScreen() {
 
   const finish = () => leave('finish');
 
+  const openHistory = () => router.push(`/exercise/${exercise.exerciseId}`);
+
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
       <Screen bottomInset={barHeight} scroll={false}>
@@ -314,6 +370,17 @@ export default function LiveScreen() {
             <ScreenHeader
               title={exercise.name}
               kicker={`EXERCISE ${exerciseIndex + 1} OF ${exercises.length}`}
+              right={
+                exerciseStill(exercise.exerciseId) ? (
+                  <Pressable
+                    onPress={openHistory}
+                    accessibilityRole="button"
+                    accessibilityLabel="Exercise history"
+                  >
+                    <ExerciseStill exerciseId={exercise.exerciseId} size={56} />
+                  </Pressable>
+                ) : undefined
+              }
             />
           </Pressable>
 
@@ -339,7 +406,7 @@ export default function LiveScreen() {
             rpe={set.rpe}
             oneRm={oneRm}
             showRpe={showRpe}
-            onEdit={setEditing}
+            onEdit={(p) => setEditing((current) => (current === p ? null : p))}
             pulse={pulse}
             onDetent={onDetent}
             // Lab 32's switch: one route or the other opens the keypad, and
@@ -356,8 +423,12 @@ export default function LiveScreen() {
             }
           />
 
+          {editing === null ? (
+            <LiveActions onSwap={() => pick({ replace: exercise.id })} onHistory={openHistory} />
+          ) : null}
+
           {previous ? (
-            <Section label="LAST TIME" plated={false}>
+            <Section label="LAST TIME" plated={false} first={editing === null}>
               <Text style={text.body}>
                 {formatWeight(previous.weightKg ?? 0)} KG × {previous.reps ?? 0}
                 {previous.rpe == null ? '' : ` @ RPE ${previous.rpe}`}
@@ -393,6 +464,14 @@ export default function LiveScreen() {
         sessionExerciseId={exercise.id}
         sets={sets}
         currentSetId={set.id}
+        onReorder={(from, to) => reorderSets(moved(sets, from, to).map((s) => s.id))}
+        onDelete={(id) => {
+          if (sets.length > 1) removeSet(id);
+          else {
+            setSheet(null);
+            removeSessionExercise(exercise.id);
+          }
+        }}
       />
       <ExercisesSheet
         open={sheet === 'exercises'}
@@ -401,6 +480,16 @@ export default function LiveScreen() {
         sessionId={session.id}
         exercises={exerciseRows}
         currentSessionExerciseId={exercise.id}
+        onReorder={(from, to) =>
+          reorderSessionExercises(moved(exerciseRows, from, to).map((e) => e.id))
+        }
+        onDelete={(id) => {
+          const row = exerciseRows.find((e) => e.id === id);
+          if (row && row.setsDone > 0) skipSessionExercise(id);
+          else removeSessionExercise(id);
+        }}
+        onReplace={(id) => pick({ replace: id })}
+        onAdd={() => pick({ sessionId: session.id })}
       />
       <KeypadSheet
         key={`${keypadParam}-${keypadParam !== null}`}

@@ -53,7 +53,7 @@ export function ScreenHeader({ title, kicker, right, onBack }: Props) {
     <View style={{ paddingTop: 10, paddingBottom: 2, gap: 5 }}>
       {kicker ? <Text style={text.label}>{kicker}</Text> : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <Text style={text.h1}>{title}</Text>
+        <Text style={[text.h1, { flexShrink: 1 }]}>{title}</Text>
         <View style={{ flex: 1 }} />
         {right}
       </View>

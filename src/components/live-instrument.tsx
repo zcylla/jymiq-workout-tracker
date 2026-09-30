@@ -69,7 +69,7 @@ export function LiveInstrument({
       <View style={{ paddingRight: editing ? TAPE_GUTTER : 0, alignItems: 'center' }}>
         <Pressable
           onPress={() => onEdit('load')}
-          disabled={editing !== null}
+          disabled={editing !== null && editing !== 'load'}
           accessibilityRole="button"
           accessibilityLabel="Edit load"
         >
