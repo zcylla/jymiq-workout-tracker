@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useGlassTrial } from '@/data/glass-trial';
 import { type Element, glassOf } from '@/lib/glass-trial';
-import { type GlassRecipe, glassRecipes } from '@/theme';
+import { chromeGlass, type GlassRecipe, glassRecipes } from '@/theme';
 
 /**
  * The screen's backdrop, wrapped in a `BlurTargetView`, when the trial blurs.
@@ -17,12 +17,16 @@ export const BlurTargetContext = createContext<RefObject<View | null> | null>(nu
 export const GlassHeroContext = createContext(false);
 
 /** The glass lab's verdict for one surface: its recipe (null is opaque) and blur intensity (0 is no BlurView). */
-export function useGlass(element: Element, targetOverride?: RefObject<View | null> | null) {
+export function useGlass(element: Element) {
   const trial = useGlassTrial();
-  const contextTarget = useContext(BlurTargetContext);
-  const target = targetOverride === undefined ? contextTarget : targetOverride;
+  const target = useContext(BlurTargetContext);
   const { glass, blur } = glassOf(trial, element);
-  const recipe = glass && trial.style !== 'off' ? glassRecipes[trial.style] : null;
+  const recipe =
+    glass && trial.style !== 'off'
+      ? element === 'chrome'
+        ? chromeGlass
+        : glassRecipes[trial.style]
+      : null;
   return { recipe, blur: target ? blur : 0, target };
 }
 

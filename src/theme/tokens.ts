@@ -186,7 +186,17 @@ export const glassRecipes = {
   },
 } as const;
 
-export type GlassRecipe = (typeof glassRecipes)[keyof typeof glassRecipes];
+export const chromeGlass = {
+  fill: {
+    ...glassRecipes.tint.fill,
+    backgroundColor: 'rgba(38,34,27,1)',
+  },
+  drop: glassRecipes.tint.drop,
+  tile: glassRecipes.tint.tile,
+  blurTint: glassRecipes.tint.blurTint,
+} as const;
+
+export type GlassRecipe = (typeof glassRecipes)[keyof typeof glassRecipes] | typeof chromeGlass;
 
 /** The glass lab's grounds, drawn by `Backdrop` in place of the dot field. */
 export const backgrounds = {

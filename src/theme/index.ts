@@ -4,6 +4,7 @@ export { lh, ls, text, type TextVariant } from './type';
 export {
   backgrounds,
   chromeShadow,
+  chromeGlass,
   glassRecipes,
   type GlassRecipe,
   color,

@@ -1,18 +1,17 @@
 import { BlurTargetView } from 'expo-blur';
-import { type ReactNode, type Ref, useEffect, useRef } from 'react';
+import { type ReactNode, type Ref, useRef } from 'react';
 import type { ScrollView } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useIsFocused } from 'expo-router';
 
 import { useGlassTrial } from '@/data/glass-trial';
-import { chromeBlurs, screenBlurs } from '@/lib/glass-trial';
+import { screenBlurs } from '@/lib/glass-trial';
 import { color, space } from '@/theme';
 
 import { Backdrop } from './backdrop';
 import { BlurTargetContext } from './glass';
-import { useTabBarBlurTarget, useTabBarScroll } from './tab-bar';
+import { useTabBarScroll } from './tab-bar';
 
 /**
  * The screen shell — kit's `.scr`. Ground, the 22pt side margin, and the real
@@ -41,23 +40,14 @@ export function Screen({
   const insets = useSafeAreaInsets();
   const onScroll = useTabBarScroll();
   const targetRef = useRef<View>(null);
-  const rootTargetRef = useRef<View>(null);
-  const registerTabBarBlurTarget = useTabBarBlurTarget();
-  const focused = useIsFocused();
-  const trial = useGlassTrial();
-  const blurs = screenBlurs(trial);
-  const tabBarBlurs = chromeBlurs(trial) && registerTabBarBlurTarget !== null;
-  useEffect(() => {
-    if (!focused || !tabBarBlurs || !registerTabBarBlurTarget) return;
-    return registerTabBarBlurTarget(rootTargetRef);
-  }, [focused, registerTabBarBlurTarget, tabBarBlurs]);
+  const blurs = screenBlurs(useGlassTrial());
   const padding = {
     paddingHorizontal: space.pad,
     paddingTop: insets.top,
     paddingBottom: scroll ? insets.bottom + space.between + bottomInset : bottomInset,
   };
-  const content = (
-    <>
+  return (
+    <View style={{ flex: 1, backgroundColor: color.ground }}>
       {/* expo-blur on Android blurs only what sits inside a BlurTargetView, and a
           BlurView must not be inside its own target — so the target is the backdrop alone. */}
       {blurs ? (
@@ -83,13 +73,6 @@ export function Screen({
           <View style={[{ flex: 1 }, padding]}>{children}</View>
         )}
       </BlurTargetContext.Provider>
-    </>
-  );
-  return tabBarBlurs ? (
-    <BlurTargetView ref={rootTargetRef} style={{ flex: 1, backgroundColor: color.ground }}>
-      {content}
-    </BlurTargetView>
-  ) : (
-    <View style={{ flex: 1, backgroundColor: color.ground }}>{content}</View>
+    </View>
   );
 }
