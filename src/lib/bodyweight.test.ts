@@ -4,7 +4,9 @@ import { test } from 'node:test';
 import {
   byMonth,
   dailyWeights,
+  isBodyweightKg,
   latest,
+  resolveBodyweight,
   sevenDayAverage,
   thirtyDayChange,
   trendGeometry,
@@ -62,4 +64,42 @@ test('months come newest first with a change against the previous month', () => 
       [7, 2, 81, null],
     ],
   );
+});
+
+test('deleting the latest reading of a day hands the day, and latest, to the one before', () => {
+  const readings = [r(8, 17, 84, 20), r(8, 17, 83, 7), r(8, 16, 82)];
+  const rest = readings.slice(1);
+  assert.deepEqual(
+    dailyWeights(rest).map((d) => d.weightKg),
+    [82, 83],
+  );
+  assert.equal(latest(rest), 83);
+  const onlyToday = rest.slice(0, 1);
+  assert.deepEqual(
+    dailyWeights(onlyToday).map((d) => d.weightKg),
+    [83],
+  );
+  assert.equal(latest([]), null);
+  assert.deepEqual(dailyWeights([]), []);
+});
+
+test('the stored range is 20 to 350 kg, ends included', () => {
+  assert.equal(isBodyweightKg(20), true);
+  assert.equal(isBodyweightKg(350), true);
+  assert.equal(isBodyweightKg(19.9), false);
+  assert.equal(isBodyweightKg(350.1), false);
+  assert.equal(isBodyweightKg(Number.NaN), false);
+});
+
+test('typed digits resolve to one decimal in the unit, or null when the kilograms fall outside', () => {
+  assert.equal(resolveBodyweight('82.45', 'kg'), 82.5);
+  assert.equal(resolveBodyweight('82.', 'kg'), 82);
+  assert.equal(resolveBodyweight('', 'kg'), null);
+  assert.equal(resolveBodyweight('.', 'kg'), null);
+  assert.equal(resolveBodyweight('19', 'kg'), null);
+  assert.equal(resolveBodyweight('351', 'kg'), null);
+  assert.equal(resolveBodyweight('180', 'lb'), 180);
+  assert.equal(resolveBodyweight('40', 'lb'), null);
+  assert.equal(resolveBodyweight('45', 'lb'), 45);
+  assert.equal(resolveBodyweight('780', 'lb'), null);
 });

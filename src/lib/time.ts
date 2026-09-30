@@ -122,6 +122,11 @@ export function dateLabel(atMs: number): string {
   return `${weekday} ${d.getDate()} ${month}`;
 }
 
+/** "8:05 AM" — the clock time of a reading, in the device's locale. */
+export function timeLabel(atMs: number): string {
+  return new Date(atMs).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
 /** "Today"/"TODAY", or "Tue 2 Sep"/"TUE 2 SEP" for anything else. */
 export function sessionDateLabel(
   atMs: number,

@@ -1,4 +1,5 @@
 import { dayKey } from './calendar.ts';
+import { toKg, type Unit } from './units.ts';
 
 export interface Reading {
   measuredAt: number;
@@ -20,6 +21,20 @@ export interface MonthSummary {
 }
 
 export const WINDOW_DAYS = 14;
+
+export const BODYWEIGHT_MIN_KG = 20;
+export const BODYWEIGHT_MAX_KG = 350;
+
+export const isBodyweightKg = (kg: number): boolean =>
+  Number.isFinite(kg) && kg >= BODYWEIGHT_MIN_KG && kg <= BODYWEIGHT_MAX_KG;
+
+/** Typed digits to a one-decimal value in `unit`, or null when nothing sane was typed. */
+export function resolveBodyweight(entered: string, unit: Unit): number | null {
+  const n = Number(entered);
+  if (entered === '' || !Number.isFinite(n)) return null;
+  const value = Math.round(n * 10) / 10;
+  return isBodyweightKg(toKg(value, unit)) ? value : null;
+}
 
 /** Calendar-day stepping, so a DST change never shifts a day boundary by an hour. */
 const shiftDays = (at: number, days: number): number => {
