@@ -44,67 +44,26 @@ export function liftsThisWeek(histories: readonly LiftHistory[], weekFrom: numbe
   return out;
 }
 
-const list = (xs: readonly string[]): string =>
-  xs.length < 2 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
-
 const MIN_SESSIONS = 3;
 
+export type DeloadState = 'DELOAD' | 'HOLD' | 'NOT YET';
+
+/**
+ * Both conditions (a muscle past its hard landmark and a stalled lift) is a
+ * deload; one of them is a hold; neither is not yet. Null when there is
+ * nothing to judge: too little history, or no sets this week.
+ */
 export function deloadCall(input: {
   totalSessions: number;
   muscles: readonly MuscleRow[];
   lifts: readonly Lift[];
-}): { lead: string; reason: string } {
-  if (input.totalSessions < MIN_SESSIONS) {
-    return {
-      lead: 'Too early to call.',
-      reason: 'A deload call needs a few sessions of history to compare against.',
-    };
-  }
+}): DeloadState | null {
+  if (input.totalSessions < MIN_SESSIONS) return null;
+  if (!input.muscles.some((m) => m.sets > 0)) return null;
 
-  const hard = input.muscles
-    .filter((m) => m.landmark && m.sets > m.landmark.high)
-    .map((m) => m.name);
-  const stalled = input.lifts.filter((l) => l.stalled).map((l) => l.name);
-  const climbing = input.lifts.filter((l) => !l.stalled).map((l) => l.name);
+  const hard = input.muscles.some((m) => m.landmark && m.sets > m.landmark.high);
+  const stalled = input.lifts.some((l) => l.stalled);
 
-  if (hard.length && stalled.length) {
-    return {
-      lead: 'Deload next week.',
-      reason: `Volume is in the hard range for ${list(hard)}, and ${list(stalled)} stopped climbing.`,
-    };
-  }
-  if (hard.length) {
-    const lifts = climbing.length
-      ? `${list(climbing)} ${climbing.length === 1 ? 'keeps' : 'keep'} climbing`
-      : 'no lift shows a stall yet';
-    return {
-      lead: 'Not yet.',
-      reason: `Volume is in the hard range for ${list(hard)}, but ${lifts}. Deload when both are true.`,
-    };
-  }
-  if (stalled.length) {
-    return {
-      lead: 'Not yet.',
-      reason: `${list(stalled)} stopped climbing, but volume is still within range. Deload when both are true.`,
-    };
-  }
-  // Neither condition holds — but "your lifts are progressing" is a claim, and
-  // it needs a lift that was judged. With nothing logged this week, or nothing
-  // with three sessions of history, say that instead of asserting progress.
-  if (climbing.length) {
-    return {
-      lead: 'Not yet.',
-      reason: `Volume is within range and ${list(climbing)} ${climbing.length === 1 ? 'keeps' : 'keep'} climbing.`,
-    };
-  }
-  if (input.muscles.some((m) => m.sets > 0)) {
-    return {
-      lead: 'Not yet.',
-      reason: 'Volume is within range. No lift has three sessions of history to judge yet.',
-    };
-  }
-  return {
-    lead: 'Nothing to call yet.',
-    reason: 'No sets logged this week. The call updates as soon as one is.',
-  };
+  if (hard && stalled) return 'DELOAD';
+  return hard || stalled ? 'HOLD' : 'NOT YET';
 }

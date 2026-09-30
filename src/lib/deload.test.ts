@@ -14,49 +14,39 @@ const muscle = (name: string, sets: number, high: number | null): MuscleRow => (
 
 const hardQuads = [muscle('Quads', 17, 16)];
 const okQuads = [muscle('Quads', 12, 16)];
+const climbing = [{ name: 'Squat', stalled: false }];
+const stalled = [{ name: 'Squat', stalled: true }];
 
-test('fewer than three sessions ever: too early', () => {
+test('fewer than three sessions ever: no call', () => {
+  assert.equal(deloadCall({ totalSessions: 2, muscles: hardQuads, lifts: stalled }), null);
+});
+
+test('no sets this week: no call', () => {
+  assert.equal(deloadCall({ totalSessions: 9, muscles: [], lifts: [] }), null);
   assert.equal(
-    deloadCall({ totalSessions: 2, muscles: hardQuads, lifts: [] }).lead,
-    'Too early to call.',
+    deloadCall({ totalSessions: 9, muscles: [muscle('Quads', 0, 16)], lifts: [] }),
+    null,
   );
 });
 
-test('ceiling and stall: deload, naming both', () => {
-  const r = deloadCall({
-    totalSessions: 9,
-    muscles: hardQuads,
-    lifts: [{ name: 'Squat', stalled: true }],
-  });
-  assert.equal(r.lead, 'Deload next week.');
-  assert.match(r.reason, /Quads/);
-  assert.match(r.reason, /Squat/);
+test('ceiling and stall: deload', () => {
+  assert.equal(deloadCall({ totalSessions: 9, muscles: hardQuads, lifts: stalled }), 'DELOAD');
 });
 
-test('only one condition: not yet, and says which', () => {
-  const a = deloadCall({
-    totalSessions: 9,
-    muscles: hardQuads,
-    lifts: [{ name: 'Squat', stalled: false }],
-  });
-  assert.equal(a.lead, 'Not yet.');
-  assert.match(a.reason, /Quads.*Squat keeps climbing/);
-  const b = deloadCall({
-    totalSessions: 9,
-    muscles: okQuads,
-    lifts: [{ name: 'Squat', stalled: true }],
-  });
-  assert.equal(b.lead, 'Not yet.');
-  assert.match(b.reason, /Squat stopped climbing/);
-  assert.match(
-    deloadCall({ totalSessions: 9, muscles: okQuads, lifts: [] }).reason,
-    /within range/,
-  );
+test('only one condition: hold', () => {
+  assert.equal(deloadCall({ totalSessions: 9, muscles: hardQuads, lifts: climbing }), 'HOLD');
+  assert.equal(deloadCall({ totalSessions: 9, muscles: okQuads, lifts: stalled }), 'HOLD');
+  assert.equal(deloadCall({ totalSessions: 9, muscles: hardQuads, lifts: [] }), 'HOLD');
+});
+
+test('neither condition: not yet, judged lifts or not', () => {
+  assert.equal(deloadCall({ totalSessions: 9, muscles: okQuads, lifts: climbing }), 'NOT YET');
+  assert.equal(deloadCall({ totalSessions: 9, muscles: okQuads, lifts: [] }), 'NOT YET');
 });
 
 test('a muscle without a landmark never counts as near the ceiling', () => {
   const r = deloadCall({ totalSessions: 9, muscles: [muscle('Triceps', 40, null)], lifts: [] });
-  assert.equal(r.lead, 'Not yet.');
+  assert.equal(r, 'NOT YET');
 });
 
 test('stall: two sessions cannot stall, a rise is not a stall, a flat or lower last is', () => {
@@ -78,21 +68,4 @@ test('liftsThisWeek ignores lifts not trained this week or with too little histo
     5,
   );
   assert.deepEqual(out, [{ name: 'Squat', stalled: true }]);
-});
-
-test('neither condition: progress is only claimed for a lift that was judged', () => {
-  const climbing = deloadCall({
-    totalSessions: 9,
-    muscles: okQuads,
-    lifts: [{ name: 'Squat', stalled: false }],
-  });
-  assert.equal(climbing.lead, 'Not yet.');
-  assert.match(climbing.reason, /Squat keeps climbing/);
-
-  const unjudged = deloadCall({ totalSessions: 9, muscles: okQuads, lifts: [] });
-  assert.equal(unjudged.lead, 'Not yet.');
-  assert.doesNotMatch(unjudged.reason, /progress|climbing/);
-
-  const empty = deloadCall({ totalSessions: 9, muscles: [], lifts: [] });
-  assert.equal(empty.lead, 'Nothing to call yet.');
 });

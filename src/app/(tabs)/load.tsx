@@ -1,10 +1,14 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import {
+  BodyMap,
+  Chevron,
   Delta,
   ListRow,
+  Pill,
+  Rail,
   RowPlate,
   RowPlates,
   Screen,
@@ -14,27 +18,41 @@ import {
   useTabBarHeight,
   ZoneBar,
 } from '@/components';
-import { bodyWeightsQuery } from '@/data/queries/bodyweight';
 import { useRows } from '@/data/live';
+import { fatigueSetsQuery } from '@/data/queries/fatigue';
+import { bodyWeightsQuery } from '@/data/queries/bodyweight';
 import {
   bestE1rmQuery,
   loggedSessionIdsQuery,
   primeSetsQuery,
   rangeSetsQuery,
 } from '@/data/queries/load';
+import { recordsQuery } from '@/data/queries/records';
+import { useActiveSchedule } from '@/data/schedule';
 import { useSettings } from '@/data/settings';
 import { daysSince } from '@/lib/bodyweight';
-import { formatWeight } from '@/lib/units';
 import { deloadCall, type LiftHistory, liftsThisWeek } from '@/lib/deload';
+import { loadByMuscle, relativeLoad, WINDOW_DAYS } from '@/lib/fatigue';
 import { muscleRows } from '@/lib/landmarks';
+import { formatPrValue } from '@/lib/pr';
+import { programWeekNumber } from '@/lib/program';
+import { sessionDateLabel, sessionDotTone } from '@/lib/time';
+import { formatWeight } from '@/lib/units';
 import { countWorkingSets, formatTonnage, totalVolume } from '@/lib/volume';
 import { weekBounds } from '@/lib/week';
-import { text } from '@/theme';
+import { color, heat, space, text } from '@/theme';
 
-/** Lab 37 D1: sets, volume, sets per muscle and the deload call, then the body map and Records. */
+const DAY = 86_400_000;
+const FIGURE_GAP = 14;
+const SCALE = [0, 0.25, 0.5, 0.75, 1];
+const RECORDS_SHOWN = 3;
+const DELOAD_TONE = { DELOAD: 'live', HOLD: 'accent', 'NOT YET': 'done' } as const;
+
+/** Lab 49 L-A: the body opens the tab, then the week's numbers, sets per muscle and Records. */
 export default function LoadScreen() {
   const tabBar = useTabBarHeight();
   const settings = useSettings();
+  const active = useActiveSchedule();
 
   const week = useMemo(() => weekBounds(), []);
   const unit = settings.weightUnit;
@@ -58,6 +76,21 @@ export default function LoadScreen() {
     [],
   );
 
+  const now = useMemo(() => nowMs(), []);
+  const fatigueSets = useRows(
+    useMemo(() => fatigueSetsQuery(now - WINDOW_DAYS * DAY), [now]),
+    [now],
+  );
+  const relative = useMemo(
+    () => relativeLoad(loadByMuscle(fatigueSets ?? [], now)),
+    [fatigueSets, now],
+  );
+
+  const records = useRows(
+    useMemo(() => recordsQuery(), []),
+    [],
+  );
+
   const weighIns = useRows(
     useMemo(() => bodyWeightsQuery(), []),
     [],
@@ -65,7 +98,7 @@ export default function LoadScreen() {
   const lastWeighIn = weighIns?.[weighIns.length - 1];
   const weighInMeta = lastWeighIn
     ? `${formatWeight(lastWeighIn.weightKg, unit)} ${unit.toUpperCase()} · ${ago(daysSince(lastWeighIn.measuredAt, nowMs()))}`
-    : 'NOT LOGGED YET';
+    : '—';
 
   const totals = useMemo(() => {
     if (!rangeSets) return null;
@@ -81,7 +114,7 @@ export default function LoadScreen() {
   const muscles = useMemo(() => (primeSets ? muscleRows(primeSets) : null), [primeSets]);
 
   const call = useMemo(() => {
-    if (!muscles || !e1rms || !someSessions) return null;
+    if (!muscles || !e1rms || !someSessions) return undefined;
     const byLift = new Map<string, LiftHistory>();
     for (const r of e1rms) {
       if (r.bestE1rmKg == null) continue;
@@ -101,49 +134,60 @@ export default function LoadScreen() {
       ? Math.round(((totals.volumeKg - totals.lastVolumeKg) / totals.lastVolumeKg) * 100)
       : null;
 
+  const weekTag = active?.program ? programWeekNumber(active.program.startedAt) : null;
+
   return (
     <Screen bottomInset={tabBar}>
       <ScreenHeader title="Load" kicker="THIS WEEK" />
 
-      <Section first>
-        <StatTiles
-          surface="raised"
-          items={[
-            { label: 'SETS', value: totals ? String(totals.sets) : '—' },
-            {
-              label: 'VOLUME',
-              value: totals && totals.volumeKg > 0 ? formatTonnage(totals.volumeKg, unit) : '—',
-              below:
-                change === null ? undefined : (
-                  <Delta value={`${change >= 0 ? '+' : ''}${change}%`} positive={change >= 0} />
-                ),
-            },
-          ]}
-        />
+      <Section first plated={false}>
+        <BodyHero relative={relative} />
       </Section>
 
-      <Section label="WEEKLY SETS PER MUSCLE" plated={false}>
-        {muscles === null ? null : muscles.length ? (
+      <Section pad={13}>
+        <View style={{ gap: space.within }}>
+          <StatTiles
+            surface="raised"
+            items={[
+              { label: 'SETS', value: totals ? String(totals.sets) : '—' },
+              {
+                label: 'VOLUME',
+                value: totals && totals.volumeKg > 0 ? formatTonnage(totals.volumeKg, unit) : '—',
+                below:
+                  change === null ? undefined : (
+                    <Delta value={`${change >= 0 ? '+' : ''}${change}%`} positive={change >= 0} />
+                  ),
+              },
+            ]}
+          />
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 2 }}
+          >
+            <Text style={text.label}>DELOAD</Text>
+            <View style={{ flex: 1 }} />
+            {call === undefined ? null : call === null ? (
+              <Text style={[text.num, { color: color.lo }]}>—</Text>
+            ) : (
+              <>
+                <Pill label={call} tone={DELOAD_TONE[call]} />
+                {weekTag ? <Text style={[text.meta, { color: color.lo }]}>W{weekTag}</Text> : null}
+              </>
+            )}
+          </View>
+        </View>
+      </Section>
+
+      {muscles?.length ? (
+        <Section label="SETS / MUSCLE" plated={false}>
           <View>
             {muscles.map((m) => (
               <ZoneBar key={m.muscle} name={m.name} sets={m.sets} landmark={m.landmark} />
             ))}
           </View>
-        ) : (
-          <Text style={text.prose}>No sets logged this week yet.</Text>
-        )}
-      </Section>
+        </Section>
+      ) : null}
 
-      <Section label="DELOAD" plated={false}>
-        {call ? (
-          <View style={{ gap: 8 }}>
-            <Text style={text.lead}>{call.lead}</Text>
-            <Text style={text.prose}>{call.reason}</Text>
-          </View>
-        ) : null}
-      </Section>
-
-      <Section label="BODYWEIGHT" plated={false}>
+      <Section plated={false}>
         <RowPlates>
           <RowPlate onPress={() => router.push('/bodyweight')}>
             <ListRow title="Bodyweight" meta={weighInMeta} />
@@ -151,21 +195,79 @@ export default function LoadScreen() {
         </RowPlates>
       </Section>
 
-      <Section plated={false}>
-        <RowPlates>
-          <RowPlate onPress={() => router.push('/body')}>
-            <ListRow title="Body map" />
-          </RowPlate>
-          <RowPlate onPress={() => router.push('/records')}>
-            <ListRow title="Records" />
-          </RowPlate>
-        </RowPlates>
+      <Section
+        label="RECORDS"
+        plated={false}
+        right={
+          <Pressable
+            onPress={() => router.push('/records')}
+            accessibilityRole="button"
+            accessibilityLabel="Records"
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 6 }}
+            style={({ pressed }) => [
+              { flexDirection: 'row', alignItems: 'center', gap: 8 },
+              pressed && { opacity: 0.6 },
+            ]}
+          >
+            {records ? (
+              <Text style={[text.num, { color: color.mid }]}>{records.length}</Text>
+            ) : null}
+            <Chevron />
+          </Pressable>
+        }
+      >
+        {records?.length ? (
+          <Rail
+            air={22}
+            items={records.slice(0, RECORDS_SHOWN).map((r) => ({
+              tone: sessionDotTone(r.achievedAt),
+              onPress: () => router.push('/records'),
+              body: (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+                  <Text style={text.num}>{sessionDateLabel(r.achievedAt)}</Text>
+                  <Text style={[text.rowName, { flex: 1 }]} numberOfLines={1}>
+                    {r.exerciseName}
+                  </Text>
+                  <Text style={[text.numRow, { color: color.accent }]}>
+                    {formatPrValue(r.category, r.value, unit)}
+                  </Text>
+                </View>
+              ),
+            }))}
+          />
+        ) : null}
       </Section>
     </Screen>
   );
 }
 
-const ago = (days: number) => (days <= 0 ? 'TODAY' : `${days} DAY${days === 1 ? '' : 'S'} AGO`);
+/** The full figure, front and back, coloured by the last week's load, over a FRESH to NEEDS REST key. */
+function BodyHero({ relative }: { relative: Map<string, number> }) {
+  const { width } = useWindowDimensions();
+  const figure = Math.min(140, (width - 2 * space.pad - FIGURE_GAP) / 2);
+
+  return (
+    <View style={{ gap: 12 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: FIGURE_GAP }}>
+        <BodyMap view="front" relative={relative} width={figure} />
+        <BodyMap view="back" relative={relative} width={figure} />
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Text style={text.label}>FRESH</Text>
+        <View
+          style={{ flex: 1, flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden' }}
+        >
+          {SCALE.map((v) => (
+            <View key={v} style={{ flex: 1, backgroundColor: heat(v) }} />
+          ))}
+        </View>
+        <Text style={text.label}>NEEDS REST</Text>
+      </View>
+    </View>
+  );
+}
+
+const ago = (days: number) => (days <= 0 ? 'TODAY' : `${days}D`);
 
 function nowMs(): number {
   return Date.now();
