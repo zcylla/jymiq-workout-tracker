@@ -56,8 +56,7 @@ export default function RootLayout() {
           <View
             style={{ flex: 1, justifyContent: 'center', padding: space.pad, gap: space.within }}
           >
-            <Text style={text.label}>DATABASE</Text>
-            <Text style={text.lead}>The database could not be migrated.</Text>
+            <Text style={text.lead}>Database error</Text>
             {/* The message drizzle throws is only the SQL it was running; the
                 reason SQLite refused it is on `cause`, and without it this
                 screen says a migration failed without saying why. */}

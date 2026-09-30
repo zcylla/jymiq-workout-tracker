@@ -10,7 +10,6 @@ import { useRows } from '@/data/live';
 import { exerciseE1rmQuery, exerciseMusclesQuery, exerciseQuery } from '@/data/queries/exercises';
 import { useSettings } from '@/data/settings';
 import { e1rmTakeaway } from '@/lib/e1rm';
-import { sameProse } from '@/lib/prose';
 import { sessionDateLabel } from '@/lib/time';
 import { toDisplay } from '@/lib/units';
 import { color, motion, space, text } from '@/theme';
@@ -67,10 +66,8 @@ export default function ExerciseScreen() {
         </Section>
       ) : null}
 
-      {/* The description is dropped when HOW TO below is the same text in a
-            better shape — see `sameProse`. It is not dropped when the two
-            genuinely differ, nor when there are no cues to fall back on. */}
-      {exercise?.description && !sameProse(exercise.description, cues) ? (
+      {/* HOW TO carries the same text as cues; the description is only the fallback. */}
+      {exercise?.description && cues.length === 0 ? (
         <Section plated={false}>
           <Text style={text.body}>{exercise.description}</Text>
         </Section>
@@ -96,29 +93,20 @@ export default function ExerciseScreen() {
         </Section>
       ) : null}
 
-      {rows?.length === 0 ? (
-        <Section label="YOUR NUMBERS" plated={false}>
-          <Text style={text.prose}>
-            Nothing logged yet. Your best set and estimated 1RM appear here after the first session.
-          </Text>
-        </Section>
-      ) : null}
-
-      {bests.length === 1 ? (
-        <Section label="ESTIMATED 1RM" plated={false}>
-          <Text style={text.prose}>One session logged. The trend draws from the second.</Text>
-        </Section>
-      ) : null}
-
-      {bests.length >= 2 ? (
-        <Section label={`ESTIMATED 1RM · ${e1rmTakeaway(bests, unit)}`} plated={false}>
+      {bests.length >= 1 ? (
+        <Section
+          label={bests.length >= 2 ? `1RM ${e1rmTakeaway(bests, unit)}` : '1RM'}
+          plated={false}
+        >
           <ColumnChart
             values={bests.map((kg) => toDisplay(kg, unit))}
             format={(v) => String(Math.round(v))}
             xFirst={sessionDateLabel(sessionsNewestFirst[sessionsNewestFirst.length - 1].at, {
               upper: true,
             })}
-            xLast={sessionDateLabel(sessionsNewestFirst[0].at, { upper: true })}
+            xLast={
+              bests.length >= 2 ? sessionDateLabel(sessionsNewestFirst[0].at, { upper: true }) : ''
+            }
           />
         </Section>
       ) : null}

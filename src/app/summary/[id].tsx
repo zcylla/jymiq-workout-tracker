@@ -118,7 +118,7 @@ export default function SummaryScreen() {
           title={session?.name ?? ''}
           kicker={
             session
-              ? `SESSION COMPLETE · ${sessionDateLabel(session.endedAt ?? session.startedAt, { upper: true })}`
+              ? sessionDateLabel(session.endedAt ?? session.startedAt, { upper: true })
               : undefined
           }
           onBack={() => router.back()}
@@ -129,7 +129,7 @@ export default function SummaryScreen() {
         </Section>
 
         {records.length > 0 ? (
-          <Section label="NEW RECORDS" pad={13}>
+          <Section label="RECORDS" pad={13}>
             <View style={{ gap: 11 }}>
               {records.map((r) => (
                 <View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -150,7 +150,7 @@ export default function SummaryScreen() {
           </Section>
         ) : null}
 
-        <Section label="WHAT YOU LIFTED" plated={false}>
+        <Section label="LIFTS" plated={false}>
           {lifted.map((ex, i) => (
             <ListRow
               key={ex.id}

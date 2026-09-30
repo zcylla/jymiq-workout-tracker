@@ -16,12 +16,11 @@ type PrRow = Awaited<ReturnType<typeof recordsQuery>>[number];
 
 /** Lab 36 C4, pushed from History and Load. */
 export default function RecordsScreen() {
-  const { data, updatedAt } = useLiveQuery(
+  const { data } = useLiveQuery(
     useMemo(() => recordsQuery(), []),
     [],
   );
   const records = data ?? [];
-  const loading = updatedAt === undefined;
 
   const railItems: RailItem[] = records.map((r) => ({
     tone: sessionDotTone(r.achievedAt),
@@ -33,11 +32,7 @@ export default function RecordsScreen() {
       <ScreenHeader title="Records" onBack={() => router.back()} />
 
       <Section first plated={false}>
-        {records.length ? (
-          <Rail items={railItems} air={26} />
-        ) : loading ? null : (
-          <Text style={text.prose}>No records yet. Log a session to set your first one.</Text>
-        )}
+        {records.length ? <Rail items={railItems} air={26} /> : null}
       </Section>
     </Screen>
   );

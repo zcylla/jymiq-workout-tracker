@@ -17,14 +17,7 @@ import { useRows } from '@/data/live';
 import { logBodyweight } from '@/data/mutations/bodyweight';
 import { bodyWeightsQuery } from '@/data/queries/bodyweight';
 import { useSettings } from '@/data/settings';
-import {
-  byMonth,
-  dailyWeights,
-  latest,
-  sevenDayAverage,
-  thirtyDayChange,
-  trendGeometry,
-} from '@/lib/bodyweight';
+import { byMonth, dailyWeights, latest, sevenDayAverage, thirtyDayChange } from '@/lib/bodyweight';
 import { formatWeight, fromDisplay, toDisplay } from '@/lib/units';
 import { color, hairline, radius, space, text, wash } from '@/theme';
 
@@ -72,7 +65,6 @@ export default function BodyweightScreen() {
   const latestKg = rows ? latest(rows) : null;
   const averageKg = sevenDayAverage(days, now);
   const changeKg = thirtyDayChange(days, now);
-  const inWindow = trendGeometry(days, now, 1, 1).points.length;
   const months = useMemo(() => byMonth(days), [days]);
 
   const close = () => {
@@ -87,16 +79,14 @@ export default function BodyweightScreen() {
       logBodyweight(fromDisplay(value, unit));
       close();
     } catch {
-      setError(
-        `Enter a weight between ${formatWeight(20, unit)} and ${formatWeight(350, unit)} ${unit}.`,
-      );
+      setError(`${formatWeight(20, unit)}–${formatWeight(350, unit)} ${unitLabel}`);
     }
   };
 
   return (
     <>
       <Screen bottomInset={actionBar}>
-        <ScreenHeader title="Bodyweight" kicker="TREND" onBack={() => router.back()} />
+        <ScreenHeader title="Bodyweight" onBack={() => router.back()} />
 
         <Section first pad={13}>
           <StatTiles
@@ -122,15 +112,7 @@ export default function BodyweightScreen() {
         </Section>
 
         <Section label={`LAST 14 DAYS · ${unitLabel}`} plated={false}>
-          {rows === null ? null : inWindow >= 2 ? (
-            <TrendChart days={days} now={now} />
-          ) : (
-            <Text style={text.prose}>
-              {rows.length === 0
-                ? 'Log a weigh-in and the trend starts here.'
-                : 'The line draws from the second weigh-in in the last 14 days.'}
-            </Text>
-          )}
+          {rows === null ? null : <TrendChart days={days} now={now} />}
         </Section>
 
         {months.length ? (
@@ -146,12 +128,10 @@ export default function BodyweightScreen() {
                   paddingVertical: 7,
                 }}
               >
-                <View style={{ gap: 3, flexShrink: 1 }}>
-                  <Text style={text.body} numberOfLines={1}>
-                    {MONTHS[m.month]}
-                  </Text>
-                  <Text style={text.meta}>{`${m.count} WEIGH-IN${m.count === 1 ? '' : 'S'}`}</Text>
-                </View>
+                <Text style={[text.body, { flexShrink: 1 }]} numberOfLines={1}>
+                  {MONTHS[m.month]}
+                </Text>
+                <Text style={text.meta}>{m.count}</Text>
                 <View style={{ flex: 1 }} />
                 <Text style={text.num}>{oneDecimal(toDisplay(m.averageKg, unit))}</Text>
                 <Text style={[text.numSm, { width: 44, textAlign: 'right' }]}>
@@ -174,9 +154,10 @@ export default function BodyweightScreen() {
             setError(null);
           }}
           keyboard="decimal"
+          prompt={`${formatWeight(20, unit)}–${formatWeight(350, unit)}`}
           autoFocus
         />
-        {error ? <Text style={text.prose}>{error}</Text> : null}
+        {error ? <Text style={[text.meta, { color: color.live }]}>{error}</Text> : null}
         <Pressable
           accessibilityRole="button"
           onPress={save}

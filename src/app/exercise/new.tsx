@@ -71,7 +71,7 @@ export default function NewExerciseScreen() {
   return (
     <>
       <Screen bottomInset={actionBar}>
-        <ScreenHeader title="New exercise" kicker="CUSTOM" onBack={() => router.back()} />
+        <ScreenHeader title="New exercise" onBack={() => router.back()} />
 
         <Section first plated={false}>
           <RowPlates>
@@ -117,7 +117,7 @@ export default function NewExerciseScreen() {
           </RowPlates>
         </Section>
 
-        <Section label="MUSCLES WORKED" plated={false}>
+        <Section label="MUSCLES" plated={false}>
           <Wrap>
             {MUSCLES.map((m) => (
               <Chip
@@ -134,21 +134,16 @@ export default function NewExerciseScreen() {
           </Wrap>
         </Section>
 
-        <Section label="TRACKING" plated={false}>
+        <Section plated={false}>
           <RowPlates>
             <RowPlate>
-              <Toggle
-                label="Track RPE"
-                meta="OFF BY DEFAULT · SEE SETTINGS"
-                on={trackRpe}
-                onToggle={setTrackRpe}
-              />
+              <Toggle label="Track RPE" on={trackRpe} onToggle={setTrackRpe} />
             </RowPlate>
           </RowPlates>
         </Section>
       </Screen>
       <ActionBar
-        primary="Create exercise"
+        primary="Create"
         onPrimary={create}
         secondary="CANCEL"
         onSecondary={() => router.back()}

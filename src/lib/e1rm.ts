@@ -39,7 +39,6 @@ export function e1rmTakeaway(bestsKg: readonly number[], unit: Unit): string {
   const delta =
     Math.round(toDisplay(bestsKg[bestsKg.length - 1], unit)) -
     Math.round(toDisplay(bestsKg[0], unit));
-  const over = `OVER ${bestsKg.length} SESSIONS`;
-  if (delta === 0) return `UNCHANGED ${over}`;
-  return `${delta > 0 ? 'UP' : 'DOWN'} ${Math.abs(delta)} ${unit.toUpperCase()} ${over}`;
+  if (delta === 0) return 'FLAT';
+  return `${delta > 0 ? '+' : '−'}${Math.abs(delta)} ${unit.toUpperCase()}`;
 }

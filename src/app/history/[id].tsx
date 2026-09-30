@@ -88,11 +88,7 @@ export default function HistoryScreen() {
         onBack={() => router.back()}
       />
 
-      {!anyPerformed && !loading ? (
-        <Section first plated={false}>
-          <Text style={text.prose}>No sets logged in this session.</Text>
-        </Section>
-      ) : (
+      {anyPerformed || loading ? (
         <>
           {lifted.map((ex, i) => (
             <ExerciseSection
@@ -108,12 +104,12 @@ export default function HistoryScreen() {
               which is worth saying — but §0 keeps an empty thing dim, and it
               does not give it a heading of its own. */}
           {skipped.length ? (
-            <Section label="NOT LIFTED" plated={false} first={lifted.length === 0}>
+            <Section label="SKIPPED" plated={false} first={lifted.length === 0}>
               <Text style={text.prose}>{skipped.map((ex) => ex.name).join(' · ')}</Text>
             </Section>
           ) : null}
         </>
-      )}
+      ) : null}
     </Screen>
   );
 }
