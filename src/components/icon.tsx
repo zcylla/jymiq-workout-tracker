@@ -51,13 +51,12 @@ const grip = StyleSheet.create({
 });
 
 /**
- * The reorder handle. Three plain Views rather than a glyph: it is kit's own
- * drawing, not a Lucide icon, and three Views are cheaper than a text draw.
+ * The reorder handle. Two plain Views rather than a glyph: it is kit's own
+ * drawing, not a Lucide icon, and two Views are cheaper than a text draw.
  */
 export function Grip({ tone = color.dim }: { tone?: Ink }) {
   return (
     <View style={grip.column}>
-      <View style={[grip.bar, { backgroundColor: tone }]} />
       <View style={[grip.bar, { backgroundColor: tone }]} />
       <View style={[grip.bar, { backgroundColor: tone }]} />
     </View>
