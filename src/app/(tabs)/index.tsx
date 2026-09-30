@@ -346,6 +346,7 @@ function DevLinks() {
           ['/dev/lab33', 'Lab 33', 'live workout inputs'],
           ['/dev/fonts', 'Type ramp', "phase 1's gate"],
           ['/dev/gestures', 'Gestures', "phase 6's gate"],
+          ['/dev/glass', 'Glass lab', 'style, blur, background and scope'],
           ['/dev/db', 'Database', 'row counts per table'],
         ].map(([href, title, meta]) => (
           <Link key={href} href={href as never} asChild>
