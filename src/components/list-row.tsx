@@ -28,6 +28,8 @@ type Props = {
   valueDim?: boolean;
   /** Replaces the label/value stack entirely — a Pill, usually. */
   right?: ReactNode;
+  /** Sits between the number and the title — an ExerciseStill, usually. */
+  thumb?: ReactNode;
   grip?: boolean;
   chevron?: boolean;
   /** Out of the program, off the plan — present but not in play. */
@@ -65,6 +67,7 @@ export function ListRow({
   valueDim = false,
   danger = false,
   right,
+  thumb,
   grip = false,
   readOnly = false,
   chevron = !readOnly,
@@ -99,6 +102,7 @@ export function ListRow({
       {lead ? (
         <Text style={[text.meta, { width: LEAD_WIDTH, color: color.dim }]}>{lead}</Text>
       ) : null}
+      {thumb}
 
       <View style={{ gap: 3, flexShrink: 1 }}>
         <Text

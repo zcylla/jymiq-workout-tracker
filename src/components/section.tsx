@@ -10,6 +10,8 @@ type Props = {
   label?: string;
   /** An action at the right end of the label line. */
   right?: ReactNode;
+  /** Sits left of the label — an ExerciseStill, usually. */
+  lead?: ReactNode;
   /** First section on the screen: it sits under the header, not 46pt below it. */
   first?: boolean;
   /**
@@ -35,6 +37,7 @@ type Props = {
 export function Section({
   label,
   right,
+  lead,
   first = false,
   plated = true,
   tone,
@@ -46,6 +49,7 @@ export function Section({
     <View style={{ paddingTop: first ? 8 : space.between, gap: space.within }}>
       {label ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 2 }}>
+          {lead ? <View style={{ marginRight: space.within }}>{lead}</View> : null}
           <Text style={text.label}>{label}</Text>
           {rule ? (
             <View

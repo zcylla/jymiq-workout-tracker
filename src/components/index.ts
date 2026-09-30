@@ -12,6 +12,7 @@ export {
 } from './dialog';
 export { DurationSheet } from './duration-sheet';
 export { ExercisesSheet } from './exercises-sheet';
+export { ExerciseStill } from './exercise-still';
 export { KeypadSheet } from './keypad-sheet';
 export { Field } from './field';
 export { Chevron, Grip, Icon, type IconName } from './icon';
