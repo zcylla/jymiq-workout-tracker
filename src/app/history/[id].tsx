@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import { Pill, Screen, ScreenHeader, Section } from '@/components';
+import { ExerciseStill, Pill, Screen, ScreenHeader, Section } from '@/components';
 import {
   sessionLogExercisesQuery,
   sessionQuery,
@@ -130,7 +130,13 @@ function ExerciseSection({
   const right = hasRecord ? <Pill label="PR" /> : undefined;
 
   return (
-    <Section label={exercise.name.toUpperCase()} plated={false} first={first} right={right}>
+    <Section
+      label={exercise.name.toUpperCase()}
+      lead={<ExerciseStill exerciseId={exercise.exerciseId} size={28} />}
+      plated={false}
+      first={first}
+      right={right}
+    >
       {/* One child, so Section's 11pt inter-child gap cannot creep between the
           rows — the board stacks them flush at 34pt, which is the whole reason
           a read-only row is 34 and not 44. */}

@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 
 import {
   ActionBar,
+  ExerciseStill,
   Icon,
   ListRow,
   Rail,
@@ -167,6 +168,7 @@ export default function RoutineScreen() {
                   grip
                   chevron={false}
                   lead={String(i + 1).padStart(2, '0')}
+                  thumb={<ExerciseStill exerciseId={lift.exerciseId} />}
                   quiet
                   title={lift.name}
                   meta={liftMeta(lift, settings.weightUnit)}

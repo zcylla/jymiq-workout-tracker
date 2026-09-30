@@ -6,6 +6,7 @@ import { Text, View } from 'react-native';
 import {
   ActionBar,
   Delta,
+  ExerciseStill,
   ListRow,
   Pill,
   Screen,
@@ -103,6 +104,7 @@ export default function SummaryScreen() {
     return [
       {
         id: ex.id,
+        exerciseId: ex.exerciseId,
         name: ex.name,
         count,
         top: topSet(exSets),
@@ -156,6 +158,7 @@ export default function SummaryScreen() {
               key={ex.id}
               chevron={false}
               lead={String(i + 1).padStart(2, '0')}
+              thumb={<ExerciseStill exerciseId={ex.exerciseId} />}
               title={ex.name}
               meta={`${ex.count} SETS${ex.top ? ` · TOP ${formatWeight(ex.top.weightKg ?? 0, settings.weightUnit)} × ${ex.top.reps}` : ''} · ${formatTonnage(ex.volumeKg, settings.weightUnit)}`}
             />
