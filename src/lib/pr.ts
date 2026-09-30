@@ -121,9 +121,9 @@ export function formatPrValue(category: PrCategory, value: number, unit: Unit = 
 }
 
 export const PR_LABELS: Record<PrCategory, string> = {
-  heaviest: 'HEAVIEST',
-  best_e1rm: 'BEST ESTIMATED 1RM',
-  most_reps_at_weight: 'MOST REPS AT',
-  best_set_volume: 'BEST SET VOLUME',
-  best_session_volume: 'BEST SESSION VOLUME',
+  heaviest: 'WEIGHT',
+  best_e1rm: '1RM',
+  most_reps_at_weight: 'REPS @',
+  best_set_volume: 'SET VOL',
+  best_session_volume: 'SESSION VOL',
 };

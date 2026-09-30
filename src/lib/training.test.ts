@@ -35,10 +35,10 @@ import { formatWeight, fromDisplay, roundToStep, toDisplay, weightKey } from './
 
 // ---------------------------------------------------------------- e1RM ----
 test('e1rmTakeaway names the direction and the whole-number change', () => {
-  assert.equal(e1rmTakeaway([112, 120, 130], 'kg'), 'UP 18 KG OVER 3 SESSIONS');
-  assert.equal(e1rmTakeaway([130, 120, 127, 127], 'kg'), 'DOWN 3 KG OVER 4 SESSIONS');
-  assert.equal(e1rmTakeaway([100, 90, 100.2, 100, 100.4], 'kg'), 'UNCHANGED OVER 5 SESSIONS');
-  assert.equal(e1rmTakeaway([100, 110], 'lb'), 'UP 23 LB OVER 2 SESSIONS');
+  assert.equal(e1rmTakeaway([112, 120, 130], 'kg'), '+18 KG');
+  assert.equal(e1rmTakeaway([130, 120, 127, 127], 'kg'), '−3 KG');
+  assert.equal(e1rmTakeaway([100, 90, 100.2, 100, 100.4], 'kg'), 'FLAT');
+  assert.equal(e1rmTakeaway([100, 110], 'lb'), '+23 LB');
 });
 
 test('e1RM is the weight itself at one rep', () => {

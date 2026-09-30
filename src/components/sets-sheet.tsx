@@ -135,10 +135,10 @@ export function SetsSheet({
     <Sheet open={open} onClose={onClose}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.within }}>
         <Text style={[text.label, { flexShrink: 1 }]} numberOfLines={1}>
-          {`SETS · ${exerciseName.toUpperCase()}`}
+          {exerciseName.toUpperCase()}
         </Text>
         <View style={{ flex: 1 }} />
-        <Text style={[text.label, { flexShrink: 0 }]}>{`${done} OF ${sets.length} DONE`}</Text>
+        <Text style={[text.label, { flexShrink: 0 }]}>{`${done}/${sets.length}`}</Text>
       </View>
       <View
         style={{ height: 1, backgroundColor: hairline.onPlate, marginVertical: space.within }}
@@ -189,7 +189,7 @@ export function SetsSheet({
         })}
       >
         <Text style={{ ...sans(500), fontSize: 14, letterSpacing: ls(-0.01, 14), color: color.hi }}>
-          Add set
+          + Set
         </Text>
       </Pressable>
     </Sheet>

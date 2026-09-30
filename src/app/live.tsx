@@ -120,11 +120,9 @@ export default function LiveScreen() {
   }, []);
 
   const logged = countLoggedSets(allSets);
-  /** Null until the sets are in — the dialogs must not print a count of "0" they
-   *  only believe because the query has not answered yet. */
-  const tally = setsLoaded
-    ? `${logged} logged ${logged === 1 ? 'set' : 'sets'}`
-    : 'Anything you logged';
+  /** Null until the sets are in — the dialog must not print a count of "0" it
+   *  only believes because the query has not answered yet. */
+  const tally = setsLoaded ? `${logged} ${logged === 1 ? 'set' : 'sets'}` : 'Your sets';
 
   /**
    * Leaving the session, from the back chevron and from Finish alike.
@@ -163,8 +161,8 @@ export default function LiveScreen() {
 
     if (intent === 'discard') {
       show({
-        title: 'Discard this session?',
-        message: `${tally} will be deleted, along with any records from this session. This cannot be undone.`,
+        title: 'Discard session?',
+        message: `Deletes ${tally.toLowerCase()} and any records.`,
         actions: [
           {
             label: 'Discard',
@@ -174,35 +172,14 @@ export default function LiveScreen() {
               router.replace('/');
             },
           },
-          { label: 'Keep going', tone: 'cancel' },
+          { label: 'Keep', tone: 'cancel' },
         ],
       });
       return true;
     }
 
-    show({
-      title: 'Finish this session?',
-      message: `${tally}.`,
-      actions: [
-        {
-          label: 'Finish',
-          tone: 'primary',
-          onPress: () => {
-            finishSession(session.id);
-            router.replace(`/summary/${session.id}`);
-          },
-        },
-        {
-          label: 'Discard',
-          tone: 'destructive',
-          onPress: () => {
-            discardSession(session.id);
-            router.replace('/');
-          },
-        },
-        { label: 'Not yet', tone: 'cancel' },
-      ],
-    });
+    finishSession(session.id);
+    router.replace(`/summary/${session.id}`);
     return true;
   };
 
@@ -230,10 +207,7 @@ export default function LiveScreen() {
   if (!session) {
     return (
       <Screen>
-        <ScreenHeader title="No session" kicker="LIVE" onBack={() => router.replace('/')} />
-        <Section first label="NOTHING RUNNING" plated={false}>
-          <Text style={text.prose}>Start a routine and it takes over this screen.</Text>
-        </Section>
+        <ScreenHeader title="" onBack={() => router.replace('/')} />
       </Screen>
     );
   }
@@ -242,15 +216,9 @@ export default function LiveScreen() {
     // "No exercises in it" is a claim about the session, and both queries are
     // still in flight on the frame this screen takes over. Say nothing until
     // they have answered, rather than accusing a full session of being empty.
-    const answered = sessionExerciseRows !== null && sessionSets !== null;
     return (
       <Screen>
-        <ScreenHeader title={session.name} kicker="LIVE" onBack={() => router.replace('/')} />
-        {answered ? (
-          <Section first label="EMPTY SESSION" plated={false}>
-            <Text style={text.prose}>This session has no exercises in it yet.</Text>
-          </Section>
-        ) : null}
+        <ScreenHeader title={session.name} onBack={() => router.replace('/')} />
       </Screen>
     );
   }
@@ -278,7 +246,7 @@ export default function LiveScreen() {
   const core = {
     label: 'LOAD',
     value: formatWeight(load),
-    subline: oneRm ? `KG · ${percentOf1RM(load, oneRm)}% OF 1RM` : 'KG',
+    subline: oneRm ? `KG · ${percentOf1RM(load, oneRm)}%` : 'KG',
     editing: editing !== null,
     chips: editing
       ? undefined
@@ -297,7 +265,7 @@ export default function LiveScreen() {
   const log = () => {
     const hits = completeSet(set.id);
     setEditing(null);
-    announce(show, hits, 'Logged');
+    announce(show, hits, 'Record');
   };
 
   const finish = () => leave('finish');
@@ -371,7 +339,6 @@ export default function LiveScreen() {
                 reps: String(reps),
                 rpe: set.rpe == null ? '—' : String(set.rpe),
               }}
-              gloss={editing === 'rpe' && set.rpe != null ? `RIR ${10 - set.rpe}` : undefined}
               // Lab 32's switch: one route or the other opens the keypad, and
               // the tape is always reachable by the one it is not on.
               onSelect={(p) =>
@@ -391,13 +358,13 @@ export default function LiveScreen() {
         {previous ? (
           <Section label="LAST TIME" plated={false}>
             <Text style={text.body}>
-              {formatWeight(previous.weightKg ?? 0)} kg × {previous.reps ?? 0}
+              {formatWeight(previous.weightKg ?? 0)} KG × {previous.reps ?? 0}
               {previous.rpe == null ? '' : ` @ RPE ${previous.rpe}`}
             </Text>
           </Section>
         ) : null}
 
-        <Section label="SESSION" plated={false}>
+        <Section plated={false}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.within }}>
             <Text style={text.num}>
               {formatClock(elapsedSec(session.startedAt, session.pausedMs, now))}
@@ -414,7 +381,7 @@ export default function LiveScreen() {
             hitSlop={8}
             style={{ minHeight: size.hit, justifyContent: 'center' }}
           >
-            <Text style={text.body}>Finish session</Text>
+            <Text style={text.body}>Finish</Text>
           </Pressable>
         </Section>
       </Screen>

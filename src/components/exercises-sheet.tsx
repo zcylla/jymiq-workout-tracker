@@ -41,7 +41,7 @@ function ExerciseRow({
     state === 'done' ? color.done : state === 'current' ? color.accent : color.dim;
   const nameColor: Ink = state === 'done' || state === 'ahead' ? color.mid : color.accent;
   const remaining = exercise.setsTotal - exercise.setsDone;
-  const meta = completed ? 'DONE' : `${remaining} LEFT`;
+  const meta = completed ? '' : String(remaining);
 
   return (
     <Pressable
@@ -67,7 +67,7 @@ function ExerciseRow({
           {exercise.name}
         </Text>
       </View>
-      <Text style={text.label}>{meta}</Text>
+      {meta ? <Text style={text.label}>{meta}</Text> : null}
       <Chevron />
     </Pressable>
   );
@@ -97,10 +97,10 @@ export function ExercisesSheet({
     <Sheet open={open} onClose={onClose}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.within }}>
         <Text style={[text.label, { flexShrink: 1 }]} numberOfLines={1}>
-          {`EXERCISES · ${sessionName.toUpperCase()}`}
+          {sessionName.toUpperCase()}
         </Text>
         <View style={{ flex: 1 }} />
-        <Text style={[text.label, { flexShrink: 0 }]}>{`${done} OF ${exercises.length} DONE`}</Text>
+        <Text style={[text.label, { flexShrink: 0 }]}>{`${done}/${exercises.length}`}</Text>
       </View>
       <View
         style={{ height: 1, backgroundColor: hairline.onPlate, marginVertical: space.within }}
