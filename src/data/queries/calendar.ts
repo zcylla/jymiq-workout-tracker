@@ -4,7 +4,7 @@ import { db } from '../db';
 import { sessions } from '../schema';
 
 /**
- * Every logged session inside a date range — the Load tab's calendar asks for a
+ * Every logged session inside a date range — History's calendar asks for a
  * month, Today's week strip asks for three weeks.
  *
  * `FROM sessions` with no join: `useLiveQuery` subscribes only to the table
@@ -17,6 +17,7 @@ export function sessionsInRangeQuery(from: number, to: number) {
   return db
     .select({
       id: sessions.id,
+      name: sessions.name,
       startedAt: sessions.startedAt,
       totalVolumeKg: sessions.totalVolumeKg,
     })

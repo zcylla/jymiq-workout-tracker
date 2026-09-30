@@ -3,7 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { exercises, personalRecords } from '../schema';
 
-/** The Strength tab's timeline: every PR ever set, newest first. */
+/** The Records timeline: every PR ever set, newest first. */
 export function recordsQuery() {
   return db
     .select({
