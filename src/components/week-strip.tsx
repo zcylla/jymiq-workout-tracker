@@ -9,6 +9,7 @@ import { DayMarkGlyph } from './day-mark';
 const CELL_WIDTH = 46;
 const BAR_MAX = 26;
 const MARK_HEIGHT = 18;
+const RING_AIR = 6;
 
 /**
  * lab45 W3 — "the calendar and the graph are one element" — in Lab 49's day-state
@@ -41,7 +42,7 @@ export function WeekStrip({
       // "scroll to the end" the whole of the scroll-to-today logic.
       onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
       style={{ marginHorizontal: -bleed }}
-      contentContainerStyle={{ gap: 5, paddingHorizontal: bleed }}
+      contentContainerStyle={{ gap: 5, paddingHorizontal: bleed, paddingVertical: RING_AIR }}
     >
       {days.map((day) => (
         <DayCell key={day.key} day={day} maxVolumeKg={maxVolumeKg} onPress={onPressDay} />
