@@ -841,6 +841,10 @@ Also: prime movers vs assisting muscles as a real distinction with a written key
 a separate common-mistakes list (health-messaging research says 1–3 sentences, not paragraphs); and
 **frequency** is the most valuable statistic that was missing.
 
+### Progress charts (owner request, 2026-09-30)
+
+Not in Lab 39 Q1, added on request from the owner's reference app: the exercise screen's PROGRESS section — a metric switch (1RM · WEIGHT · VOLUME · REPS), a granularity switch (D · W · M · Y), one filled line chart with a dashed trend line and an UP / DOWN / FLAT flag, and THIS PERIOD VS LAST tiles (two per row, the change attached to its number). Built as `LineChart` and `Segmented`; the LOG is the rail's "exercise history".
+
 ### Still open
 
 The **body map** is disliked and deferred to implementation by the user's own call. **Time under

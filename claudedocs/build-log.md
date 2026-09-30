@@ -3,6 +3,22 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
+Last updated 2026-09-30 (afternoon). **Feature pass, all merged and checked on the phone.** Built from
+the owner's reference app (Gym Day, `com.anthonyng.workoutapp` — see the memory note): routine target
+editing and lift reorder; weigh-in edit and delete; exercise detail's YOUR NUMBERS, REP MAXES, **PROGRESS**
+(1RM / WEIGHT / VOLUME / REPS by D / W / M / Y on a new `LineChart`, dashed trend, UP/DOWN/FLAT flag,
+this-period-vs-last tiles) and a **LOG** (every set by date, on a rail); the tab bar **minimises on
+scroll** (W5); volume is always kg or lb, abbreviated `k` / `mil` from 100,000 (Spanish by device locale);
+**weekly goal** (Settings, feeds Today's SESSIONS meter when no program runs); **Perform again** on a past
+session; a **RECENT** group in the library; **TIME / AVG** tiles on History's month; **Settings**: weight
+increment (1 / 1.25 / 2.5 / 5 kg, kg only — the live screen stays kilograms), default sets, keep screen on.
+Performance work is **paused** by the owner (findings under "Pick this up here"). Known small follow-ups:
+finishing a live session with nothing logged deletes it and lands on a blank summary screen (should return
+to Today); `exerciseE1rmQuery` is now unused; the progress chart's middle x label is approximate on a
+12-slot window; a 1 kg increment draws 121 ring ticks (check on the phone before recommending it).
+Open owner decisions: whether Today's RECENT rail stays hidden when empty (§0 says visible and dim).
+Not built from Gym Day: reminders, starter plan templates, body measurements beyond weight, share a session.
+
 Last updated 2026-09-29 (evening). **The live session was finished against its board, and the app
 got motion.** Audit: `claudedocs/live-gap-audit.md` (the earlier "every drawn screen is built" was
 wrong for the live screen). Now built and checked on the phone: swipe pager (left/right sets, up/down
