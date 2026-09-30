@@ -1,5 +1,13 @@
 import { type TabTriggerSlotProps, useTabTrigger } from 'expo-router/ui';
-import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   type SharedValue,
@@ -16,7 +24,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { stepBar } from '@/lib/tab-bar';
 import { chromeShadow, color, fabShadow, hairline, type Ink, motion, radius, text } from '@/theme';
 
-import { glassStyle, useGlass } from './glass';
+import { GlassUnder, glassStyle, useGlass } from './glass';
 import { tick } from './haptics';
 import { Icon, type IconName } from './icon';
 import { AnimatedPressable, usePressFeel } from './press';
@@ -25,10 +33,8 @@ import { AnimatedPressable, usePressFeel } from './press';
  * W2 (Lab 23) — four labelled tabs on one plane with an inset circular start
  * button. These are the drawn parts only; the router wires them up.
  *
- * On Android the plane is an opaque raised plate, not glass (Lab 43 N2). That is
- * a platform switch rather than a fallback: blur on Android is a per-frame
- * RenderEffect re-capture, measured at +98% frame duration with moving content
- * behind it, which is exactly a bar over a scrolling list.
+ * The owner chose a live Android blur on 2026-09-30. Its measured per-frame
+ * capture cost while content scrolls behind it is the intentional tradeoff.
  */
 /** Plate (4 + 52 + 4) plus the air beneath it. Content scrolls under the bar,
  *  so any scroller inside a tab must pad by this much to clear its last row. */
@@ -51,11 +57,31 @@ const TAB_NAMES = Object.keys(TABS) as TabName[];
  * W5's signal: 1 while the bar is minimised. The bar is a sibling of the screens, so the
  * scroll has to reach it through a shared value that lives above both.
  */
-const MinimisedContext = createContext<SharedValue<number> | null>(null);
+type TabBarContextValue = {
+  minimisedSV: SharedValue<number>;
+  blurTarget: RefObject<View | null> | null;
+  registerBlurTarget: (target: RefObject<View | null>) => () => void;
+};
+
+const TabBarContext = createContext<TabBarContextValue | null>(null);
 
 export function TabBarProvider({ children }: { children: ReactNode }) {
   const minimisedSV = useSharedValue(0);
-  return <MinimisedContext.Provider value={minimisedSV}>{children}</MinimisedContext.Provider>;
+  const [blurTarget, setBlurTarget] = useState<RefObject<View | null> | null>(null);
+  const registerBlurTarget = useCallback((target: RefObject<View | null>) => {
+    setBlurTarget(target);
+    return () => setBlurTarget((current) => (current === target ? null : current));
+  }, []);
+  return (
+    <TabBarContext.Provider value={{ minimisedSV, blurTarget, registerBlurTarget }}>
+      {children}
+    </TabBarContext.Provider>
+  );
+}
+
+/** Registers the focused tab screen's outer blur target; pushed screens have no tab shell. */
+export function useTabBarBlurTarget() {
+  return useContext(TabBarContext)?.registerBlurTarget ?? null;
 }
 
 /**
@@ -63,7 +89,7 @@ export function TabBarProvider({ children }: { children: ReactNode }) {
  * so a screen pushed over the tabs registers no scroll handler at all.
  */
 export function useTabBarScroll() {
-  const minimisedSV = useContext(MinimisedContext);
+  const minimisedSV = useContext(TabBarContext)?.minimisedSV ?? null;
   const anchorSV = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
     if (!minimisedSV) return;
@@ -83,10 +109,11 @@ export function useTabBarScroll() {
  */
 export function TabBar({ children, onStart }: { children: ReactNode; onStart?: () => void }) {
   const insets = useSafeAreaInsets();
-  const minimisedSV = useContext(MinimisedContext);
-  if (!minimisedSV) throw new Error('TabBar must be inside <TabBarProvider>');
-  const { recipe } = useGlass('chrome');
-  const glass = recipe && glassStyle(recipe, 0);
+  const tabBar = useContext(TabBarContext);
+  if (!tabBar) throw new Error('TabBar must be inside <TabBarProvider>');
+  const { minimisedSV, blurTarget } = tabBar;
+  const { recipe, blur, target } = useGlass('chrome', blurTarget);
+  const glass = recipe && glassStyle(recipe, blur);
 
   const progressSV = useDerivedValue(() =>
     withTiming(minimisedSV.get(), { duration: motion.base }),
@@ -129,6 +156,9 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
             glass,
           ]}
         >
+          {recipe && blur > 0 && target ? (
+            <GlassUnder recipe={recipe} blur={blur} target={target} radius={radius.sheet} />
+          ) : null}
           {children}
         </View>
       </Animated.View>
@@ -161,6 +191,9 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
             glass,
           ]}
         >
+          {recipe && blur > 0 && target ? (
+            <GlassUnder recipe={recipe} blur={blur} target={target} radius={radius.full} />
+          ) : null}
           {TAB_NAMES.map((name) => (
             <CurrentTab key={name} name={name} minimisedSV={minimisedSV} />
           ))}

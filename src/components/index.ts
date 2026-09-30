@@ -52,6 +52,7 @@ export {
   TabBar,
   TabBarProvider,
   TabItem,
+  useTabBarBlurTarget,
   useTabBarHeight,
   useTabBarScroll,
 } from './tab-bar';
