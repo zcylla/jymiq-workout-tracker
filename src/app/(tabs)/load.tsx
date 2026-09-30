@@ -34,7 +34,7 @@ import { daysSince } from '@/lib/bodyweight';
 import { deloadCall, type LiftHistory, liftsThisWeek } from '@/lib/deload';
 import { loadByMuscle, relativeLoad, WINDOW_DAYS } from '@/lib/fatigue';
 import { muscleRows } from '@/lib/landmarks';
-import { formatPrValue } from '@/lib/pr';
+import { formatPrValue, PR_LABELS } from '@/lib/pr';
 import { programWeekNumber } from '@/lib/program';
 import { sessionDateLabel, sessionDotTone } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
@@ -228,6 +228,7 @@ export default function LoadScreen() {
                   <Text style={[text.rowName, { flex: 1 }]} numberOfLines={1}>
                     {r.exerciseName}
                   </Text>
+                  <Text style={text.meta}>{PR_LABELS[r.category]}</Text>
                   <Text style={[text.numRow, { color: color.accent }]}>
                     {formatPrValue(r.category, r.value, unit)}
                   </Text>
