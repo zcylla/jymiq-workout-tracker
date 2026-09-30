@@ -1,5 +1,5 @@
 import { Fragment, useEffect } from 'react';
-import { Text, View, type ViewStyle } from 'react-native';
+import { Pressable, Text, View, type ViewStyle } from 'react-native';
 import Animated, {
   type CSSTransitionProperties,
   useAnimatedStyle,
@@ -30,6 +30,7 @@ const TICK_TRANSITION: CSSTransitionProperties<ViewStyle> = {
 };
 
 type RingChip = {
+  onPress?: () => void;
   value: string;
   unit: string;
 };
@@ -171,7 +172,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
       })}
 
       <Animated.View
-        pointerEvents="none"
+        pointerEvents="box-none"
         style={[
           {
             position: 'absolute',
@@ -226,12 +227,21 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
         {chips?.length ? (
           <View style={{ flexDirection: 'row', gap: 4, marginTop: gap }}>
             {chips.map((chip) => (
-              <View
+              <Pressable
                 key={chip.unit}
+                accessibilityRole="button"
+                accessibilityLabel={`Edit ${chip.unit.toLowerCase()}`}
+                hitSlop={{ top: 10, bottom: 10 }}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  chip.onPress?.();
+                }}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'baseline',
                   gap: 5,
+                  minWidth: 44,
+                  minHeight: 44,
                   paddingVertical: 2,
                   paddingHorizontal: 7,
                   borderRadius: radius.cell,
@@ -259,7 +269,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
                 >
                   {chip.unit}
                 </Text>
-              </View>
+              </Pressable>
             ))}
           </View>
         ) : null}
