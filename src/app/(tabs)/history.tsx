@@ -23,6 +23,7 @@ import {
   Screen,
   ScreenHeader,
   Section,
+  StatTiles,
   useTabBarHeight,
   Waiting,
 } from '@/components';
@@ -34,7 +35,7 @@ import { sessionsWithRecordsQuery } from '@/data/queries/sessions';
 import { useActiveSchedule } from '@/data/schedule';
 import { useSettings } from '@/data/settings';
 import { monthGrid, trainedDays, weekVolumes } from '@/lib/calendar';
-import { dayLabel } from '@/lib/time';
+import { dayLabel, monthTime } from '@/lib/time';
 import { formatTonnage, formatTonnageAxis } from '@/lib/volume';
 import { color, motion, size, text } from '@/theme';
 
@@ -81,6 +82,7 @@ export default function HistoryScreen() {
         .sort((a, b) => b.startedAt - a.startedAt),
     [all, grid.from, grid.to],
   );
+  const time = useMemo(() => monthTime(month), [month]);
   const trained = useMemo(() => trainedDays(month), [month]);
   const weeks = useMemo(() => weekVolumes(grid, trainedDays(all ?? [])), [grid, all]);
 
@@ -145,6 +147,13 @@ export default function HistoryScreen() {
               <Text style={text.label}>SESSIONS</Text>
             </View>
           </View>
+          <StatTiles
+            surface="raised"
+            items={[
+              { label: 'TIME', value: time.total, pending: all === null },
+              { label: 'AVG', value: time.avg, pending: all === null },
+            ]}
+          />
           {month.length && weeks.length ? (
             <View style={{ gap: 6, paddingTop: 5 }}>
               <Text style={text.label}>{weightUnit === 'kg' ? 'KG / WEEK' : 'LB / WEEK'}</Text>
