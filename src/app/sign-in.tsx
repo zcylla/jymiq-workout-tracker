@@ -6,7 +6,7 @@ import Storage from 'expo-sqlite/kv-store';
 import * as WebBrowser from 'expo-web-browser';
 import { count } from 'drizzle-orm';
 import { useEffect, useState } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import {
   ActionBar,
@@ -27,7 +27,6 @@ import { syncQueue } from '@/data/schema';
 import { pushNow, restoreFromCloud, useSyncState } from '@/data/sync';
 import { useRows } from '@/data/live';
 import { authCodeFromUrl, authRedirectTo, exchangeAuthCode, supabase } from '@/data/supabase';
-import { describeSync } from '@/lib/sync';
 import { buildExport, exportFileName, totalRows } from '@/lib/export';
 import {
   type BackupFile,
@@ -36,7 +35,7 @@ import {
   describeBackup,
   parseBackup,
 } from '@/lib/import';
-import { text } from '@/theme';
+import { color, radius, text } from '@/theme';
 
 /**
  * Account and sync. Reachable from the gear on Today; nothing else in the app
@@ -114,6 +113,35 @@ async function writeBackup(dir: string): Promise<{ name: string; rows: number }>
 
 const nowMs = () => Date.now();
 
+function ago(at: number, now: number): string {
+  const min = Math.floor((now - at) / 60_000);
+  if (min < 1) return 'NOW';
+  if (min < 60) return `${min} MIN`;
+  const h = Math.floor(min / 60);
+  return h < 24 ? `${h} H` : `${Math.floor(h / 24)} D`;
+}
+
+function Note({ children }: { children: string }) {
+  return (
+    <Text style={text.prose} numberOfLines={1} ellipsizeMode="middle">
+      {children}
+    </Text>
+  );
+}
+
+function BackupStatus({ tone, value }: { tone: 'done' | 'accent' | 'live' | null; value: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      {tone ? (
+        <View
+          style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: color[tone] }}
+        />
+      ) : null}
+      {value ? <Text style={text.numSm}>{value}</Text> : null}
+    </View>
+  );
+}
+
 function SyncSection() {
   const show = useDialog();
   const sync = useSyncState();
@@ -136,15 +164,15 @@ function SyncSection() {
       const r = await restoreFromCloud(async () => withDirectory(writeBackup));
       setNote(
         'cancelled' in r
-          ? `Restore cancelled — ${r.cancelled}.`
-          : `Restored ${r.written.toLocaleString()} rows from the cloud. Your previous database is in ${r.rollbackName}.`,
+          ? 'Restore cancelled'
+          : `${r.written.toLocaleString()} rows · rollback ${r.rollbackName}`,
       );
     } catch (e) {
       show({
         title: 'Restore failed',
         message: e instanceof Error ? e.message : 'Nothing was written.',
       });
-      setNote('Restore failed. Your data is untouched.');
+      setNote('Restore failed');
     } finally {
       setBusy(false);
     }
@@ -154,44 +182,50 @@ function SyncSection() {
     if (busy) return;
     setNote(null);
     show({
-      title: 'Replace everything?',
-      message:
-        'Everything on this phone is deleted and replaced with your cloud copy. ' +
-        'Your current database is written to a rollback file first.',
+      title: 'Replace all data?',
+      message: 'Phone data replaced by cloud copy. Rollback file saved first.',
       actions: [
         { label: 'Replace', tone: 'destructive', onPress: () => void applyCloudRestore() },
-        {
-          label: 'Cancel',
-          tone: 'cancel',
-          onPress: () => setNote('Restore cancelled. Nothing was written.'),
-        },
+        { label: 'Cancel', tone: 'cancel' },
       ],
     });
   };
 
+  const tone = sync.lastError
+    ? 'live'
+    : pending > 0
+      ? 'accent'
+      : sync.lastPushAt !== null
+        ? 'done'
+        : null;
+  const value = [
+    sync.lastPushAt !== null ? ago(sync.lastPushAt, nowMs()) : null,
+    pending > 0 ? String(pending) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <Section label="SYNC" plated={false}>
-      <Text style={text.prose}>
-        {note ??
-          describeSync({ lastPushAt: sync.lastPushAt, pending, error: sync.lastError }, nowMs())}
-      </Text>
       <RowPlates>
         <RowPlate onPress={backUp} disabled={busy}>
-          <ListRow title={busy ? 'Working…' : 'Back up now'} meta="SENDS ONLY WHAT CHANGED" />
+          <ListRow
+            quiet
+            title={busy ? 'Working…' : 'Back up now'}
+            right={<BackupStatus tone={tone} value={value} />}
+            chevron={false}
+          />
         </RowPlate>
         <RowPlate onPress={confirmCloudRestore} disabled={busy}>
-          <ListRow title="Restore from cloud" meta="REPLACES EVERYTHING ON THIS PHONE" />
+          <ListRow quiet danger title="Restore from cloud" />
         </RowPlate>
       </RowPlates>
-      <Text style={text.prose}>
-        One phone at a time: a second phone that backs up here would overwrite this phone&apos;s
-        copy.
-      </Text>
+      {note ? <Note>{note}</Note> : null}
     </Section>
   );
 }
 
-function DataSection() {
+function DataSection({ first = false }: { first?: boolean }) {
   const show = useDialog();
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -204,11 +238,7 @@ function DataSection() {
     setFiles(null);
     try {
       const written = await withDirectory(writeBackup);
-      setNote(
-        written
-          ? `Wrote ${written.name} — ${written.rows.toLocaleString()} rows.`
-          : 'Export cancelled. Nothing was written.',
-      );
+      setNote(written ? `${written.rows.toLocaleString()} rows saved` : null);
     } catch (e) {
       // A failed backup must say so loudly. Silence here reads as success, and
       // the whole point of the feature is that you can rely on it having run.
@@ -216,7 +246,7 @@ function DataSection() {
         title: 'Export failed',
         message: e instanceof Error ? e.message : 'Nothing was written.',
       });
-      setNote('Export failed. Nothing was written.');
+      setNote('Export failed');
     } finally {
       setBusy(false);
     }
@@ -231,12 +261,12 @@ function DataSection() {
       const found = await withDirectory(async (dir) =>
         backupFiles(await FileSystem.StorageAccessFramework.readDirectoryAsync(dir)),
       );
-      if (!found) return setNote('Restore cancelled. Nothing was written.');
+      if (!found) return;
       setFiles(found);
-      if (found.length === 0) setNote('No Jymiq backups in that folder.');
+      if (found.length === 0) setNote('No backups here');
     } catch (e) {
       show({
-        title: 'Could not read that folder',
+        title: 'Unreadable folder',
         message: e instanceof Error ? e.message : 'Unknown error.',
       });
     } finally {
@@ -256,27 +286,22 @@ function DataSection() {
     try {
       const parsed = parseBackup(await FileSystem.readAsStringAsync(file.uri));
       if (!parsed.ok) {
-        setNote(parsed.reason);
+        console.warn(parsed.reason);
+        setNote('Not a valid backup');
         return;
       }
       const { backup } = parsed;
       show({
-        title: 'Replace everything?',
-        message:
-          `${describeBackup(backup)}\n\nEverything on this phone is deleted and replaced with this file. ` +
-          'Your current database is written to the same folder as a rollback file first.',
+        title: 'Replace all data?',
+        message: `${describeBackup(backup)}\n\nRollback file saved first.`,
         actions: [
           { label: 'Replace', tone: 'destructive', onPress: () => void applyRestore(backup) },
-          {
-            label: 'Cancel',
-            tone: 'cancel',
-            onPress: () => setNote('Restore cancelled. Nothing was written.'),
-          },
+          { label: 'Cancel', tone: 'cancel' },
         ],
       });
     } catch (e) {
       show({
-        title: 'Could not read that file',
+        title: 'Unreadable file',
         message: e instanceof Error ? e.message : 'Unknown error.',
       });
     } finally {
@@ -289,53 +314,43 @@ function DataSection() {
     setBusy(true);
     try {
       const rollback = await withDirectory(writeBackup);
-      if (!rollback)
-        return setNote('Restore cancelled — no rollback file, so nothing was written.');
+      if (!rollback) return setNote('No rollback file — cancelled');
       const written = restoreBackup(backup.tables);
       setFiles(null);
-      setNote(
-        `Restored ${written.toLocaleString()} rows. Your previous database is in ${rollback.name}.`,
-      );
+      setNote(`${written.toLocaleString()} rows · rollback ${rollback.name}`);
     } catch (e) {
       // The write is one transaction, so a failure here left the database alone.
       show({
         title: 'Restore failed',
         message: e instanceof Error ? e.message : 'Nothing was written.',
       });
-      setNote('Restore failed. Nothing was written — your data is untouched.');
+      setNote('Restore failed');
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Section label="YOUR DATA" plated={false}>
+    <Section first={first} label="YOUR DATA" plated={false}>
       <RowPlates>
         <RowPlate onPress={runExport}>
-          <ListRow
-            title={busy ? 'Working…' : 'Export everything'}
-            meta="EVERY SESSION, SET AND ROUTINE, AS JSON"
-          />
+          <ListRow quiet title={busy ? 'Working…' : 'Export everything'} />
         </RowPlate>
         <RowPlate onPress={files ? () => setFiles(null) : listBackups}>
           <ListRow
+            quiet
+            danger={!files}
             title={files ? 'Cancel restore' : 'Restore from a backup'}
-            meta={files ? 'PICK A FILE BELOW' : 'REPLACES EVERYTHING ON THIS PHONE'}
           />
         </RowPlate>
       </RowPlates>
-      {/* Above the file list, not under it. This line is the only feedback the
-          screen gives, and a list of backups is tall enough to push it off the
-          bottom of the screen — which is exactly what a cancelled restore did. */}
-      <Text style={text.prose}>
-        {note ??
-          'Pick a folder and the whole database is written there as one file. This phone is the only copy until you do.'}
-      </Text>
+      {/* Above the file list, not under it: a tall list pushes the status off screen. */}
+      {note ? <Note>{note}</Note> : null}
       {files && files.length > 0 ? (
         <RowPlates>
           {files.map((file) => (
             <RowPlate key={file.uri} onPress={() => confirmRestore(file)}>
-              <ListRow title={file.name} meta="TAP TO SEE WHAT IS IN IT" />
+              <ListRow quiet title={file.name} />
             </RowPlate>
           ))}
         </RowPlates>
@@ -360,13 +375,8 @@ export default function SignInScreen() {
   if (!supabase) {
     return (
       <Screen>
-        <ScreenHeader title="Account" kicker="SYNC" onBack={() => router.back()} />
-        <Section label="SYNC" plated={false}>
-          <Text style={text.prose}>
-            Sync is not configured on this build. Your workouts are on this phone and nowhere else.
-          </Text>
-        </Section>
-        <DataSection />
+        <ScreenHeader title="Account" onBack={() => router.back()} />
+        <DataSection first />
       </Screen>
     );
   }
@@ -388,19 +398,19 @@ export default function SignInScreen() {
     // itself and never emits the link the root layout listens for. On Android
     // both routes see it, and exchangeAuthCode lets only the first one through.
     const code = authCodeFromUrl(result.url);
-    if (!code) return setStatus('Google did not return a sign-in code.');
+    if (!code) return setStatus('Sign-in failed');
     setStatus(await exchangeAuthCode(code));
   };
 
   const sendMagicLink = async () => {
     setStatus(null);
     const address = email.trim();
-    if (!address) return setStatus('Enter an email address first.');
+    if (!address) return setStatus('Enter an email');
     const { error } = await client.auth.signInWithOtp({
       email: address,
       options: { emailRedirectTo: authRedirectTo },
     });
-    setStatus(error ? error.message : `Link sent to ${address}. Open it on this phone.`);
+    setStatus(error ? error.message : 'Link sent');
   };
 
   const signOut = async () => {
@@ -413,22 +423,20 @@ export default function SignInScreen() {
     return (
       <>
         <Screen bottomInset={actionBar}>
-          <ScreenHeader title="Account" kicker="SYNC" onBack={() => router.back()} />
+          <ScreenHeader title="Account" onBack={() => router.back()} />
           <Section first plated={false}>
             <RowPlates>
               <RowPlate>
-                <ListRow
-                  chevron={false}
-                  title={session.user.email ?? 'Signed in'}
-                  meta={(session.user.app_metadata.provider ?? 'EMAIL').toUpperCase()}
-                />
+                <ListRow chevron={false} quiet title={session.user.email ?? 'Signed in'} />
               </RowPlate>
             </RowPlates>
           </Section>
           <SyncSection />
           <DataSection />
           {status ? (
-            <Section plated={false}>{<Text style={text.prose}>{status}</Text>}</Section>
+            <Section plated={false}>
+              <Note>{status}</Note>
+            </Section>
           ) : null}
         </Screen>
         <ActionBar primary="Sign out" onPrimary={signOut} />
@@ -439,17 +447,17 @@ export default function SignInScreen() {
   return (
     <>
       <Screen bottomInset={actionBar}>
-        <ScreenHeader title="Account" kicker="SYNC" onBack={() => router.back()} />
+        <ScreenHeader title="Account" onBack={() => router.back()} />
 
         <Section first plated={false}>
           <RowPlates>
             <RowPlate onPress={signInWithGoogle}>
-              <ListRow title="Continue with Google" meta="OPENS A BROWSER, RETURNS HERE" />
+              <ListRow quiet title="Continue with Google" />
             </RowPlate>
           </RowPlates>
         </Section>
 
-        <Section label="OR BY EMAIL" plated={false}>
+        <Section label="OR" plated={false}>
           <RowPlates>
             <RowPlate>
               <Field
@@ -461,18 +469,12 @@ export default function SignInScreen() {
               />
             </RowPlate>
           </RowPlates>
-        </Section>
-
-        <Section label="WHY" plated={false}>
-          <Text style={text.prose}>
-            {status ??
-              'Signing in backs your workouts up to your account, sending only what changed. This phone stays the source of truth and everything works without an account.'}
-          </Text>
+          {status ? <Note>{status}</Note> : null}
         </Section>
 
         <DataSection />
       </Screen>
-      <ActionBar primary="Send magic link" onPrimary={sendMagicLink} />
+      <ActionBar primary="Send link" onPrimary={sendMagicLink} />
     </>
   );
 }
