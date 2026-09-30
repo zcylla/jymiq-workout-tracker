@@ -72,6 +72,27 @@ export function formatSessionDuration(sec: number | null): string {
   return isPlausibleDuration(sec) ? formatDuration(sec) : '—';
 }
 
+/** "17.1 H", or "42 M" under an hour — a month's training time, where `formatDuration`'s "1H 04" is a session's. */
+export function formatTotalTime(sec: number): string {
+  const m = Math.round(sec / 60);
+  return m >= 60 ? `${(sec / 3600).toFixed(1)} H` : `${m} M`;
+}
+
+/**
+ * The month's TIME and AVG tiles. A session with no plausible duration is out of
+ * the sum and out of the average's denominator, so a session that was never
+ * timed does not drag the average toward zero.
+ */
+export function monthTime(rows: readonly { durationSec: number | null }[]): {
+  total: string;
+  avg: string;
+} {
+  const secs = rows.map((r) => r.durationSec).filter(isPlausibleDuration);
+  if (!secs.length) return { total: '—', avg: '—' };
+  const total = secs.reduce((a, b) => a + b, 0);
+  return { total: formatTotalTime(total), avg: formatDuration(total / secs.length) };
+}
+
 /** Always the minutes form, e.g. `64 MIN` — used by rail meta lines, which
  * never switch to the hour form `formatDuration` uses past 60 minutes. */
 export function formatMinutes(sec: number): string {
