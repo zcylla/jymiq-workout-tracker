@@ -11,6 +11,7 @@ export const SCOPES = [
   'hero',
   'hero+inner',
   'cards',
+  'cards+chrome',
   'all',
   'chrome',
   'chrome+hero',
@@ -29,12 +30,12 @@ export type GlassTrial = {
   scope: Scope;
 };
 
-/** The owner's pick from the lab (2026-09-30): frost with minimal blur on every main card, today's ground. */
+/** The owner's pick from the lab (2026-09-30): frost with minimal blur on every main card and chrome, today's ground. */
 export const DEFAULT_TRIAL: GlassTrial = {
   style: 'frost',
   blur: 20,
   background: 'dots',
-  scope: 'cards',
+  scope: 'cards+chrome',
 };
 
 const SCOPE_ELEMENTS: Record<Scope, readonly Element[]> = {
@@ -42,6 +43,7 @@ const SCOPE_ELEMENTS: Record<Scope, readonly Element[]> = {
   hero: ['hero'],
   'hero+inner': ['hero', 'inner'],
   cards: ['hero', 'plate'],
+  'cards+chrome': ['hero', 'plate', 'chrome'],
   all: ['hero', 'plate', 'row'],
   chrome: ['chrome'],
   'chrome+hero': ['chrome', 'hero'],
@@ -83,6 +85,8 @@ export function glassOf(t: GlassTrial, element: Element): { glass: boolean; blur
  */
 export const screenBlurs = (t: GlassTrial): boolean =>
   (['hero', 'plate', 'row'] as const).some((element) => glassOf(t, element).blur > 0);
+
+export const chromeBlurs = (t: GlassTrial): boolean => glassOf(t, 'chrome').blur > 0;
 
 export const PRESETS: readonly { label: string; trial: GlassTrial }[] = [
   { label: 'A · Frost 20 cards', trial: DEFAULT_TRIAL },

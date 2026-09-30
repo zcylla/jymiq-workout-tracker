@@ -12,13 +12,19 @@ import {
   SCOPES,
   type Scope,
   appliesTo,
+  chromeBlurs,
   coerceTrial,
   glassOf,
   screenBlurs,
 } from './glass-trial.ts';
 
 test('the default trial is the look that already shipped', () => {
-  assert.deepEqual(DEFAULT_TRIAL, { style: 'frost', blur: 20, background: 'dots', scope: 'cards' });
+  assert.deepEqual(DEFAULT_TRIAL, {
+    style: 'frost',
+    blur: 20,
+    background: 'dots',
+    scope: 'cards+chrome',
+  });
 });
 
 test('nothing readable in the store gives the default trial', () => {
@@ -47,6 +53,7 @@ const TABLE: Record<Scope, Element[]> = {
   hero: ['hero'],
   'hero+inner': ['hero', 'inner'],
   cards: ['hero', 'plate'],
+  'cards+chrome': ['hero', 'plate', 'chrome'],
   all: ['hero', 'plate', 'row'],
   chrome: ['chrome'],
   'chrome+hero': ['chrome', 'hero'],
@@ -70,11 +77,11 @@ test('every preset is a valid trial, and the first is today', () => {
   assert.equal(new Set(PRESETS.map((p) => p.label)).size, PRESETS.length);
 });
 
-test('the default glasses heroes and plates with a light blur, never rows or chrome', () => {
+test('the default glasses heroes, plates, and chrome with a light blur, never rows', () => {
   assert.deepEqual(glassOf(DEFAULT_TRIAL, 'hero'), { glass: true, blur: 20 });
   assert.deepEqual(glassOf(DEFAULT_TRIAL, 'plate'), { glass: true, blur: 20 });
   assert.deepEqual(glassOf(DEFAULT_TRIAL, 'row'), { glass: false, blur: 0 });
-  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'chrome'), { glass: false, blur: 0 });
+  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'chrome'), { glass: true, blur: 20 });
 });
 
 test('style off or scope off is opaque everywhere', () => {
@@ -103,4 +110,14 @@ test('a screen carries a blur target only when a surface on it blurs', () => {
   );
   assert.equal(screenBlurs({ style: 'frost', blur: 0, background: 'dots', scope: 'all' }), false);
   assert.equal(screenBlurs({ style: 'tint', blur: 80, background: 'dots', scope: 'all' }), false);
+});
+
+test('chrome blur follows chrome scopes and blurring styles', () => {
+  assert.equal(chromeBlurs(DEFAULT_TRIAL), true);
+  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, scope: 'chrome' }), true);
+  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, scope: 'chrome+hero' }), true);
+  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, scope: 'cards' }), false);
+  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, style: 'tint' }), false);
+  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, blur: 0 }), false);
+  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, style: 'off' }), false);
 });
