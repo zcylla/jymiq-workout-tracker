@@ -95,8 +95,13 @@ tab roots, Settings, Account and the copy on nearly every screen; the main scree
 ### What remains, in order
 
 **1. Performance and navigation (the owner: "the app feels laggy").** Start here.
-- *In flight, 2026-09-29:* the shared backdrop image (one cached image instead of a Skia canvas in
-  every `Screen`; `Backdrop` in `src/components/backdrop.tsx`) and brighter unlit dial ticks.
+- *Done 2026-09-29, measured:* the shared backdrop image (one cached image instead of a Skia canvas
+  in every `Screen`; `src/components/backdrop.tsx`, drawn once ~47 ms + PNG encode ~160 ms after first
+  paint). **It barely moved the numbers** — scenario (3 tab loops, 3 routine push/pops, 3 History
+  scrolls) went from 12.6% / 11.4% janky, p95 48 ms, p99 93-97 ms to 11.6% / 10.3% janky, p95 36-40 ms,
+  p99 89 ms; median and p90 unchanged. So the backdrop was NOT the main cost: the remaining ~10% jank
+  is in the suspects below. Scripts were in `/tmp/claude-1000/scenario.sh` (recreate from the
+  scenario list). Unlit dial ticks now use `color.tick1`.
 - *Stashed, unverified:* `git stash list` holds `perf-agent-partial` — a half-finished attempt at a
   ring rewrite (`src/lib/ring.ts`), a live render split (`live-deck.tsx`, `live.tsx`) and a backdrop
   rewrite, from an agent stopped mid-task. Read it with `git stash show -p stash@{0}` before
