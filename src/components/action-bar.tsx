@@ -20,11 +20,14 @@ export function ActionBar({
   onPrimary,
   secondary,
   onSecondary,
+  disabled = false,
 }: {
   primary: string;
   onPrimary?: () => void;
   secondary?: string;
   onSecondary?: () => void;
+  /** Dim and inert: the button says the action is not available, instead of a dialog saying why. */
+  disabled?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -60,7 +63,10 @@ export function ActionBar({
 
       <Pressable
         onPress={onPrimary}
+        disabled={disabled}
+        accessibilityState={{ disabled }}
         style={({ pressed }) => [
+          disabled && { opacity: 0.4 },
           {
             flex: 1,
             minHeight: BAR_HEIGHT,
