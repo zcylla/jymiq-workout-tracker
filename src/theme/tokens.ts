@@ -163,6 +163,16 @@ export const wash = {
 } as const;
 
 /**
+ * The two marks of the day-state grammar (Lab 49 D1) that are not a fill: the
+ * dashed outline of a planned day and the hatching of a missed one. Drawn in
+ * Skia, so they are strings the canvas takes rather than styles.
+ */
+export const dayMark = {
+  dash: 'rgba(228,198,140,0.70)',
+  hatch: 'rgba(255,255,255,0.12)',
+} as const;
+
+/**
  * Any colour a component may be handed. Typing a prop as `Ink` rather than
  * `string` is what stops a screen from passing a hex — tsc rejects it, so the
  * one-file rule is enforced by the compiler rather than by review.

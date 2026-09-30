@@ -5,6 +5,7 @@ export {
   chromeShadow,
   color,
   containment,
+  dayMark,
   fabShadow,
   field,
   hairline,
