@@ -47,7 +47,7 @@ CSS = """
          display:flex;flex-direction:column;background:var(--ground);
          border:1px solid rgba(255,255,255,0.08)}
   .field{position:absolute;inset:0;pointer-events:none;z-index:0;
-         background-image:radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px);
+         background-image:radial-gradient(rgba(255,255,255,0.08) 1px,transparent 1px);
          background-size:18px 18px}
   .bloom{position:absolute;border-radius:9999px;pointer-events:none;z-index:0;filter:blur(88px)}
   .sb{position:relative;z-index:2;height:54px;flex:none;display:flex;align-items:center;
