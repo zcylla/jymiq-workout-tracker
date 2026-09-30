@@ -3,13 +3,23 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import { ExerciseStill, Pill, Screen, ScreenHeader, Section } from '@/components';
+import {
+  ActionBar,
+  ExerciseStill,
+  Pill,
+  Screen,
+  ScreenHeader,
+  Section,
+  useActionBarHeight,
+} from '@/components';
+import { startSessionFrom } from '@/data/mutations/sessions';
 import {
   sessionLogExercisesQuery,
   sessionQuery,
   sessionRecordsQuery,
   sessionSetsQuery,
 } from '@/data/queries/sessions';
+import { useSessionRunning } from '@/data/running';
 import { useSettings } from '@/data/settings';
 import { formatPrValue } from '@/lib/pr';
 import { formatSessionDuration, sessionDateLabel } from '@/lib/time';
@@ -27,7 +37,10 @@ type ExerciseRow = Awaited<ReturnType<typeof sessionLogExercisesQuery>>[number];
 
 /** Lab 36 C3. Read-only: no plate, no rail, the columns are the structure. */
 export default function HistoryScreen() {
+  const actionBar = useActionBarHeight();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const runningNow = useSessionRunning();
+  const running = runningNow === true;
 
   const { data: sessionRows } = useLiveQuery(
     useMemo(() => sessionQuery(id), [id]),
@@ -80,37 +93,56 @@ export default function HistoryScreen() {
   const kickerParts = session ? [session.name.toUpperCase()] : [];
   if (durationLabel !== DASH) kickerParts.push(durationLabel);
 
-  return (
-    <Screen>
-      <ScreenHeader
-        title={session ? sessionDateLabel(session.startedAt) : ''}
-        kicker={kickerParts.length ? kickerParts.join(' · ') : undefined}
-        onBack={() => router.back()}
-      />
+  const again = () => {
+    if (!running) {
+      try {
+        startSessionFrom(id);
+      } catch {
+        // A session started elsewhere between render and tap: resume it.
+      }
+    }
+    router.replace('/live');
+  };
+  const cannotStart = runningNow === null || (!running && !anyPerformed);
 
-      {anyPerformed || loading ? (
-        <>
-          {lifted.map((ex, i) => (
-            <ExerciseSection
-              key={ex.id}
-              exercise={ex}
-              sets={performedByExercise.get(ex.id) ?? []}
-              first={i === 0}
-              hasRecord={prExerciseIds.has(ex.exerciseId)}
-              showRpe={showRpe}
-            />
-          ))}
-          {/* One section, not one per exercise. They were planned and skipped,
+  return (
+    <>
+      <Screen bottomInset={actionBar}>
+        <ScreenHeader
+          title={session ? sessionDateLabel(session.startedAt) : ''}
+          kicker={kickerParts.length ? kickerParts.join(' · ') : undefined}
+          onBack={() => router.back()}
+        />
+
+        {anyPerformed || loading ? (
+          <>
+            {lifted.map((ex, i) => (
+              <ExerciseSection
+                key={ex.id}
+                exercise={ex}
+                sets={performedByExercise.get(ex.id) ?? []}
+                first={i === 0}
+                hasRecord={prExerciseIds.has(ex.exerciseId)}
+                showRpe={showRpe}
+              />
+            ))}
+            {/* One section, not one per exercise. They were planned and skipped,
               which is worth saying — but §0 keeps an empty thing dim, and it
               does not give it a heading of its own. */}
-          {skipped.length ? (
-            <Section label="SKIPPED" plated={false} first={lifted.length === 0}>
-              <Text style={text.prose}>{skipped.map((ex) => ex.name).join(' · ')}</Text>
-            </Section>
-          ) : null}
-        </>
-      ) : null}
-    </Screen>
+            {skipped.length ? (
+              <Section label="SKIPPED" plated={false} first={lifted.length === 0}>
+                <Text style={text.prose}>{skipped.map((ex) => ex.name).join(' · ')}</Text>
+              </Section>
+            ) : null}
+          </>
+        ) : null}
+      </Screen>
+      <ActionBar
+        primary={running ? 'Resume' : 'Perform again'}
+        disabled={cannotStart}
+        onPrimary={again}
+      />
+    </>
   );
 }
 
