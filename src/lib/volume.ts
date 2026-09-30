@@ -75,15 +75,41 @@ const grouped = (n: number): string =>
     .toString()
     .replace(/\B(?=(\d{3})+$)/g, ',');
 
-/** Always kg or lb, whole units, grouped from a thousand: "820 KG", "10,500 KG", "23,149 LB". */
-export function formatTonnage(kg: Kg, unit: Unit = 'kg'): string {
-  return `${grouped(toDisplay(kg, unit))} ${unit === 'lb' ? 'LB' : 'KG'}`;
+const ABBREVIATE_FROM = 100_000;
+
+const deviceLocale = (): string => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale;
+  } catch {
+    return 'en';
+  }
+};
+
+const abbreviated = (n: number, locale: string): string => {
+  const thousands = (Math.round(n / 100) / 10).toString();
+  return locale.toLowerCase().startsWith('es') ? `${thousands} mil` : `${thousands}k`;
+};
+
+const figure = (n: number, locale: string): string =>
+  Math.round(n) >= ABBREVIATE_FROM ? abbreviated(n, locale) : grouped(n);
+
+/**
+ * Always kg or lb, whole units, grouped from a thousand and abbreviated from a hundred
+ * thousand: "820 KG", "10,500 KG", "123.5k KG", "123.5 mil KG" on a Spanish device.
+ */
+export function formatTonnage(kg: Kg, unit: Unit = 'kg', locale: string = deviceLocale()): string {
+  return `${figure(toDisplay(kg, unit), locale)} ${unit === 'lb' ? 'LB' : 'KG'}`;
 }
 
-/** An axis label: above a thousand every label is a bare grouped number ("22,600", "0"); the caption names the unit. */
-export function formatTonnageAxis(kg: Kg, hiKg: Kg, unit: Unit = 'kg'): string {
-  if (toDisplay(hiKg, unit) < 1000) return formatTonnage(kg, unit);
-  return grouped(toDisplay(kg, unit));
+/** An axis label: above a thousand every label is a bare number ("22,600", "125k", "0"); the caption names the unit. */
+export function formatTonnageAxis(
+  kg: Kg,
+  hiKg: Kg,
+  unit: Unit = 'kg',
+  locale: string = deviceLocale(),
+): string {
+  if (toDisplay(hiKg, unit) < 1000) return formatTonnage(kg, unit, locale);
+  return figure(toDisplay(kg, unit), locale);
 }
 
 export type SessionStatus = 'in_progress' | 'completed' | 'abandoned';

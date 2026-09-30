@@ -100,7 +100,7 @@ test('volume is always kg or lb, grouped from a thousand', () => {
   assert.equal(formatTonnage(1000), '1,000 KG');
   assert.equal(formatTonnage(1001), '1,001 KG');
   assert.equal(formatTonnage(10_500), '10,500 KG');
-  assert.equal(formatTonnage(1_234_567), '1,234,567 KG');
+  assert.equal(formatTonnage(1_234_567, 'kg', 'en'), '1234.6k KG');
   assert.equal(formatTonnage(0, 'lb'), '0 LB');
   assert.equal(formatTonnage(372, 'lb'), '820 LB');
   assert.equal(formatTonnage(453, 'lb'), '999 LB');
@@ -480,4 +480,22 @@ test('axis labels share the top label scale, and zero is bare', () => {
   assert.equal(formatTonnageAxis(22_600, 22_600, 'lb'), '49,824');
   assert.equal(formatTonnageAxis(0, 400, 'lb'), '0 LB');
   assert.equal(formatTonnageAxis(453.6, 453.6, 'lb'), '1,000');
+});
+
+test('volume from a hundred thousand is abbreviated: k in English, mil in Spanish', () => {
+  assert.equal(formatTonnage(99_999, 'kg', 'en'), '99,999 KG');
+  assert.equal(formatTonnage(100_000, 'kg', 'en'), '100k KG');
+  assert.equal(formatTonnage(123_456, 'kg', 'en'), '123.5k KG');
+  assert.equal(formatTonnage(123_456, 'kg', 'es-MX'), '123.5 mil KG');
+  assert.equal(formatTonnage(100_000, 'kg', 'es'), '100 mil KG');
+  assert.equal(formatTonnage(40_000, 'lb', 'en'), '88,185 LB');
+  assert.equal(formatTonnage(50_000, 'lb', 'en'), '110.2k LB');
+  assert.equal(formatTonnage(50_000, 'lb', 'es'), '110.2 mil LB');
+});
+
+test('axis labels abbreviate once the top label passes a hundred thousand', () => {
+  assert.equal(formatTonnageAxis(0, 250_000, 'kg', 'en'), '0');
+  assert.equal(formatTonnageAxis(125_000, 250_000, 'kg', 'en'), '125k');
+  assert.equal(formatTonnageAxis(250_000, 250_000, 'kg', 'es'), '250 mil');
+  assert.equal(formatTonnageAxis(50_000, 99_999, 'kg', 'en'), '50,000');
 });
