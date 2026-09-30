@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Text } from 'react-native';
 
 import {
+  ExerciseStill,
   ActionBar,
   Field,
   ListRow,
@@ -85,10 +86,10 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
 
         <Section label="EXERCISES" plated={false}>
           <RowPlates>
-            {rows.map((lift, index) => (
+            {rows.map((lift) => (
               <RowPlate key={lift.id} onPress={() => remove(lift.id, lift.name)}>
                 <ListRow
-                  lead={String(index + 1).padStart(2, '0')}
+                  thumb={<ExerciseStill exerciseId={lift.exerciseId} size={44} />}
                   title={lift.name}
                   meta={liftMeta(lift, settings.weightUnit)}
                   chevron={false}
