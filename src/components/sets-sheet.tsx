@@ -2,21 +2,11 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { addSet, setSessionCursor } from '@/data/mutations/sessions';
-import { formatWeight } from '@/lib/units';
-import {
-  color,
-  hairline,
-  type Ink,
-  lh,
-  ls,
-  mono,
-  radius,
-  sans,
-  size,
-  space,
-  text,
-  wash,
-} from '@/theme';
+import { formatWeight, type Unit } from '@/lib/units';
+import { useSettings } from '@/data/settings';
+import { color, hairline, type Ink, radius, size, space, text, wash } from '@/theme';
+
+import { useGlass } from './glass';
 
 import { Chevron } from './icon';
 import { HANDLE_WIDTH, ReorderList } from './reorder-list';
@@ -50,18 +40,10 @@ type Props = {
 };
 
 const dash = (v: string | null) => v ?? '—';
-const idx = mono(500);
-const val = mono(400);
 
 /** kit's mono value column — right-aligned, a fixed width so four numbers line up. */
 function Col({ w, color: c, children }: { w: number; color: Ink; children: string }) {
-  return (
-    <Text
-      style={{ ...val, fontSize: 13, lineHeight: lh(13), width: w, textAlign: 'right', color: c }}
-    >
-      {children}
-    </Text>
-  );
+  return <Text style={{ ...text.numSm, width: w, textAlign: 'right', color: c }}>{children}</Text>;
 }
 
 function SetRow({
@@ -69,11 +51,13 @@ function SetRow({
   isCurrent,
   handle,
   onPress,
+  unit,
 }: {
   set: SheetSet;
   isCurrent: boolean;
   handle: ReactNode;
   onPress: () => void;
+  unit: Unit;
 }) {
   const done = set.completedAt != null;
   const state = isCurrent ? 'current' : done ? 'done' : 'ahead';
@@ -84,11 +68,11 @@ function SetRow({
   const rpeColor = state === 'done' ? color.mid : color.dim;
   const e1rmColor = state === 'done' ? color.accent : color.dim;
 
-  const weightText = dash(set.weightKg == null ? null : formatWeight(set.weightKg));
+  const weightText = dash(set.weightKg == null ? null : formatWeight(set.weightKg, unit));
   const repsText = dash(set.reps == null ? null : `×${set.reps}`);
   const rpeText = state === 'done' ? dash(set.rpe == null ? null : String(set.rpe)) : '—';
   const e1rmText =
-    state === 'done' ? dash(set.e1rmKg == null ? null : formatWeight(set.e1rmKg)) : '—';
+    state === 'done' ? dash(set.e1rmKg == null ? null : formatWeight(set.e1rmKg, unit)) : '—';
 
   return (
     <Pressable
@@ -98,32 +82,35 @@ function SetRow({
           flexDirection: 'row',
           alignItems: 'center',
           height: size.hit,
-          gap: 9,
+          gap: 4,
           paddingHorizontal: 8,
           borderRadius: radius.row,
-          backgroundColor: state === 'current' ? wash.accent : undefined,
+          borderBottomWidth: 0.5,
+          borderBottomColor: hairline.onPlate,
           opacity: pressed ? 0.7 : state === 'ahead' ? 0.5 : 1,
         },
       ]}
     >
-      {handle}
-      <Text style={{ ...idx, fontSize: 11, lineHeight: lh(11), width: 22, color: indexColor }}>
+      {handle ? (
+        <View style={{ backgroundColor: wash.field, borderRadius: radius.row }}>{handle}</View>
+      ) : null}
+      <Text style={{ ...text.numSm, width: 20, color: indexColor }}>
         {String(set.position).padStart(2, '0')}
       </Text>
       <View style={{ flex: 1 }} />
-      <Col w={50} color={weightColor}>
+      <Col w={48} color={weightColor}>
         {weightText}
       </Col>
-      <Col w={30} color={repsColor}>
+      <Col w={28} color={repsColor}>
         {repsText}
       </Col>
-      <Col w={36} color={rpeColor}>
+      <Col w={28} color={rpeColor}>
         {rpeText}
       </Col>
-      <Col w={44} color={e1rmColor}>
+      <Col w={42} color={e1rmColor}>
         {e1rmText}
       </Col>
-      <View style={{ width: 26, alignItems: 'flex-end' }}>
+      <View style={{ width: 16, alignItems: 'flex-end' }}>
         {state === 'current' ? null : <Chevron />}
       </View>
     </Pressable>
@@ -149,6 +136,8 @@ export function SetsSheet({
   onReorder,
   onDelete,
 }: Props) {
+  const { weightUnit } = useSettings();
+  const { recipe } = useGlass('chrome');
   const done = sets.filter((s) => s.completedAt != null).length;
 
   const selectSet = (id: string) => {
@@ -174,7 +163,7 @@ export function SetsSheet({
           flexDirection: 'row',
           alignItems: 'center',
           height: 18,
-          gap: 9,
+          gap: 4,
           paddingHorizontal: 8,
         }}
       >
@@ -183,11 +172,13 @@ export function SetsSheet({
           SET
         </Text>
         <View style={{ flex: 1 }} />
-        <Text style={[text.label, { width: 50, textAlign: 'right' }]}>KG</Text>
-        <Text style={[text.label, { width: 30, textAlign: 'right' }]}>REP</Text>
-        <Text style={[text.label, { width: 36, textAlign: 'right' }]}>RPE</Text>
-        <Text style={[text.label, { width: 44, textAlign: 'right' }]}>e1RM</Text>
-        <View style={{ width: 26 }} />
+        <Text style={[text.label, { width: 48, textAlign: 'right' }]}>
+          {weightUnit.toUpperCase()}
+        </Text>
+        <Text style={[text.label, { width: 28, textAlign: 'right' }]}>REP</Text>
+        <Text style={[text.label, { width: 28, textAlign: 'right' }]}>RPE</Text>
+        <Text style={[text.label, { width: 42, textAlign: 'right' }]}>e1RM</Text>
+        <View style={{ width: 16 }} />
       </View>
 
       <ReorderList
@@ -195,8 +186,13 @@ export function SetsSheet({
         rowHeight={size.hit}
         onReorder={onReorder}
         renderRow={(s, _i, handle) => (
-          <SwipeRow key={s.id} onDelete={onDelete ? () => onDelete(s.id) : undefined}>
+          <SwipeRow
+            key={s.id}
+            surface={recipe?.fill.backgroundColor ?? color.panel}
+            onDelete={onDelete ? () => onDelete(s.id) : undefined}
+          >
             <SetRow
+              unit={weightUnit}
               set={s}
               isCurrent={s.id === currentSetId}
               handle={handle}
@@ -221,9 +217,7 @@ export function SetsSheet({
           opacity: pressed ? 0.7 : 1,
         })}
       >
-        <Text style={{ ...sans(500), fontSize: 14, letterSpacing: ls(-0.01, 14), color: color.hi }}>
-          + Set
-        </Text>
+        <Text style={text.rowName}>+ Set</Text>
       </Pressable>
     </Sheet>
   );
