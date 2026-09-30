@@ -55,6 +55,9 @@ export const text = {
   /** kit .tabl — the tab bar's label, tighter than every other mono caption. */
   tab: { ...mono(400), fontSize: 11, letterSpacing: ls(0.05, 11), lineHeight: lh(11), color: color.lo },
 
+  /** Lab 23 W5 — the current tab's name on the minimised bar. */
+  pillTab: { ...sans(600), fontSize: 14, lineHeight: lh(14), color: color.hi },
+
   /** kit .num — Geist Mono is tabular by construction, so no fontVariant needed. */
   num: { ...mono(500), fontSize: 15, letterSpacing: ls(-0.02, 15), lineHeight: lh(15), color: color.hi },
   numSm: { ...mono(400), fontSize: 13, lineHeight: lh(13), color: color.mid },
