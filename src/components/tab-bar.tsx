@@ -134,7 +134,13 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
 
   return (
     <View
-      style={{ height: 60, marginHorizontal: 16, marginBottom: Math.max(insets.bottom + 8, 30) }}
+      style={{
+        position: 'absolute',
+        left: 16,
+        right: 16,
+        bottom: Math.max(insets.bottom + 8, 30),
+        height: 60,
+      }}
     >
       <Animated.View
         pointerEvents={minimised ? 'none' : 'auto'}
