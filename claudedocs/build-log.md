@@ -3,10 +3,21 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-28 (end of day). **Phase 8's cloud backup shipped, and its first push was
-verified on the device.** Changes are queued by SQLite triggers and only changed rows are pushed. The
-first push landed all eleven synced tables, matching the phone row for row. See **"Cloud backup —
-Phase 8"**. Not yet verified: an incremental push after an edit, and restore from the cloud.
+Last updated 2026-09-29. **The UI refactor against over-explaining text shipped, unverified on a
+device.** Owner-approved via Lab 49 (`design-labs/lab49.py`, §0 updated): **History replaces
+Strength** (month page: ‹ › header, session count + weekly-tonnes chart, the calendar, one line per
+session opening its detail, a Records row → `/records`); **Load opens on the body figure** with a
+deload chip and Records at the foot (`/body` is gone); **day states with no key** on the calendar and
+Today's strip (trained fill, planned dashed, missed hatched, rest empty, today the only solid ring —
+`src/lib/day-state.ts`); **readiness and deload are chips**; **Settings and Account rows are one
+line**; **empty states are actions only**; guard dialogs became dim/Resume buttons; both bloom
+orbs are now the same gold. The text audit is `claudedocs/text-audit.md`. **Nothing here has run on
+a device** — start with "Pick this up here".
+
+Before that (2026-09-28): **Phase 8's cloud backup shipped, and its first push was verified on the
+device.** Changes are queued by SQLite triggers and only changed rows are pushed. The first push
+landed all eleven synced tables. See **"Cloud backup — Phase 8"**. Not yet verified: an incremental
+push after an edit, and restore from the cloud.
 
 Before that, the same day: **the body map shipped — Lab 35 B4.** It is the MuscleMap figure
 drawn with Skia and coloured by recent load relative to the most-worked muscle, with no invented
@@ -60,24 +71,21 @@ session detail (C3). The history *list* was dropped — the IA never had one.
 ## Pick this up here
 
 **State:** clean on `main` (local commits not pushed — push only when asked), `pnpm check` exit 0,
-**182 tests**. Every tab root, the live session, routines, programs (with the A4 chart), library,
-exercise detail (with the e1RM chart), bodyweight, readiness, session summary and detail, export,
-restore, Settings and the body map are on the device and verified there. **Every drawn screen is
-built.**
-
-**Nothing is scheduled.** The open work is: verifying an incremental push and restore-from-cloud on the
-device (see "Cloud backup — Phase 8"), the UI pass described under "Smaller things", and full
-multi-device sync if it is ever wanted.
+~200 tests, 3 old lint warnings. Every screen is built; the 2026-09-29 refactor (above) changed the
+tab roots, Settings, Account and the copy on nearly every screen and **has only been type-checked.**
 
 ### What remains, in order
 
-| # | What | Board | Blocked on |
-|---|---|---|---|
-| 1 | **Verify incremental push and restore-from-cloud** | "Cloud backup — Phase 8" | the owner making an edit; a second signed-in device or a wiped one |
+| # | What | Notes |
+|---|---|---|
+| 1 | **Device pass over the refactor** | Plug the phone in (or use the `jymiq-a` emulator). Highest risk first: History calendar's Skia dashed/hatched cells against the flex grid; Today strip glyphs at 14x18 and their horizontal scroll; one-line rows at 360dp; Load's two Skia figures above the zone bars; Start dimming and the Resume swap; live screen finish going straight to the summary |
+| 2 | Verify incremental push and restore-from-cloud | "Cloud backup — Phase 8" |
+| 3 | Judgement calls to confirm | HOLD = one of two deload conditions; LIGHT and REST share the live red (no orange token); the recent rail draws nothing when empty (§0 says stay visible and dim); the "one phone at a time" warning was dropped from Account; a finished session skips the confirm dialog |
 
-**Correction to the previous handoff:** D1 was listed as blocked on the chart. It never was — Lab 37
-records that the six-week volume chart was *cut* from Load to pay for the restyle. The chart
-unblocks items 1 and 2 only.
+**Known gaps from the refactor:** Records rows lost their `1RM · WAS 128` meta line; History's stats
+dropped the board's PRS number and delta; the board's neutral chip tone does not exist (`Pill` has
+accent, done, live, dim); `describeSync` in `lib/sync.ts` is unused; `TrendChart` draws a blank
+frame for a single weigh-in.
 
 ### Smaller things, none of them blocking
 
