@@ -37,6 +37,7 @@ export { SessionRow } from './session-row';
 export { Sheet } from './sheet';
 export { SetsSheet } from './sets-sheet';
 export { StatTiles, type Tile } from './tiles';
+export { SwipeRow } from './swipe-row';
 export { Tape } from './tape';
 export { TrendChart } from './trend-chart';
 export { Toggle } from './toggle';
