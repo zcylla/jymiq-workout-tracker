@@ -1,11 +1,14 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
-import { View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { BackHandler, Pressable, Text, View } from 'react-native';
 
 import {
   ActionBar,
   ExerciseStill,
+  Field,
+  Sheet,
+  useDialog,
   Icon,
   ListRow,
   Rail,
@@ -21,7 +24,12 @@ import {
   type Tile,
   useActionBarHeight,
 } from '@/components';
-import { reorderRoutineExercises } from '@/data/mutations/routines';
+import {
+  deleteRoutine,
+  duplicateRoutine,
+  renameRoutine,
+  reorderRoutineExercises,
+} from '@/data/mutations/routines';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
 import {
   routineSessionsQuery,
@@ -36,7 +44,7 @@ import { moved } from '@/lib/reorder';
 import { formatRest, formatSessionDuration, sessionDotTone } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
 import { formatTonnage, topSet } from '@/lib/volume';
-import { space } from '@/theme';
+import { color, radius, size, space, text, wash } from '@/theme';
 
 const STILL = 44;
 /** The still plus the 7pt a `ListRow` pads above and below it: the plate's exact height, which the drag slots by. */
@@ -51,6 +59,27 @@ const PLATE_HEIGHT = STILL + 14;
  */
 export default function RoutineScreen() {
   const actionBar = useActionBarHeight();
+  const show = useDialog();
+  const [menu, setMenu] = useState<'actions' | 'rename' | null>(null);
+  const [name, setName] = useState('');
+  useEffect(() => {
+    if (!menu) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setMenu(null);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [menu]);
+  const perform = (action: () => void) => {
+    try {
+      action();
+    } catch (error) {
+      show({
+        title: 'Routine unchanged',
+        message: error instanceof Error ? error.message : 'Please try again.',
+      });
+    }
+  };
   const settings = useSettings();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: found } = useLiveQuery(
@@ -162,7 +191,22 @@ export default function RoutineScreen() {
         <ScreenHeader
           title={routine?.name ?? ''}
           onBack={() => router.back()}
-          right={<Icon name="dots" />}
+          right={
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Routine actions"
+              disabled={!routine}
+              onPress={() => setMenu('actions')}
+              style={{
+                width: size.hit,
+                height: size.hit,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon name="dots" />
+            </Pressable>
+          }
         />
 
         <Section first pad={13}>
@@ -224,6 +268,69 @@ export default function RoutineScreen() {
         onPrimary={start}
         onSecondary={() => router.push(`/routine/${id}/edit`)}
       />
+      <Sheet open={menu !== null} onClose={() => setMenu(null)}>
+        <View style={{ gap: space.within }}>
+          {menu === 'rename' ? (
+            <>
+              <Field label="RENAME ROUTINE" value={name} onChangeText={setName} autoFocus />
+              <RoutineAction
+                label="SAVE"
+                disabled={!name.trim()}
+                onPress={() =>
+                  perform(() => {
+                    renameRoutine(id, name);
+                    setMenu(null);
+                  })
+                }
+              />
+            </>
+          ) : (
+            <>
+              <Text style={text.label}>ROUTINE ACTIONS</Text>
+              <RoutineAction
+                label="RENAME"
+                onPress={() => {
+                  setName(routine?.name ?? '');
+                  setMenu('rename');
+                }}
+              />
+              <RoutineAction
+                label="DUPLICATE"
+                onPress={() =>
+                  perform(() => {
+                    const copyId = duplicateRoutine(id);
+                    setMenu(null);
+                    router.push(`/routine/${copyId}`);
+                  })
+                }
+              />
+              <RoutineAction
+                label="DELETE"
+                destructive
+                onPress={() => {
+                  setMenu(null);
+                  show({
+                    title: 'Delete routine?',
+                    message: 'Your logged sessions will be kept.',
+                    actions: [
+                      { label: 'Cancel', tone: 'cancel' },
+                      {
+                        label: 'Delete',
+                        tone: 'destructive',
+                        onPress: () =>
+                          perform(() => {
+                            deleteRoutine(id);
+                            router.back();
+                          }),
+                      },
+                    ],
+                  });
+                }}
+              />
+            </>
+          )}
+        </View>
+      </Sheet>
     </>
   );
 }
@@ -241,4 +348,35 @@ function liftMeta(lift: Lift, unit: Unit): string {
   }
   if (lift.restSec != null) parts.push(`REST ${formatRest(lift.restSec)}`);
   return parts.join(' · ');
+}
+
+function RoutineAction({
+  label,
+  onPress,
+  destructive = false,
+  disabled = false,
+}: {
+  label: string;
+  onPress: () => void;
+  destructive?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        minHeight: size.hit,
+        justifyContent: 'center',
+        paddingHorizontal: space.within,
+        borderRadius: radius.row,
+        backgroundColor: wash.field,
+        opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
+      })}
+    >
+      <Text style={[text.rowName, { color: destructive ? color.live : color.hi }]}>{label}</Text>
+    </Pressable>
+  );
 }

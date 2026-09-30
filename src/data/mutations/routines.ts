@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 import { newId } from '@/lib/id';
 
 import { db } from '../db';
-import { routineExercises, routines } from '../schema';
+import { programDays, routineExercises, routines } from '../schema';
 import { getSettings } from '../settings';
 
 export function createRoutine(input: { name: string; note?: string | null }): string {
@@ -30,6 +30,61 @@ export function updateRoutine(id: string, input: { name: string; note?: string |
     })
     .where(eq(routines.id, id))
     .run();
+}
+
+export function renameRoutine(id: string, name: string): void {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('Enter a routine name.');
+  db.update(routines)
+    .set({ name: trimmed, updatedAt: Date.now() })
+    .where(eq(routines.id, id))
+    .run();
+}
+
+export function duplicateRoutine(id: string): string {
+  const copyId = newId();
+  db.transaction((tx) => {
+    const original = tx.select().from(routines).where(eq(routines.id, id)).get();
+    if (!original) throw new Error('This routine is no longer available.');
+    const now = Date.now();
+    tx.insert(routines)
+      .values({
+        ...original,
+        id: copyId,
+        name: `${original.name} copy`,
+        archivedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run();
+    const lifts = tx
+      .select()
+      .from(routineExercises)
+      .where(eq(routineExercises.routineId, id))
+      .all();
+    for (const lift of lifts) {
+      tx.insert(routineExercises)
+        .values({ ...lift, id: newId(), routineId: copyId })
+        .run();
+    }
+  });
+  return copyId;
+}
+
+export function deleteRoutine(id: string): void {
+  db.transaction((tx) => {
+    const scheduled = tx
+      .select()
+      .from(programDays)
+      .where(eq(programDays.routineId, id))
+      .limit(1)
+      .get();
+    if (scheduled)
+      throw new Error(
+        'This routine is used by a program. Replace it or set its days to Rest in the program before deleting it.',
+      );
+    tx.delete(routines).where(eq(routines.id, id)).run();
+  });
 }
 
 export type NewRoutineExercise = {
