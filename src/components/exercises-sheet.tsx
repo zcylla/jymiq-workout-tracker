@@ -4,20 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { setSessionCursor } from '@/data/mutations/sessions';
 import { exerciseStill } from '@/data/exercise-art';
-import {
-  color,
-  hairline,
-  type Ink,
-  lh,
-  ls,
-  mono,
-  radius,
-  sans,
-  size,
-  space,
-  text,
-  wash,
-} from '@/theme';
+import { color, hairline, type Ink, ls, radius, sans, size, space, text, wash } from '@/theme';
 
 import { Chevron } from './icon';
 import { ReorderList } from './reorder-list';
@@ -55,13 +42,11 @@ const STILL = 32;
 
 function ExerciseRow({
   exercise,
-  index,
   isCurrent,
   handle,
   onPress,
 }: {
   exercise: SheetExercise;
-  index: number;
   isCurrent: boolean;
   handle: ReactNode;
   onPress: () => void;
@@ -69,9 +54,8 @@ function ExerciseRow({
   const completed = exercise.setsDone >= exercise.setsTotal && exercise.setsTotal > 0;
   const state = isCurrent ? 'current' : completed ? 'done' : 'ahead';
 
-  const indexColor: Ink =
-    state === 'done' ? color.done : state === 'current' ? color.accent : color.dim;
-  const nameColor: Ink = state === 'done' || state === 'ahead' ? color.mid : color.accent;
+  const nameColor: Ink =
+    state === 'done' ? color.done : state === 'current' ? color.accent : color.mid;
   const remaining = exercise.setsTotal - exercise.setsDone;
   const meta = completed ? '' : String(remaining);
   const still = exercise.exerciseId ? exerciseStill(exercise.exerciseId) : undefined;
@@ -91,11 +75,6 @@ function ExerciseRow({
       })}
     >
       {handle}
-      <Text
-        style={{ ...mono(500), fontSize: 11, lineHeight: lh(11), width: 22, color: indexColor }}
-      >
-        {String(index + 1).padStart(2, '0')}
-      </Text>
       {still != null ? (
         <Image
           source={still}
@@ -167,7 +146,6 @@ export function ExercisesSheet({
           >
             <ExerciseRow
               exercise={e}
-              index={i}
               isCurrent={e.id === currentSessionExerciseId}
               handle={handle}
               onPress={() => selectExercise(e.id)}
