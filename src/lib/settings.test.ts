@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { DEFAULT_REST_SEC } from './rest.ts';
+import { LOAD_STEPS_KG } from './scale.ts';
 import { DEFAULT_SETTINGS, coerceSettings } from './settings.ts';
 
 test('the defaults are the behaviour the app already had', () => {
@@ -12,6 +13,9 @@ test('the defaults are the behaviour the app already had', () => {
   // §0: RPE ships hidden, and unset rather than pre-filled.
   assert.equal(DEFAULT_SETTINGS.trackRpe, false);
   assert.equal(DEFAULT_SETTINGS.tapOpensKeypad, false);
+  assert.equal(DEFAULT_SETTINGS.weightIncrementKg, 2.5);
+  assert.equal(DEFAULT_SETTINGS.defaultSets, 3);
+  assert.equal(DEFAULT_SETTINGS.keepScreenOn, false);
 });
 
 test('nothing readable in the store gives the defaults rather than a crash', () => {
@@ -52,4 +56,31 @@ test('the weekly goal is unset by default and only a whole 1-7 survives', () => 
   assert.equal(coerceSettings({ weeklyGoal: 4 }).weeklyGoal, 4);
   for (const bad of [0, 8, 2.5, '3', null, undefined])
     assert.equal(coerceSettings({ weeklyGoal: bad }).weeklyGoal, null);
+});
+
+test('the weight increment is one of the offered steps, else the default', () => {
+  for (const step of LOAD_STEPS_KG)
+    assert.equal(coerceSettings({ weightIncrementKg: step }).weightIncrementKg, step);
+  for (const bad of [0, 3, -2.5, '5', null, Number.NaN])
+    assert.equal(coerceSettings({ weightIncrementKg: bad }).weightIncrementKg, 2.5);
+});
+
+test('default sets is a whole number from 1 to 10, else 3', () => {
+  for (const n of [1, 3, 10]) assert.equal(coerceSettings({ defaultSets: n }).defaultSets, n);
+  for (const bad of [0, 11, 2.5, -1, '4', null, Number.NaN])
+    assert.equal(coerceSettings({ defaultSets: bad }).defaultSets, 3);
+});
+
+test('keep screen on only counts a real boolean', () => {
+  assert.equal(coerceSettings({ keepScreenOn: true }).keepScreenOn, true);
+  assert.equal(coerceSettings({ keepScreenOn: 'yes' }).keepScreenOn, false);
+  assert.equal(coerceSettings({}).keepScreenOn, false);
+});
+
+test('a store from before these settings reads as the old behaviour', () => {
+  const s = coerceSettings({ weightUnit: 'lb', trackRpe: true });
+  assert.equal(s.weightIncrementKg, 2.5);
+  assert.equal(s.defaultSets, 3);
+  assert.equal(s.keepScreenOn, false);
+  assert.equal(s.trackRpe, true);
 });

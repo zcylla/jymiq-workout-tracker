@@ -1,4 +1,4 @@
-import { REST_SCALE, snapTo } from './scale.ts';
+import { LOAD_STEPS_KG, REST_SCALE, snapTo } from './scale.ts';
 import type { Unit } from './units.ts';
 
 /**
@@ -24,6 +24,15 @@ export interface Settings {
   tapOpensKeypad: boolean;
   /** Sessions a week, 1-7. The SESSIONS meter's denominator when no program is running; null is unset. */
   weeklyGoal: number | null;
+  /**
+   * The live load tape's step, in kilograms and only kilograms: the live screen
+   * does not follow the display unit, so there is nothing to convert.
+   */
+  weightIncrementKg: number;
+  /** Sets a newly added exercise starts with, in a routine or a live session. */
+  defaultSets: number;
+  /** Hold the screen awake while a session is live. */
+  keepScreenOn: boolean;
 }
 
 /**
@@ -37,8 +46,17 @@ export const DEFAULT_SETTINGS: Settings = {
   trackRpe: false,
   tapOpensKeypad: false,
   weeklyGoal: null,
+  weightIncrementKg: 2.5,
+  defaultSets: 3,
+  keepScreenOn: false,
 };
 
+export const DEFAULT_SETS_MAX = 10;
+
+const isStep = (n: unknown): n is (typeof LOAD_STEPS_KG)[number] =>
+  LOAD_STEPS_KG.some((step) => step === n);
+const isSetCount = (n: unknown): n is number =>
+  typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= DEFAULT_SETS_MAX;
 const isRest = (n: unknown): n is number => typeof n === 'number' && n >= 0 && n <= 3600;
 
 const isGoal = (n: unknown): n is number =>
@@ -64,5 +82,10 @@ export function coerceSettings(raw: unknown): Settings {
     trackRpe: o.trackRpe === true,
     tapOpensKeypad: o.tapOpensKeypad === true,
     weeklyGoal: isGoal(o.weeklyGoal) ? o.weeklyGoal : null,
+    weightIncrementKg: isStep(o.weightIncrementKg)
+      ? o.weightIncrementKg
+      : DEFAULT_SETTINGS.weightIncrementKg,
+    defaultSets: isSetCount(o.defaultSets) ? o.defaultSets : DEFAULT_SETTINGS.defaultSets,
+    keepScreenOn: o.keepScreenOn === true,
   };
 }

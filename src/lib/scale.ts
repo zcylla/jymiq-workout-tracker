@@ -62,8 +62,19 @@ export function clampIndex(s: Scale, index: number): number {
   return index < 0 ? 0 : index > s.n - 1 ? s.n - 1 : index;
 }
 
-/** Load 20–140 by 2.5: every detent is a weight you can actually load. */
-export const LOAD_SCALE = makeScale(20, 140, 2.5, 4, 8);
+/**
+ * The load steps Settings offers, in kilograms. The live screen is kilograms
+ * whatever the display unit, so these are not converted.
+ */
+export const LOAD_STEPS_KG = [1, 1.25, 2.5, 5] as const;
+
+/**
+ * Load 20–140 by `step`: every detent is a weight you can actually load. The
+ * ends are multiples of every offered step, so the span never moves, and a rule
+ * lands every 10 kg and a numeral every 20 whatever the step.
+ */
+export const loadScale = (step: number) => makeScale(20, 140, step, 10 / step, 20 / step);
+export const LOAD_SCALE = loadScale(2.5);
 export const REPS_SCALE = makeScale(1, 15, 1, 5, 5);
 /**
  * A routine's targets are typed, never dialled, so these bound what a keypad may
