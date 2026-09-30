@@ -23,7 +23,7 @@ export default function TabsLayout() {
       <TabList style={{ display: 'none' }}>
         <TabTrigger name="today" href="/" />
         <TabTrigger name="session" href="/session" />
-        <TabTrigger name="strength" href="/strength" />
+        <TabTrigger name="history" href="/history" />
         <TabTrigger name="load" href="/load" />
       </TabList>
 
@@ -38,8 +38,8 @@ export default function TabsLayout() {
         {/* Not a tab — it pushes the live session, which owns the whole plane. */}
         <StartButton onPress={() => router.push('/live')} />
 
-        <TabTrigger name="strength" asChild>
-          <TabItem icon="strength" label="Strength" />
+        <TabTrigger name="history" asChild>
+          <TabItem icon="cal" label="History" />
         </TabTrigger>
         <TabTrigger name="load" asChild>
           <TabItem icon="load" label="Load" />

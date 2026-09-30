@@ -1,26 +1,12 @@
-import { router } from 'expo-router';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import {
-  ListRow,
-  Rail,
-  type RailItem,
-  RowPlate,
-  RowPlates,
-  Screen,
-  ScreenHeader,
-  Section,
-  StatTiles,
-  type Tile,
-} from '@/components';
-import { useRows } from '@/data/live';
-import { fatigueSetsQuery } from '@/data/queries/fatigue';
+import { Rail, type RailItem, Screen, ScreenHeader, Section } from '@/components';
 import { recordsQuery } from '@/data/queries/records';
 import { useSettings } from '@/data/settings';
-import { hardest, WINDOW_DAYS } from '@/lib/fatigue';
-import { PR_LABELS, type PrCategory, formatPrValue } from '@/lib/pr';
+import { formatPrValue, PR_LABELS, type PrCategory } from '@/lib/pr';
 import { sessionDateLabel, sessionDotTone } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
 import { color, text } from '@/theme';
@@ -28,41 +14,14 @@ import { color, text } from '@/theme';
 /** Shadowing the global `Record<K, V>` utility in this file would be a trap. */
 type PrRow = Awaited<ReturnType<typeof recordsQuery>>[number];
 
-/** Lab 36 C4. This is a tab root (Strength), so no back affordance. */
-export default function StrengthScreen() {
+/** Lab 36 C4, pushed from History and Load. */
+export default function RecordsScreen() {
   const { data, updatedAt } = useLiveQuery(
     useMemo(() => recordsQuery(), []),
     [],
   );
   const records = data ?? [];
   const loading = updatedAt === undefined;
-
-  const { monthCount, yearCount } = useMemo(() => {
-    const now = new Date();
-    let month = 0;
-    let year = 0;
-    for (const r of records) {
-      const d = new Date(r.achievedAt);
-      if (d.getFullYear() === now.getFullYear()) {
-        year += 1;
-        if (d.getMonth() === now.getMonth()) month += 1;
-      }
-    }
-    return { monthCount: month, yearCount: year };
-  }, [records]);
-
-  const now = useMemo(() => nowMs(), []);
-  const fatigueRows = useRows(
-    useMemo(() => fatigueSetsQuery(now - WINDOW_DAYS * 86_400_000), [now]),
-    [now],
-  );
-  const top = useMemo(() => hardest(fatigueRows ?? [], now, 1)[0], [fatigueRows, now]);
-  const bodyMeta = top ? `${top.name.toUpperCase()} WORKED HARDEST` : 'NOTHING IN 7 DAYS';
-
-  const tiles: Tile[] = [
-    { label: 'THIS MONTH', value: loading ? '—' : String(monthCount) },
-    { label: 'THIS YEAR', value: loading ? '—' : String(yearCount) },
-  ];
 
   const railItems: RailItem[] = records.map((r) => ({
     tone: sessionDotTone(r.achievedAt),
@@ -71,21 +30,9 @@ export default function StrengthScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title="Records" kicker="STRENGTH" />
+      <ScreenHeader title="Records" onBack={() => router.back()} />
 
-      <Section first label="BODY" plated={false}>
-        <RowPlates>
-          <RowPlate onPress={() => router.push('/body')}>
-            <ListRow title="Body map" meta={fatigueRows === null ? undefined : bodyMeta} />
-          </RowPlate>
-        </RowPlates>
-      </Section>
-
-      <Section pad={13}>
-        <StatTiles items={tiles} surface="raised" />
-      </Section>
-
-      <Section label="TIMELINE" plated={false}>
+      <Section first plated={false}>
         {records.length ? (
           <Rail items={railItems} air={26} />
         ) : loading ? null : (
@@ -127,8 +74,4 @@ function RecordRow({ record }: { record: PrRow }) {
       </View>
     </>
   );
-}
-
-function nowMs(): number {
-  return Date.now();
 }

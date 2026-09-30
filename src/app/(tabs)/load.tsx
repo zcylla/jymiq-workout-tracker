@@ -1,10 +1,8 @@
-import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
 import {
-  Calendar,
   Delta,
   ListRow,
   RowPlate,
@@ -17,7 +15,6 @@ import {
   ZoneBar,
 } from '@/components';
 import { bodyWeightsQuery } from '@/data/queries/bodyweight';
-import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { useRows } from '@/data/live';
 import {
   bestE1rmQuery,
@@ -25,53 +22,19 @@ import {
   primeSetsQuery,
   rangeSetsQuery,
 } from '@/data/queries/load';
-import { useActiveSchedule } from '@/data/schedule';
 import { useSettings } from '@/data/settings';
 import { daysSince } from '@/lib/bodyweight';
 import { formatWeight } from '@/lib/units';
-import { monthGrid, type TrainedDay, trainedDays } from '@/lib/calendar';
 import { deloadCall, type LiftHistory, liftsThisWeek } from '@/lib/deload';
 import { muscleRows } from '@/lib/landmarks';
 import { countWorkingSets, formatTonnage, totalVolume } from '@/lib/volume';
 import { weekBounds } from '@/lib/week';
-import { color, hairline, text } from '@/theme';
+import { text } from '@/theme';
 
-/**
- * Lab 37 D1 on top — sets, volume, sets per muscle and the deload call — and
- * then the calendar below it.
- *
- * Lab 39 Q2 — the calendar, and so far the whole Load tab. §0's IA gives Load
- * "volume, deload, bodyweight, calendar", but no board draws the tab root, and
- * the calendar is the only one of the four with both data and a board today.
- *
- * **The missed state is live**, now that programs store a plan by weekday: a
- * past day the running program put a routine on, and you did not train, drops
- * its rest plate and takes a ring instead (§0). With nothing running the
- * schedule is empty and every untrained day is rest again, which is the honest
- * answer — the app cannot assert a lapse against a plan that does not exist.
- * Nothing before the day a program was activated is ever missed either.
- */
+/** Lab 37 D1: sets, volume, sets per muscle and the deload call, then the body map and Records. */
 export default function LoadScreen() {
   const tabBar = useTabBarHeight();
   const settings = useSettings();
-
-  // One month, computed once: the grid, the query range and the title all come
-  // out of the same call, so they cannot disagree about which month this is.
-  const grid = useMemo(() => monthGrid(), []);
-  const active = useActiveSchedule();
-
-  const { data, updatedAt } = useLiveQuery(
-    useMemo(() => sessionsInRangeQuery(grid.from, grid.to), [grid.from, grid.to]),
-    [grid.from, grid.to],
-  );
-  const loading = updatedAt === undefined;
-
-  const trained = useMemo(() => trainedDays(data), [data]);
-  const volumeKg = useMemo(() => {
-    let sum = 0;
-    for (const day of trained.values()) sum += day.volumeKg;
-    return sum;
-  }, [trained]);
 
   const week = useMemo(() => weekBounds(), []);
   const unit = settings.weightUnit;
@@ -138,8 +101,6 @@ export default function LoadScreen() {
       ? Math.round(((totals.volumeKg - totals.lastVolumeKg) / totals.lastVolumeKg) * 100)
       : null;
 
-  const openDay = (day: TrainedDay) => router.push(`/history/${day.sessionId}`);
-
   return (
     <Screen bottomInset={tabBar}>
       <ScreenHeader title="Load" kicker="THIS WEEK" />
@@ -190,33 +151,15 @@ export default function LoadScreen() {
         </RowPlates>
       </Section>
 
-      <Section label={grid.title.toUpperCase()}>
-        <Calendar
-          weeks={grid.weeks}
-          trained={trained}
-          todayKey={grid.todayKey}
-          schedule={active?.schedule}
-          onPressDay={openDay}
-        />
-
-        {/* One line of text, not a second chart competing with the grid for the
-            same attention. A month with nothing in it keeps the grid — §0 draws
-            a component that will fill in dim rather than hiding it. */}
-        {loading ? null : trained.size === 0 ? (
-          <Text style={text.prose}>
-            Nothing logged this month. Start a session and it lands here.
-          </Text>
-        ) : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={text.body}>Trained</Text>
-            <Text style={text.num}>
-              {trained.size} of {grid.days}
-            </Text>
-            <View style={{ width: 1, height: 13, backgroundColor: hairline.onPlate }} />
-            <Text style={text.body}>volume</Text>
-            <Text style={[text.num, { color: color.accent }]}>{formatTonnage(volumeKg, unit)}</Text>
-          </View>
-        )}
+      <Section plated={false}>
+        <RowPlates>
+          <RowPlate onPress={() => router.push('/body')}>
+            <ListRow title="Body map" />
+          </RowPlate>
+          <RowPlate onPress={() => router.push('/records')}>
+            <ListRow title="Records" />
+          </RowPlate>
+        </RowPlates>
       </Section>
     </Screen>
   );
