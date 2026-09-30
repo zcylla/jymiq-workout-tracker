@@ -65,6 +65,18 @@ export function clampIndex(s: Scale, index: number): number {
 /** Load 20–140 by 2.5: every detent is a weight you can actually load. */
 export const LOAD_SCALE = makeScale(20, 140, 2.5, 4, 8);
 export const REPS_SCALE = makeScale(1, 15, 1, 5, 5);
+/**
+ * A routine's targets are typed, never dialled, so these bound what a keypad may
+ * write rather than what a tape can show. The load is in whatever unit the user
+ * trains in; `toKg` turns it into what is stored.
+ */
+export const TARGET_SETS_SCALE = makeScale(1, 20, 1, 5, 5);
+export const TARGET_REPS_SCALE = makeScale(1, 100, 1, 10, 10);
+export const TARGET_LOAD_SCALE = makeScale(0.25, 999, 0.25, 4, 4);
+/** Pounds show one decimal, so a quarter-pound step would be accepted and then read back rounded. */
+const TARGET_LOAD_SCALE_LB = makeScale(0.5, 999, 0.5, 4, 4);
+export const targetLoadScale = (unit: 'kg' | 'lb') =>
+  unit === 'kg' ? TARGET_LOAD_SCALE : TARGET_LOAD_SCALE_LB;
 /** Whole points only — RIR = 10 − RPE maps cleanly and half points on a
  *  subjective scale are mostly false precision. */
 export const RPE_SCALE = makeScale(1, 10, 1, 1, 1);

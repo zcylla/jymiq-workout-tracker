@@ -10,6 +10,10 @@ export const toDisplay = (kg: Kg, unit: Unit): number => (unit === 'kg' ? kg : k
 export const fromDisplay = (value: number, unit: Unit): Kg =>
   unit === 'kg' ? value : value / LB_PER_KG;
 
+/** A typed load to the kilograms stored, without the float tail a pound conversion leaves. */
+export const toKg = (value: number, unit: Unit): Kg =>
+  Math.round(fromDisplay(value, unit) * 1000) / 1000;
+
 export const roundToStep = (value: number, step: number): number => Math.round(value / step) * step;
 
 export const floorToStep = (value: number, step: number): number =>
