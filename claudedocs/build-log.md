@@ -3,6 +3,36 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
+**START HERE (2026-09-30, end of session).** `main` is clean and green (`pnpm check` exit 0, 323 tests, 3 old
+lint warnings), nothing is pushed, no worktrees are left. The dev client on the phone includes `expo-blur`;
+Metro is started with `pnpm expo start --dev-client` (it now ignores `.claude/worktrees`). Read this block, then
+"Pick this up here".
+- **Glass (owner's pick, awaiting a final look):** frost style, blur 20, today's dot background, scope `cards`
+  (every main card; rows, tiles and chrome stay solid). It is `DEFAULT_TRIAL` in `src/lib/glass-trial.ts`; the
+  recipes are in `src/theme/tokens.ts` (`glassRecipes.frost` was softened to a dark tint because the first version
+  read as a grey slab). The lab is `/dev/glass` (DEV list at the bottom of Today) and persists per phone, so
+  re-apply a preset there after changing a default. **Measured (dev client, scroll scenario, 2026-09-30):** opaque
+  1-2% janky, blur-less tint the same, frost 40 on one or two hero cards 3-4%, frost 20 on every main card 4% on
+  Today and 7-8% on History (two blurred plates). If that is too costly, scope `hero` only. **Chrome vs Off:** chrome
+  only gives the tab bar, sheets and action bar a translucent fill and they cannot blur (they sit beside the
+  screen, not over the backdrop), so on a near-black ground it looks identical to off; a real blurred tab bar
+  would mean blurring live scrolling content every frame (Lab 43 N2 chose opaque on Android).
+- **Design boards:** Labs 48 (corrected) and 49 were published to Claude Design on 2026-09-30 (project
+  85c2eefb-a239-4501-83a0-a24a4ccd7cae). `kit.py` is behind the app: the tab bar still says Strength, there is no
+  glass plate, line chart, segmented control or TYPE button, and boards print tonnes. Update `kit.py`, regenerate,
+  gate with `gate.py`, then the owner runs `/design-sync` (only the owner can) and I upload the boards with `DesignSync`.
+- **Open owner decisions:** glass scope/intensity final confirm; blur cost vs benefit; whether to also blur the tab
+  bar; which remaining Gym Day ideas to build (reminders, starter plan templates, body measurements beyond weight,
+  share a session).
+- **Still open from earlier:** performance (tab switching is one ~100 ms frame per switch and is real in release
+  builds; ideas in "Pick this up here"), cloud backup verification (incremental push, restore from cloud), 12 empty
+  mirror tables on the wrong Supabase project `hrmxlijtdldcmljkhwhf` to drop, the rest `DurationSheet` and haptics
+  and a 360dp screen not yet seen on the phone, `exerciseE1rmQuery` is unused, the progress chart's middle x label is
+  approximate, weight edits/deletes in History are not offered (only weigh-ins).
+- **Working agreements:** features before performance; build a release variant only when it matters; guard every
+  adb tap with a focus check; commits are atomic and single-line with a lowercase subject (`commitlint`); never
+  remove a worktree before `git log -1` shows its commit.
+
 Last updated 2026-09-30 (afternoon). **Feature pass, all merged and checked on the phone.** Built from
 the owner's reference app (Gym Day, `com.anthonyng.workoutapp` — see the memory note): routine target
 editing and lift reorder; weigh-in edit and delete; exercise detail's YOUR NUMBERS, REP MAXES, **PROGRESS**
