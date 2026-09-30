@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, like, max, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, isNull, like, max, ne, sql } from 'drizzle-orm';
 
 import { db } from '../db';
 import {
@@ -71,4 +71,29 @@ export function exerciseE1rmQuery(exerciseId: string) {
     .groupBy(sessions.id)
     .orderBy(desc(sessions.startedAt))
     .limit(10);
+}
+
+/** Every logged set of one lift, for the YOUR NUMBERS tiles and REP MAXES. `src/lib/exercise-stats.ts` decides which ones count. */
+export function exerciseSetsQuery(exerciseId: string) {
+  return db
+    .select({
+      sessionId: sessions.id,
+      at: sessions.startedAt,
+      weightKg: sets.weightKg,
+      reps: sets.reps,
+      kind: sets.kind,
+      completedAt: sets.completedAt,
+      e1rmKg: sets.e1rmKg,
+    })
+    .from(sessions)
+    .innerJoin(sessionExercises, eq(sessionExercises.sessionId, sessions.id))
+    .innerJoin(sets, eq(sets.sessionExerciseId, sessionExercises.id))
+    .where(
+      and(
+        ne(sessions.status, 'in_progress'),
+        eq(sessionExercises.exerciseId, exerciseId),
+        isNull(sessionExercises.removedAt),
+        isNotNull(sets.completedAt),
+      ),
+    );
 }
