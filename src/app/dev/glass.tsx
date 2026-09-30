@@ -47,7 +47,7 @@ export default function GlassLabScreen() {
           surface="raised"
           items={[
             { label: 'SESSIONS', value: '3' },
-            { label: 'VOLUME', value: '12.4 T' },
+            { label: 'VOLUME', value: '12,400 KG' },
             { label: 'TOP SET', value: '140 KG', tone: 'accent' },
             { label: 'STREAK', value: '6' },
           ]}
