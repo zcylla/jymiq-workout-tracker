@@ -247,6 +247,10 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         setSheet(null);
         return true;
       }
+      if (editing !== null) {
+        setEditing(null);
+        return true;
+      }
       if (!session) return false;
       // Back never leaves a live session silently — the confirm is the whole
       // reason the handler exists, and it must claim the event to show one.
