@@ -179,6 +179,7 @@ function SortRow({
     <GestureDetector gesture={pan}>
       <View
         accessibilityLabel="Reorder"
+        onStartShouldSetResponder={() => true}
         style={{
           width: HANDLE_WIDTH,
           height: rowHeight,
