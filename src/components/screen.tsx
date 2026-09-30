@@ -1,12 +1,16 @@
-import type { ReactNode, Ref } from 'react';
+import { BlurTargetView } from 'expo-blur';
+import { type ReactNode, type Ref, useRef } from 'react';
 import type { ScrollView } from 'react-native';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useGlassTrial } from '@/data/glass-trial';
+import { screenBlurs } from '@/lib/glass-trial';
 import { color, space } from '@/theme';
 
 import { Backdrop } from './backdrop';
+import { BlurTargetContext } from './glass';
 import { useTabBarScroll } from './tab-bar';
 
 /**
@@ -35,6 +39,8 @@ export function Screen({
 }) {
   const insets = useSafeAreaInsets();
   const onScroll = useTabBarScroll();
+  const targetRef = useRef<View>(null);
+  const blurs = screenBlurs(useGlassTrial());
   const padding = {
     paddingHorizontal: space.pad,
     paddingTop: insets.top,
@@ -42,21 +48,31 @@ export function Screen({
   };
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
-      <Backdrop />
-      {scroll ? (
-        <Animated.ScrollView
-          ref={scrollRef}
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          style={{ flex: 1 }}
-          contentContainerStyle={padding}
-          showsVerticalScrollIndicator={false}
-        >
-          {children}
-        </Animated.ScrollView>
+      {/* expo-blur on Android blurs only what sits inside a BlurTargetView, and a
+          BlurView must not be inside its own target — so the target is the backdrop alone. */}
+      {blurs ? (
+        <BlurTargetView ref={targetRef} style={StyleSheet.absoluteFill}>
+          <Backdrop />
+        </BlurTargetView>
       ) : (
-        <View style={[{ flex: 1 }, padding]}>{children}</View>
+        <Backdrop />
       )}
+      <BlurTargetContext.Provider value={blurs ? targetRef : null}>
+        {scroll ? (
+          <Animated.ScrollView
+            ref={scrollRef}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            style={{ flex: 1 }}
+            contentContainerStyle={padding}
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </Animated.ScrollView>
+        ) : (
+          <View style={[{ flex: 1 }, padding]}>{children}</View>
+        )}
+      </BlurTargetContext.Provider>
     </View>
   );
 }

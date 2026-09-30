@@ -21,6 +21,8 @@ type Props = {
    */
   plated?: boolean;
   tone?: 'raised' | 'panel' | 'glass';
+  /** A hero card the glass lab added — see `Plate`. */
+  hero?: boolean;
   pad?: number;
   /** The hairline running from the label to the right edge. */
   rule?: boolean;
@@ -41,6 +43,7 @@ export function Section({
   first = false,
   plated = true,
   tone,
+  hero,
   pad,
   rule = true,
   children,
@@ -67,7 +70,7 @@ export function Section({
         </View>
       ) : null}
       {plated ? (
-        <Plate tone={tone} pad={pad}>
+        <Plate tone={tone} hero={hero} pad={pad}>
           {children}
         </Plate>
       ) : (

@@ -16,6 +16,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { stepBar } from '@/lib/tab-bar';
 import { chromeShadow, color, fabShadow, hairline, type Ink, motion, radius, text } from '@/theme';
 
+import { glassStyle, useGlass } from './glass';
 import { tick } from './haptics';
 import { Icon, type IconName } from './icon';
 import { AnimatedPressable, usePressFeel } from './press';
@@ -84,6 +85,8 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
   const insets = useSafeAreaInsets();
   const minimisedSV = useContext(MinimisedContext);
   if (!minimisedSV) throw new Error('TabBar must be inside <TabBarProvider>');
+  const { recipe } = useGlass('chrome');
+  const glass = recipe && glassStyle(recipe, 0);
 
   const progressSV = useDerivedValue(() =>
     withTiming(minimisedSV.get(), { duration: motion.base }),
@@ -112,16 +115,19 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
         style={[StyleSheet.absoluteFill, { flexDirection: 'row', alignItems: 'center' }, full]}
       >
         <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: 4,
-            borderRadius: radius.sheet,
-            borderCurve: 'continuous',
-            backgroundColor: color.raised,
-            boxShadow: chromeShadow,
-          }}
+          style={[
+            {
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: 4,
+              borderRadius: radius.sheet,
+              borderCurve: 'continuous',
+              backgroundColor: color.raised,
+              boxShadow: chromeShadow,
+            },
+            glass,
+          ]}
         >
           {children}
         </View>
@@ -141,16 +147,19 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
           hitSlop={{ top: 4, bottom: 4 }}
           accessibilityRole="button"
           accessibilityLabel="Show tabs"
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 9,
-            paddingVertical: 9,
-            paddingHorizontal: 18,
-            borderRadius: radius.full,
-            backgroundColor: color.raised,
-            boxShadow: chromeShadow,
-          }}
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 9,
+              paddingVertical: 9,
+              paddingHorizontal: 18,
+              borderRadius: radius.full,
+              backgroundColor: color.raised,
+              boxShadow: chromeShadow,
+            },
+            glass,
+          ]}
         >
           {TAB_NAMES.map((name) => (
             <CurrentTab key={name} name={name} minimisedSV={minimisedSV} />

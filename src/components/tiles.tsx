@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useContext } from 'react';
 import { Text, View } from 'react-native';
 
 import { color, radius, space, text } from '@/theme';
 
+import { GlassHeroContext, useGlass } from './glass';
 import { RollingNumber } from './rolling-number';
 import { Waiting } from './waiting';
 
@@ -52,6 +53,9 @@ export function StatTiles({
   surface?: 'panel' | 'raised';
 }) {
   const fill = surface === 'raised' ? color.panel : color.raised;
+  const inHero = useContext(GlassHeroContext);
+  const { recipe } = useGlass('inner');
+  const glass = inHero && recipe ? recipe.tile : null;
 
   // Chunked rather than wrapped: flexWrap would stretch a short last row.
   const rows: Tile[][] = [];
@@ -64,15 +68,18 @@ export function StatTiles({
           {row.map((tile, c) => (
             <View
               key={c}
-              style={{
-                flex: 1,
-                gap: 5,
-                paddingVertical: 11,
-                paddingHorizontal: 12,
-                backgroundColor: fill,
-                borderRadius: radius.tile,
-                borderCurve: 'continuous',
-              }}
+              style={[
+                {
+                  flex: 1,
+                  gap: 5,
+                  paddingVertical: 11,
+                  paddingHorizontal: 12,
+                  backgroundColor: fill,
+                  borderRadius: radius.tile,
+                  borderCurve: 'continuous',
+                },
+                glass,
+              ]}
             >
               <Text style={text.label}>{tile.label}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

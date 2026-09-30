@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { color, containment, space } from '@/theme';
+import { color, containment, radius, space } from '@/theme';
 
+import { GlassUnder, glassStyle, useGlass } from './glass';
 import { AnimatedPressable, usePressFeel } from './press';
 
 /**
@@ -23,13 +24,24 @@ export function RowPlate({
   disabled?: boolean;
 }) {
   const press = usePressFeel();
+  const { recipe, blur, target } = useGlass('row');
   const style = [
     containment.rowPlate,
     { paddingHorizontal: 14 },
     tone === 'panel' && { backgroundColor: color.panel },
+    recipe && glassStyle(recipe, blur),
   ];
+  const under = recipe ? (
+    <GlassUnder recipe={recipe} blur={blur} target={target} radius={radius.row} />
+  ) : null;
 
-  if (!onPress) return <View style={style}>{children}</View>;
+  if (!onPress)
+    return (
+      <View style={style}>
+        {under}
+        {children}
+      </View>
+    );
 
   return (
     <AnimatedPressable
@@ -38,6 +50,7 @@ export function RowPlate({
       {...press.handlers}
       style={[style, disabled ? { opacity: 0.7 } : press.style]}
     >
+      {under}
       {children}
     </AnimatedPressable>
   );
