@@ -29,6 +29,8 @@ type Props = {
   onDetent: (value: number) => void;
   onSelect: (parameter: WorkoutParameter) => void;
   onLongPress: (parameter: WorkoutParameter) => void;
+  /** Bumped on every logged set. */
+  pulse: number;
 };
 
 export function LiveInstrument({
@@ -42,6 +44,7 @@ export function LiveInstrument({
   onDetent,
   onSelect,
   onLongPress,
+  pulse,
 }: Props) {
   const params: WorkoutParameter[] = showRpe ? ['load', 'reps', 'rpe'] : ['load', 'reps'];
   const rpeText = rpe == null ? '—' : String(rpe);
@@ -78,11 +81,13 @@ export function LiveInstrument({
             // The numerals mean the perimeter is live, which is only true of load.
             showNumerals={editing === 'load'}
             core={core}
+            pulse={pulse}
           />
         </Pressable>
         {editing ? (
           <View style={{ position: 'absolute', right: 0, top: -6 }}>
             <Tape
+              key={editing}
               scale={TAPES[editing].scale}
               value={editing === 'load' ? load : editing === 'reps' ? reps : (rpe ?? 5)}
               unit={TAPES[editing].unit}

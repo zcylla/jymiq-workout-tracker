@@ -1,6 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { color, text } from '@/theme';
+import { color, motion, text } from '@/theme';
 
 const LADDER_EDGE = 10;
 
@@ -16,7 +17,7 @@ type Props = {
  *  a horizontal drag never would be. */
 export function ExerciseLadder({ rungs, currentId, dimmed, onPress }: Props) {
   return (
-    <View
+    <Animated.View
       pointerEvents="box-none"
       style={{
         position: 'absolute',
@@ -26,6 +27,8 @@ export function ExerciseLadder({ rungs, currentId, dimmed, onPress }: Props) {
         justifyContent: 'center',
         gap: 11,
         opacity: dimmed ? 0.28 : 1,
+        transitionProperty: 'opacity',
+        transitionDuration: motion.base,
       }}
     >
       {rungs.map((r, i) => (
@@ -34,16 +37,20 @@ export function ExerciseLadder({ rungs, currentId, dimmed, onPress }: Props) {
           hitSlop={{ left: 10, right: 14, top: 4, bottom: 4 }}
           onPress={onPress}
         >
-          <Text
+          <Animated.Text
             style={[
               text.meta,
-              { color: r.id === currentId ? color.accent : r.done ? color.done : color.dim },
+              {
+                color: r.id === currentId ? color.accent : r.done ? color.done : color.dim,
+                transitionProperty: 'color',
+                transitionDuration: motion.base,
+              },
             ]}
           >
             {i + 1}
-          </Text>
+          </Animated.Text>
         </Pressable>
       ))}
-    </View>
+    </Animated.View>
   );
 }

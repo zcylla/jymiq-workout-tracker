@@ -6,6 +6,7 @@ import { BackHandler, Pressable, Text, View } from 'react-native';
 import {
   ActionBar,
   ExercisesSheet,
+  Icon,
   KeypadSheet,
   Screen,
   ScreenHeader,
@@ -19,7 +20,9 @@ import {
   discardSession,
   clearRest,
   completeSet,
+  extendRest,
   finishSession,
+  setSessionCursor,
   updateSet,
 } from '@/data/mutations/sessions';
 import { useRows } from '@/data/live';
@@ -31,6 +34,8 @@ import {
   sessionSetsQuery,
 } from '@/data/queries/sessions';
 import { estimate1RM } from '@/lib/e1rm';
+import { nextExercise, nextSet, prevExercise, prevSet } from '@/lib/live-nav';
+import type { Swipe } from '@/lib/pager';
 import { formatPrValue, type PrHit, PR_LABELS } from '@/lib/pr';
 import { elapsedSec, restRemainingSec } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
@@ -38,7 +43,9 @@ import { countLoggedSets } from '@/lib/volume';
 import { ExerciseLadder } from '@/components/exercise-ladder';
 import { LiveFooter } from '@/components/live-footer';
 import { LiveInstrument } from '@/components/live-instrument';
-import { color, hairline, space, text } from '@/theme';
+import { LivePager } from '@/components/live-pager';
+import { pop } from '@/components/haptics';
+import { color, hairline, size, space, text } from '@/theme';
 
 /** A record is named, never counted — "2 PRs" tells you nothing. */
 function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: string) {
@@ -71,6 +78,7 @@ export default function LiveScreen() {
   const [sheet, setSheet] = useState<'sets' | 'exercises' | null>(null);
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [pulse, setPulse] = useState(0);
   const barHeight = useActionBarHeight();
   const show = useDialog();
   const settings = useSettings();
@@ -219,15 +227,43 @@ export default function LiveScreen() {
   const exerciseIndex = exercises.findIndex((e) => e.id === exercise.id);
   const setIndex = sets.findIndex((s) => s.id === set.id);
   const showRpe = exercise.trackRpe || settings.trackRpe;
-  const exerciseRows = exercises.map((e) => {
-    const exSets = allSets.filter((s) => s.sessionExerciseId === e.id);
-    return {
-      id: e.id,
-      name: e.name,
-      setsTotal: exSets.length,
-      setsDone: exSets.filter((s) => s.completedAt != null).length,
-    };
-  });
+  const setsOf = exercises.map((e) => allSets.filter((s) => s.sessionExerciseId === e.id));
+  const exerciseRows = exercises.map((e, i) => ({
+    id: e.id,
+    name: e.name,
+    setsTotal: setsOf[i].length,
+    setsDone: setsOf[i].filter((s) => s.completedAt != null).length,
+  }));
+
+  // The query already drops skipped exercises, so nothing here is `removed`.
+  const nav = setsOf.map((exSets) => ({
+    removed: false,
+    sets: exSets.map((s) => ({ logged: s.completedAt != null })),
+  }));
+  const cursor = { exerciseIndex, setIndex };
+  const pages: Record<Swipe, typeof cursor> = {
+    nextSet: nextSet(nav, cursor),
+    prevSet: prevSet(nav, cursor),
+    nextExercise: nextExercise(nav, cursor),
+    prevExercise: prevExercise(nav, cursor),
+  };
+  const can: Record<Swipe, boolean> = {
+    nextSet: pages.nextSet !== cursor,
+    prevSet: pages.prevSet !== cursor,
+    nextExercise: pages.nextExercise !== cursor,
+    prevExercise: pages.prevExercise !== cursor,
+  };
+
+  // Persisted, so the ring, ladder, sheets and Resume all read the same cursor.
+  const turn = (swipe: Swipe) => {
+    const to = pages[swipe];
+    if (to === cursor) return;
+    const target = exercises[to.exerciseIndex];
+    setSessionCursor(session.id, {
+      sessionExerciseId: target.id,
+      setId: setsOf[to.exerciseIndex][to.setIndex]?.id ?? null,
+    });
+  };
 
   const onDetent = (value: number) => {
     if (editing === 'load') updateSet(set.id, { weightKg: value });
@@ -240,6 +276,8 @@ export default function LiveScreen() {
   const log = () => {
     if (!ready) return;
     const hits = completeSet(set.id);
+    pop();
+    setPulse((n) => n + 1);
     setEditing(null);
     announce(show, hits, 'Record');
   };
@@ -249,69 +287,91 @@ export default function LiveScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
       <Screen bottomInset={barHeight} scroll={false}>
-        <Pressable
-          onPress={() => setSheet('exercises')}
-          accessibilityRole="button"
-          accessibilityLabel="Exercises"
+        {/* The back row stays put; everything under it is the page. */}
+        <View style={{ paddingTop: 6, minHeight: size.hit, justifyContent: 'center' }}>
+          <Pressable
+            onPress={discard}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            style={{ alignSelf: 'flex-start' }}
+          >
+            <Icon name="back" tone={color.mid} />
+          </Pressable>
+        </View>
+
+        <LivePager
+          pageKey={`${exercise.id}:${set.id}`}
+          can={can}
+          disabled={editing !== null || sheet !== null || keypadParam !== null}
+          onSwipe={turn}
         >
-          <ScreenHeader
-            title={exercise.name}
-            kicker={`EXERCISE ${exerciseIndex + 1} OF ${exercises.length}`}
-            onBack={discard}
+          <Pressable
+            onPress={() => setSheet('exercises')}
+            accessibilityRole="button"
+            accessibilityLabel="Exercises"
+          >
+            <ScreenHeader
+              title={exercise.name}
+              kicker={`EXERCISE ${exerciseIndex + 1} OF ${exercises.length}`}
+            />
+          </Pressable>
+
+          {/* Written, between two hairlines. A set strip was proposed and rejected. */}
+          <Pressable
+            onPress={() => setSheet('sets')}
+            accessibilityRole="button"
+            accessibilityLabel="Sets"
+          >
+            <View style={{ marginTop: space.within }}>
+              <View style={{ height: 1, backgroundColor: hairline.onGround }} />
+              <Text style={[text.label, { paddingVertical: 9, textAlign: 'center' }]}>
+                SET {setIndex + 1} OF {sets.length}
+              </Text>
+              <View style={{ height: 1, backgroundColor: hairline.onGround }} />
+            </View>
+          </Pressable>
+
+          <LiveInstrument
+            editing={editing}
+            load={load}
+            reps={reps}
+            rpe={set.rpe}
+            oneRm={oneRm}
+            showRpe={showRpe}
+            onEdit={setEditing}
+            pulse={pulse}
+            onDetent={onDetent}
+            // Lab 32's switch: one route or the other opens the keypad, and
+            // the tape is always reachable by the one it is not on.
+            onSelect={(p) =>
+              settings.tapOpensKeypad
+                ? setKeypadParam(p)
+                : setEditing((current) => (current === p ? null : p))
+            }
+            onLongPress={(p) =>
+              settings.tapOpensKeypad
+                ? setEditing((current) => (current === p ? null : p))
+                : setKeypadParam(p)
+            }
           />
-        </Pressable>
 
-        {/* Written, between two hairlines. A set strip was proposed and rejected. */}
-        <Pressable
-          onPress={() => setSheet('sets')}
-          accessibilityRole="button"
-          accessibilityLabel="Sets"
-        >
-          <View style={{ marginTop: space.within }}>
-            <View style={{ height: 1, backgroundColor: hairline.onGround }} />
-            <Text style={[text.label, { paddingVertical: 9, textAlign: 'center' }]}>
-              SET {setIndex + 1} OF {sets.length}
-            </Text>
-            <View style={{ height: 1, backgroundColor: hairline.onGround }} />
-          </View>
-        </Pressable>
-
-        <LiveInstrument
-          editing={editing}
-          load={load}
-          reps={reps}
-          rpe={set.rpe}
-          oneRm={oneRm}
-          showRpe={showRpe}
-          onEdit={setEditing}
-          onDetent={onDetent}
-          // Lab 32's switch: one route or the other opens the keypad, and
-          // the tape is always reachable by the one it is not on.
-          onSelect={(p) =>
-            settings.tapOpensKeypad
-              ? setKeypadParam(p)
-              : setEditing((current) => (current === p ? null : p))
-          }
-          onLongPress={(p) =>
-            settings.tapOpensKeypad
-              ? setEditing((current) => (current === p ? null : p))
-              : setKeypadParam(p)
-          }
-        />
-
-        {previous ? (
-          <Section label="LAST TIME" plated={false}>
-            <Text style={text.body}>
-              {formatWeight(previous.weightKg ?? 0)} KG × {previous.reps ?? 0}
-              {previous.rpe == null ? '' : ` @ RPE ${previous.rpe}`}
-            </Text>
-          </Section>
-        ) : null}
+          {previous ? (
+            <Section label="LAST TIME" plated={false}>
+              <Text style={text.body}>
+                {formatWeight(previous.weightKg ?? 0)} KG × {previous.reps ?? 0}
+                {previous.rpe == null ? '' : ` @ RPE ${previous.rpe}`}
+              </Text>
+            </Section>
+          ) : null}
+        </LivePager>
 
         <LiveFooter
           elapsedSec={elapsedSec(session.startedAt, session.pausedMs, now)}
+          restUntil={session.restUntil}
           restLeftSec={restLeft}
-          onClearRest={() => clearRest(session.id)}
+          onExtendRest={() => extendRest(session.id, 30)}
+          onSkipRest={() => clearRest(session.id)}
           onFinish={finish}
         />
       </Screen>

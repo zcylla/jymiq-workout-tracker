@@ -1,11 +1,29 @@
-import { Fragment } from 'react';
-import { Text, View } from 'react-native';
+import { Fragment, useEffect } from 'react';
+import { Text, View, type ViewStyle } from 'react-native';
+import Animated, {
+  type CSSTransitionProperties,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { indexOf, valueAt, type Scale } from '@/lib/scale';
 import { color, type Ink, lh, ls, mono, radius, text, wash } from '@/theme';
 
+import { RollingNumber } from './rolling-number';
+
 const A0 = -240;
 const A1 = 60;
+/** Every tick is drawn at this box and scaled to its length and weight, so a
+ *  change of value is a transform transition rather than a relayout. */
+const TICK_BOX = 40;
+const TICK_THICK = 3;
+const TICK_TRANSITION: CSSTransitionProperties<ViewStyle> = {
+  transitionProperty: ['transform', 'backgroundColor'],
+  transitionDuration: 200,
+};
 
 type RingChip = {
   value: string;
@@ -28,6 +46,8 @@ type Props = {
   mark: number | null;
   showNumerals: boolean;
   core: LoadRingCore;
+  /** Bumped when a set is logged: the core pops once. */
+  pulse?: number;
 };
 
 const polar = (center: number, radius: number, angle: number) => {
@@ -39,7 +59,17 @@ const polar = (center: number, radius: number, angle: number) => {
  * The live-session load dial. Its fill is conveyed by tick length, rather than
  * a colour gradient, so the cursor stays legible on the small edit dial.
  */
-export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props) {
+export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse = 0 }: Props) {
+  const popSV = useSharedValue(1);
+
+  // Lab 06 tile 05: under 250ms, one element, never in the way of the next input.
+  useEffect(() => {
+    if (pulse === 0) return;
+    popSV.set(withSequence(withTiming(1.08, { duration: 80 }), withSpring(1, { damping: 14 })));
+  }, [pulse, popSV]);
+
+  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: popSV.get() }] }));
+
   const center = size / 2;
   const ringRadius = size / 2 - (showNumerals ? 45 : 26);
   const cursor = indexOf(scale, value);
@@ -84,25 +114,25 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
           outRadius = Math.max(outRadius, 6);
         }
 
-        const [outerX, outerY] = polar(center, ringRadius + outRadius, angle);
-        const [innerX, innerY] = polar(center, ringRadius - length, angle);
-        const tickLength = length + outRadius;
-        const midX = (outerX + innerX) / 2;
-        const midY = (outerY + innerY) / 2;
-
         return (
           <Fragment key={i}>
-            <View
+            <Animated.View
               pointerEvents="none"
               style={{
                 position: 'absolute',
-                left: midX - tickLength / 2,
-                top: midY - width / 2,
-                width: tickLength,
-                height: width,
-                borderRadius: width / 2,
+                left: center - TICK_BOX / 2,
+                top: center - TICK_THICK / 2,
+                width: TICK_BOX,
+                height: TICK_THICK,
+                borderRadius: TICK_THICK / 2,
                 backgroundColor: tickColor,
-                transform: [{ rotate: `${angle}deg` }],
+                transform: [
+                  { rotate: `${angle}deg` },
+                  { translateX: ringRadius + (outRadius - length) / 2 },
+                  { scaleX: (length + outRadius) / TICK_BOX },
+                  { scaleY: width / TICK_THICK },
+                ],
+                ...TICK_TRANSITION,
               }}
             />
             {showNumerals && i % scale.label === 0 ? (
@@ -127,18 +157,21 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
         );
       })}
 
-      <View
+      <Animated.View
         pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 1,
-        }}
+        style={[
+          {
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+          },
+          popStyle,
+        ]}
       >
         <View
           style={{
@@ -153,7 +186,8 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
             {core.label}
           </Text>
         </View>
-        <Text
+        <RollingNumber
+          value={core.value}
           style={{
             ...mono(600),
             fontSize: big,
@@ -161,9 +195,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
             letterSpacing: ls(-0.05, big),
             color: color.hi,
           }}
-        >
-          {core.value}
-        </Text>
+        />
         <Text
           style={{
             ...mono(400),
@@ -178,7 +210,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
           <View style={{ flexDirection: 'row', gap: 4, marginTop: gap }}>
             {core.chips.map((chip) => (
               <View
-                key={`${chip.value}-${chip.unit}`}
+                key={chip.unit}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'baseline',
@@ -189,7 +221,8 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
                   borderCurve: 'continuous',
                 }}
               >
-                <Text
+                <RollingNumber
+                  value={chip.value}
                   style={{
                     ...mono(600),
                     fontSize: small,
@@ -197,9 +230,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
                     letterSpacing: ls(-0.03, small),
                     color: color.mid,
                   }}
-                >
-                  {chip.value}
-                </Text>
+                />
                 <Text
                   style={{
                     ...mono(400),
@@ -215,7 +246,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
             ))}
           </View>
         ) : null}
-      </View>
+      </Animated.View>
     </View>
   );
 }
