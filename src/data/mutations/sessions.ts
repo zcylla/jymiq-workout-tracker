@@ -2,6 +2,7 @@ import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 
 import { estimate1RM } from '@/lib/e1rm';
 import { newId } from '@/lib/id';
+import { performAgainPlan } from '@/lib/perform-again';
 import { type PrHit, detectSessionVolumePr, detectSetPrs } from '@/lib/pr';
 import { resolveRestSec } from '@/lib/rest';
 
@@ -51,20 +52,26 @@ const restDefaults = () => {
   return { compound: s.restCompoundSec, isolation: s.restIsolationSec };
 };
 
+/**
+ * The partial unique index would refuse a second live session anyway; saying so
+ * beats a constraint error surfacing from four frames down.
+ */
+function assertNoLiveSession(tx: Tx): void {
+  const [live] = tx
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(eq(sessions.status, 'in_progress'))
+    .limit(1)
+    .all();
+  if (live) throw new Error(`A session is already in progress (${live.id}).`);
+}
+
 export function startSession(input: { routineId?: string | null; name?: string } = {}): string {
   const id = newId();
   const now = Date.now();
 
   db.transaction((tx) => {
-    const [live] = tx
-      .select({ id: sessions.id })
-      .from(sessions)
-      .where(eq(sessions.status, 'in_progress'))
-      .limit(1)
-      .all();
-    // The partial unique index would refuse this anyway; saying so beats a
-    // constraint error surfacing from four frames down.
-    if (live) throw new Error(`A session is already in progress (${live.id}).`);
+    assertNoLiveSession(tx);
 
     const routine = input.routineId
       ? tx.select().from(routines).where(eq(routines.id, input.routineId)).limit(1).all()[0]
@@ -139,6 +146,107 @@ export function startSession(input: { routineId?: string | null; name?: string }
           firstExerciseId = sxId;
         }
       }
+    });
+
+    if (firstSetId) {
+      tx.update(sessions)
+        .set({ currentSessionExerciseId: firstExerciseId, currentSetId: firstSetId })
+        .where(eq(sessions.id, id))
+        .run();
+    }
+  });
+
+  return id;
+}
+
+/**
+ * Opens a session from a finished one: the lifts and sets that were logged there,
+ * in order, dialled in as the targets. The copied sets are drafts like a routine's —
+ * `completedAt` stays null, so none of them counts until it is logged.
+ */
+export function startSessionFrom(sourceId: string): string {
+  const id = newId();
+  const now = Date.now();
+
+  db.transaction((tx) => {
+    assertNoLiveSession(tx);
+
+    const [source] = tx.select().from(sessions).where(eq(sessions.id, sourceId)).limit(1).all();
+    if (!source) throw new Error(`No such session: ${sourceId}`);
+
+    const kept = and(eq(sessionExercises.sessionId, sourceId), isNull(sessionExercises.removedAt));
+    const sourceExercises = tx
+      .select({
+        id: sessionExercises.id,
+        exerciseId: sessionExercises.exerciseId,
+        position: sessionExercises.position,
+        restSec: sessionExercises.restSec,
+      })
+      .from(sessionExercises)
+      .where(kept)
+      .all();
+    const sourceSets = tx
+      .select({
+        sessionExerciseId: sets.sessionExerciseId,
+        position: sets.position,
+        kind: sets.kind,
+        weightKg: sets.weightKg,
+        reps: sets.reps,
+        completedAt: sets.completedAt,
+      })
+      .from(sets)
+      .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+      .where(kept)
+      .all();
+    const restByExercise = new Map(sourceExercises.map((ex) => [ex.exerciseId, ex.restSec]));
+
+    tx.insert(sessions)
+      .values({
+        id,
+        routineId: source.routineId,
+        name: source.name,
+        status: 'in_progress',
+        startedAt: now,
+      })
+      .run();
+
+    let firstExerciseId: string | null = null;
+    let firstSetId: string | null = null;
+
+    performAgainPlan(sourceExercises, sourceSets).forEach((line, position) => {
+      const sxId = newId();
+      tx.insert(sessionExercises)
+        .values({
+          id: sxId,
+          sessionId: id,
+          exerciseId: line.exerciseId,
+          position,
+          plannedSets: line.sets.length,
+          restSec: restByExercise.get(line.exerciseId) ?? 0,
+        })
+        .run();
+
+      line.sets.forEach((s, i) => {
+        const setId = newId();
+        tx.insert(sets)
+          .values({
+            id: setId,
+            sessionExerciseId: sxId,
+            position: i + 1,
+            kind: s.kind,
+            plannedWeightKg: s.weightKg,
+            plannedReps: s.reps,
+            weightKg: s.weightKg,
+            reps: s.reps,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .run();
+        if (!firstSetId) {
+          firstSetId = setId;
+          firstExerciseId = sxId;
+        }
+      });
     });
 
     if (firstSetId) {
