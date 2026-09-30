@@ -1504,8 +1504,8 @@ Two things the conversion turned up:
 - **Pounds now print to one decimal, kilograms to two.** 102.5 and 1.25 are real plates; 231.485… is
   a conversion artefact, and 231.49 claims a precision the number never had.
 
-**Open: tonnage stays metric.** Session and week volume still read `22.6 T` in either unit. A tonne
-is a metric unit and the boards print T; the honest alternative has not been drawn.
+**Resolved 2026-09-30 (owner): volume is always kg or lb, never tonnes.** `formatTonnage` prints whole
+units with a thousands separator (`10,500 KG`, `23,149 LB`); the History chart caption is `KG / WEEK`.
 
 ### Verified by tapping
 
