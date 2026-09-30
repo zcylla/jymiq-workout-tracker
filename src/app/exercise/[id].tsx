@@ -4,22 +4,31 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { type ScrollView, Text, View } from 'react-native';
 
-import { ColumnChart, Screen, ScreenHeader, Section } from '@/components';
+import { ColumnChart, Delta, Screen, ScreenHeader, Section, StatTiles } from '@/components';
 import { exerciseArt } from '@/data/exercise-art';
 import { useRows } from '@/data/live';
-import { exerciseE1rmQuery, exerciseMusclesQuery, exerciseQuery } from '@/data/queries/exercises';
+import {
+  exerciseE1rmQuery,
+  exerciseMusclesQuery,
+  exerciseQuery,
+  exerciseSetsQuery,
+} from '@/data/queries/exercises';
 import { useSettings } from '@/data/settings';
 import { e1rmTakeaway } from '@/lib/e1rm';
+import { exerciseNumbers, repMaxes, WINDOW_WEEKS } from '@/lib/exercise-stats';
+import { formatPrValue } from '@/lib/pr';
 import { sessionDateLabel } from '@/lib/time';
-import { toDisplay } from '@/lib/units';
-import { color, motion, space, text } from '@/theme';
+import { formatWeight, toDisplay } from '@/lib/units';
+import { color, motion, size, space, text } from '@/theme';
+
+const DASH = '—';
 
 /**
  * Lab 35 B2 (= Lab 39 Q1). A pushed detail screen: sibling of `(tabs)`, so it
  * loses the tab bar and the primary action takes that plane.
  *
- * The estimated-1RM chart is here; the board's number tiles and rep maxes are
- * not built yet.
+ * WHAT TO DO NEXT, the board's last section, is not built: it is a model's
+ * advice, which needs the owner's call on what it may say.
  */
 export default function ExerciseScreen() {
   // `focus=stats` is the live screen's STATS: the same page, opened on the 1RM chart.
@@ -37,7 +46,15 @@ export default function ExerciseScreen() {
     useMemo(() => exerciseE1rmQuery(id), [id]),
     [id],
   );
+  const logged = useRows(
+    useMemo(() => exerciseSetsQuery(id), [id]),
+    [id],
+  );
+  const now = useMemo(() => (logged ? nowMs() : 0), [logged]);
   const unit = useSettings().weightUnit;
+  const unitLabel = unit.toUpperCase();
+  const numbers = exerciseNumbers(logged ?? [], now, unit);
+  const maxes = repMaxes(logged ?? []);
   const exercise = found?.[0];
   const sessionsNewestFirst = rows ?? [];
   const bests = sessionsNewestFirst
@@ -95,6 +112,45 @@ export default function ExerciseScreen() {
         </Section>
       ) : null}
 
+      <Section label="YOUR NUMBERS" tone="raised" pad={13}>
+        <StatTiles
+          surface="raised"
+          items={[
+            {
+              label: 'BEST e1RM',
+              value:
+                numbers.bestE1rmKg === null
+                  ? DASH
+                  : formatPrValue('best_e1rm', numbers.bestE1rmKg, unit),
+              tone: numbers.bestE1rmKg === null ? undefined : 'accent',
+              visual: <Text style={text.label}>{unitLabel}</Text>,
+              below:
+                numbers.e1rmGain === null ? undefined : <Delta value={`+${numbers.e1rmGain}`} />,
+              pending: logged === null,
+            },
+            {
+              label: 'TOP SET',
+              value: numbers.topSetKg === null ? DASH : formatWeight(numbers.topSetKg, unit),
+              visual: <Text style={text.label}>{unitLabel}</Text>,
+              pending: logged === null,
+            },
+            {
+              label: 'SESSIONS',
+              value: String(numbers.sessions),
+              tone: numbers.sessions === 0 ? 'lo' : undefined,
+              visual: <Text style={text.label}>{`/ ${WINDOW_WEEKS} WK`}</Text>,
+              pending: logged === null,
+            },
+            {
+              label: 'FREQUENCY',
+              value: numbers.perWeek === null ? DASH : numbers.perWeek.toFixed(1),
+              visual: <Text style={text.label}>/ WK</Text>,
+              pending: logged === null,
+            },
+          ]}
+        />
+      </Section>
+
       {bests.length >= 1 ? (
         <View
           onLayout={(e) => {
@@ -122,6 +178,34 @@ export default function ExerciseScreen() {
           </Section>
         </View>
       ) : null}
+
+      <Section label={`REP MAXES · ${unitLabel}`} plated={false}>
+        <View>
+          {maxes.map((m) => (
+            <View
+              key={m.reps}
+              style={{ flexDirection: 'row', alignItems: 'center', height: size.readRow, gap: 10 }}
+            >
+              <Text style={text.body}>{`${m.reps}RM`}</Text>
+              <View style={{ flex: 1 }} />
+              <Text style={[text.num, m.source === null && { color: color.lo }]}>
+                {m.weightKg === null
+                  ? DASH
+                  : m.source === 'est'
+                    ? formatPrValue('best_e1rm', m.weightKg, unit)
+                    : formatWeight(m.weightKg, unit)}
+              </Text>
+              <Text style={[text.label, { width: 92, textAlign: 'right' }]}>
+                {m.source === 'est'
+                  ? 'EST'
+                  : m.at === null
+                    ? ''
+                    : sessionDateLabel(m.at, { upper: true, now })}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </Section>
 
       {/* CC BY-SA asks for credit wherever the work is distributed, and the
             app is where this app distributes it. */}
@@ -161,3 +245,7 @@ function Demo({ frames }: { frames: readonly [number, number, number] }) {
 }
 
 const DEMO = 190;
+
+function nowMs(): number {
+  return Date.now();
+}
