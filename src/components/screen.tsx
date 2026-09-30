@@ -16,26 +16,34 @@ import { Backdrop } from './backdrop';
 export function Screen({
   children,
   bottomInset = 0,
+  scroll = true,
 }: {
   children: ReactNode;
   /** Height of any chrome the content scrolls under — the tab bar, or an action bar. */
   bottomInset?: number;
+  /** False renders a fixed, non-scrolling body — the live screen keeps vertical drags for gestures. */
+  scroll?: boolean;
 }) {
   const insets = useSafeAreaInsets();
+  const padding = {
+    paddingHorizontal: space.pad,
+    paddingTop: insets.top,
+    paddingBottom: insets.bottom + space.between + bottomInset,
+  };
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
       <Backdrop />
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingHorizontal: space.pad,
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom + space.between + bottomInset,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
+      {scroll ? (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={padding}
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={[{ flex: 1 }, padding]}>{children}</View>
+      )}
     </View>
   );
 }

@@ -7,13 +7,10 @@ import {
   ActionBar,
   ExercisesSheet,
   KeypadSheet,
-  LoadRing,
-  ParamSelector,
   Screen,
   ScreenHeader,
   Section,
   SetsSheet,
-  Tape,
   useActionBarHeight,
   useDialog,
 } from '@/components';
@@ -33,23 +30,15 @@ import {
   sessionExercisesQuery,
   sessionSetsQuery,
 } from '@/data/queries/sessions';
-import { estimate1RM, percentOf1RM } from '@/lib/e1rm';
+import { estimate1RM } from '@/lib/e1rm';
 import { formatPrValue, type PrHit, PR_LABELS } from '@/lib/pr';
-import { LOAD_SCALE, REPS_SCALE, RPE_SCALE } from '@/lib/scale';
-import { elapsedSec, formatClock, formatRest, restRemainingSec } from '@/lib/time';
+import { elapsedSec, restRemainingSec } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
 import { countLoggedSets } from '@/lib/volume';
-import { color, hairline, size, space, text } from '@/theme';
-
-const TAPE_GUTTER = 62;
-const LADDER_EDGE = 10;
-
-/** The scale, unit and column each parameter drives. Load never leaves the ring. */
-const TAPES = {
-  load: { scale: LOAD_SCALE, unit: 'KG' },
-  reps: { scale: REPS_SCALE, unit: 'REPS' },
-  rpe: { scale: RPE_SCALE, unit: 'RPE' },
-} as const;
+import { ExerciseLadder } from '@/components/exercise-ladder';
+import { LiveFooter } from '@/components/live-footer';
+import { LiveInstrument } from '@/components/live-instrument';
+import { color, hairline, space, text } from '@/theme';
 
 /** A record is named, never counted — "2 PRs" tells you nothing. */
 function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: string) {
@@ -230,7 +219,6 @@ export default function LiveScreen() {
   const exerciseIndex = exercises.findIndex((e) => e.id === exercise.id);
   const setIndex = sets.findIndex((s) => s.id === set.id);
   const showRpe = exercise.trackRpe || settings.trackRpe;
-  const params: WorkoutParameter[] = showRpe ? ['load', 'reps', 'rpe'] : ['load', 'reps'];
   const exerciseRows = exercises.map((e) => {
     const exSets = allSets.filter((s) => s.sessionExerciseId === e.id);
     return {
@@ -241,28 +229,16 @@ export default function LiveScreen() {
     };
   });
 
-  // The ring is the load gauge in every state and never re-scales — what you
-  // are editing is said by the selector, not by the middle of the dial.
-  const core = {
-    label: 'LOAD',
-    value: formatWeight(load),
-    subline: oneRm ? `KG · ${percentOf1RM(load, oneRm)}%` : 'KG',
-    editing: editing !== null,
-    chips: editing
-      ? undefined
-      : [
-          { value: String(reps), unit: 'REPS' },
-          ...(showRpe ? [{ value: set.rpe == null ? '—' : String(set.rpe), unit: 'RPE' }] : []),
-        ],
-  };
-
   const onDetent = (value: number) => {
     if (editing === 'load') updateSet(set.id, { weightKg: value });
     else if (editing === 'reps') updateSet(set.id, { reps: value });
     else if (editing === 'rpe') updateSet(set.id, { rpe: value });
   };
 
+  const ready = set.weightKg != null && set.reps != null;
+
   const log = () => {
+    if (!ready) return;
     const hits = completeSet(set.id);
     setEditing(null);
     announce(show, hits, 'Record');
@@ -272,7 +248,7 @@ export default function LiveScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
-      <Screen bottomInset={barHeight}>
+      <Screen bottomInset={barHeight} scroll={false}>
         <Pressable
           onPress={() => setSheet('exercises')}
           accessibilityRole="button"
@@ -300,60 +276,28 @@ export default function LiveScreen() {
           </View>
         </Pressable>
 
-        <View style={{ paddingTop: space.between, gap: 8 }}>
-          <View style={{ paddingRight: editing ? TAPE_GUTTER : 0, alignItems: 'center' }}>
-            <Pressable
-              onPress={() => setEditing('load')}
-              disabled={editing !== null}
-              accessibilityRole="button"
-              accessibilityLabel="Edit load"
-            >
-              <LoadRing
-                size={editing ? size.ringEdit : size.ringRest}
-                scale={LOAD_SCALE}
-                value={load}
-                mark={oneRm}
-                // The numerals mean the perimeter is live, which is only true of load.
-                showNumerals={editing === 'load'}
-                core={core}
-              />
-            </Pressable>
-            {editing ? (
-              <View style={{ position: 'absolute', right: 0, top: -6 }}>
-                <Tape
-                  scale={TAPES[editing].scale}
-                  value={editing === 'load' ? load : editing === 'reps' ? reps : (set.rpe ?? 5)}
-                  unit={TAPES[editing].unit}
-                  onDetent={onDetent}
-                />
-              </View>
-            ) : null}
-          </View>
-
-          {editing ? (
-            <ParamSelector
-              active={editing}
-              parameters={params}
-              values={{
-                load: formatWeight(load),
-                reps: String(reps),
-                rpe: set.rpe == null ? '—' : String(set.rpe),
-              }}
-              // Lab 32's switch: one route or the other opens the keypad, and
-              // the tape is always reachable by the one it is not on.
-              onSelect={(p) =>
-                settings.tapOpensKeypad
-                  ? setKeypadParam(p)
-                  : setEditing((current) => (current === p ? null : p))
-              }
-              onLongPress={(p) =>
-                settings.tapOpensKeypad
-                  ? setEditing((current) => (current === p ? null : p))
-                  : setKeypadParam(p)
-              }
-            />
-          ) : null}
-        </View>
+        <LiveInstrument
+          editing={editing}
+          load={load}
+          reps={reps}
+          rpe={set.rpe}
+          oneRm={oneRm}
+          showRpe={showRpe}
+          onEdit={setEditing}
+          onDetent={onDetent}
+          // Lab 32's switch: one route or the other opens the keypad, and
+          // the tape is always reachable by the one it is not on.
+          onSelect={(p) =>
+            settings.tapOpensKeypad
+              ? setKeypadParam(p)
+              : setEditing((current) => (current === p ? null : p))
+          }
+          onLongPress={(p) =>
+            settings.tapOpensKeypad
+              ? setEditing((current) => (current === p ? null : p))
+              : setKeypadParam(p)
+          }
+        />
 
         {previous ? (
           <Section label="LAST TIME" plated={false}>
@@ -364,68 +308,22 @@ export default function LiveScreen() {
           </Section>
         ) : null}
 
-        <Section plated={false}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.within }}>
-            <Text style={text.num}>
-              {formatClock(elapsedSec(session.startedAt, session.pausedMs, now))}
-            </Text>
-            <View style={{ flex: 1 }} />
-            {restLeft > 0 ? (
-              <Pressable onPress={() => clearRest(session.id)} hitSlop={12}>
-                <Text style={[text.num, { color: color.accent }]}>REST {formatRest(restLeft)}</Text>
-              </Pressable>
-            ) : null}
-          </View>
-          <Pressable
-            onPress={finish}
-            hitSlop={8}
-            style={{ minHeight: size.hit, justifyContent: 'center' }}
-          >
-            <Text style={text.body}>Finish</Text>
-          </Pressable>
-        </Section>
+        <LiveFooter
+          elapsedSec={elapsedSec(session.startedAt, session.pausedMs, now)}
+          restLeftSec={restLeft}
+          onClearRest={() => clearRest(session.id)}
+          onFinish={finish}
+        />
       </Screen>
 
-      {/* K3: the ladder sits in the system's back-gesture dead band, which is
-          safe only because it is tap-only — a tap there is always delivered,
-          a horizontal drag never would be. */}
-      <View
-        pointerEvents="box-none"
-        style={{
-          position: 'absolute',
-          left: LADDER_EDGE,
-          top: 0,
-          bottom: 0,
-          justifyContent: 'center',
-          gap: 11,
-          opacity: editing ? 0.28 : 1,
-        }}
-      >
-        {exercises.map((e, i) => {
-          const done = allSets
-            .filter((s) => s.sessionExerciseId === e.id)
-            .every((s) => s.completedAt != null);
-          const current = e.id === exercise.id;
-          return (
-            <Pressable
-              key={e.id}
-              hitSlop={{ left: 10, right: 14, top: 4, bottom: 4 }}
-              onPress={() => setSheet('exercises')}
-            >
-              <Text
-                style={[
-                  text.meta,
-                  { color: current ? color.accent : done ? color.done : color.dim },
-                ]}
-              >
-                {i + 1}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <ExerciseLadder
+        rungs={exerciseRows.map((e) => ({ id: e.id, done: e.setsDone === e.setsTotal }))}
+        currentId={exercise.id}
+        dimmed={editing !== null}
+        onPress={() => setSheet('exercises')}
+      />
 
-      <ActionBar primary="Log set" onPrimary={log} />
+      <ActionBar primary="Log set" onPrimary={log} disabled={!ready} />
 
       <SetsSheet
         open={sheet === 'sets'}
