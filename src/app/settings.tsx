@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import {
   DurationSheet,
   ListRow,
+  NumberSheet,
   RowPlate,
   RowPlates,
   Screen,
@@ -15,7 +16,9 @@ import { ReadinessPill } from '@/components/pill';
 import { useRows } from '@/data/live';
 import { latestCheckInQuery } from '@/data/queries/readiness';
 import { setSettings, useSettings } from '@/data/settings';
+import { resolveKeypadValue } from '@/lib/keypad';
 import { dayStart, readinessStep } from '@/lib/readiness';
+import { WEEKLY_GOAL_SCALE } from '@/lib/scale';
 import { formatRest } from '@/lib/time';
 
 /**
@@ -38,6 +41,7 @@ import { formatRest } from '@/lib/time';
 export default function SettingsScreen() {
   const settings = useSettings();
   const [picking, setPicking] = useState<'compound' | 'isolation' | null>(null);
+  const [goal, setGoal] = useState({ open: false, n: 0 });
 
   const today = useMemo(() => dayStart(nowMs()), []);
   const checkIns = useRows(
@@ -78,6 +82,13 @@ export default function SettingsScreen() {
                 quiet
                 title="Check-in"
                 right={step ? <ReadinessPill step={step} /> : undefined}
+              />
+            </RowPlate>
+            <RowPlate onPress={() => setGoal((g) => ({ open: true, n: g.n + 1 }))}>
+              <ListRow
+                quiet
+                title="Weekly goal"
+                value={settings.weeklyGoal === null ? '\u2014' : `${settings.weeklyGoal} / WK`}
               />
             </RowPlate>
             <RowPlate>
@@ -124,6 +135,17 @@ export default function SettingsScreen() {
           setSettings(picking === 'compound' ? { restCompoundSec: sec } : { restIsolationSec: sec })
         }
         onClose={() => setPicking(null)}
+      />
+      <NumberSheet
+        key={goal.n}
+        open={goal.open}
+        onClose={() => setGoal((g) => ({ ...g, open: false }))}
+        label="WEEKLY GOAL"
+        unit="PER WEEK"
+        was={settings.weeklyGoal === null ? '\u2014' : String(settings.weeklyGoal)}
+        resolve={(entered) => resolveKeypadValue(entered, WEEKLY_GOAL_SCALE)}
+        onConfirm={(weeklyGoal) => setSettings({ weeklyGoal })}
+        onClear={() => setSettings({ weeklyGoal: null })}
       />
     </>
   );

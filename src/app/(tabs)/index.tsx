@@ -36,7 +36,7 @@ import { nextKicker } from '@/lib/next';
 import { type ScheduledDay, nextScheduled } from '@/lib/program';
 import { dateLabel, sessionDotTone } from '@/lib/time';
 import { formatTonnage } from '@/lib/volume';
-import { type StripDay, weekStrip } from '@/lib/week';
+import { type StripDay, sessionsMeter, weekStrip } from '@/lib/week';
 import { color, fabShadow, radius, size, text } from '@/theme';
 
 /**
@@ -259,13 +259,14 @@ function FirstSteps() {
 /**
  * A number gets a visual only when there is something real to draw (§0). The
  * volume has last week to compare against, so it takes a delta; the session
- * count takes a meter only when a running program plans a number of workout days
- * to be measured against, and is a plain number otherwise. Two tiles, as the
+ * count takes a meter only against a real denominator: the running program's
+ * planned days, else the weekly goal, and is a plain number otherwise. Two tiles, as the
  * board draws them — the volume can run past five characters.
  */
 function WeekTiles({ week }: { week: ReturnType<typeof weekStrip> }) {
-  const { weightUnit } = useSettings();
+  const { weightUnit, weeklyGoal } = useSettings();
   const { thisWeek, lastWeek, plannedPerWeek } = week;
+  const fill = sessionsMeter(thisWeek.sessions, plannedPerWeek, weeklyGoal);
   const change =
     lastWeek.volumeKg > 0
       ? Math.round(((thisWeek.volumeKg - lastWeek.volumeKg) / lastWeek.volumeKg) * 100)
@@ -276,10 +277,7 @@ function WeekTiles({ week }: { week: ReturnType<typeof weekStrip> }) {
       label: 'SESSIONS',
       value: String(thisWeek.sessions),
       tone: thisWeek.sessions ? 'hi' : 'lo',
-      visual:
-        plannedPerWeek > 0 ? (
-          <Meter value={thisWeek.sessions / plannedPerWeek} width={44} />
-        ) : undefined,
+      visual: fill === null ? undefined : <Meter value={fill} width={44} />,
     },
     {
       label: 'VOLUME',
