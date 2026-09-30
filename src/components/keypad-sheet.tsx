@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { updateSet } from '@/data/mutations/sessions';
+import { useSettings } from '@/data/settings';
 import { resolveKeypadValue } from '@/lib/keypad';
-import { LOAD_SCALE, REPS_SCALE, RPE_SCALE, type Scale } from '@/lib/scale';
+import { loadScale, REPS_SCALE, RPE_SCALE, type Scale } from '@/lib/scale';
 import { formatWeight } from '@/lib/units';
 import { color, hairline, lh, ls, mono, radius, sans, text, wash } from '@/theme';
 
@@ -15,11 +16,11 @@ type Patch = { weightKg: number } | { reps: number } | { rpe: number };
 
 const CONFIG: Record<
   WorkoutParameter,
-  { scale: Scale; unit: string; label: string; patch: (v: number) => Patch }
+  { unit: string; label: string; patch: (v: number) => Patch }
 > = {
-  load: { scale: LOAD_SCALE, unit: 'KG', label: 'LOAD', patch: (v) => ({ weightKg: v }) },
-  reps: { scale: REPS_SCALE, unit: 'REPS', label: 'REPS', patch: (v) => ({ reps: v }) },
-  rpe: { scale: RPE_SCALE, unit: 'RPE', label: 'RPE', patch: (v) => ({ rpe: v }) },
+  load: { unit: 'KG', label: 'LOAD', patch: (v) => ({ weightKg: v }) },
+  reps: { unit: 'REPS', label: 'REPS', patch: (v) => ({ reps: v }) },
+  rpe: { unit: 'RPE', label: 'RPE', patch: (v) => ({ rpe: v }) },
 };
 
 const ROWS = [
@@ -52,6 +53,13 @@ type Props = {
  */
 export function KeypadSheet({ open, onClose, parameter, setId, currentValue }: Props) {
   const config = CONFIG[parameter];
+  const { weightIncrementKg } = useSettings();
+  const scales: Record<WorkoutParameter, Scale> = {
+    load: loadScale(weightIncrementKg),
+    reps: REPS_SCALE,
+    rpe: RPE_SCALE,
+  };
+  const scale = scales[parameter];
   return (
     <NumberSheet
       open={open}
@@ -59,7 +67,7 @@ export function KeypadSheet({ open, onClose, parameter, setId, currentValue }: P
       label={config.label}
       unit={config.unit}
       was={wasText(parameter, currentValue)}
-      resolve={(entered) => resolveKeypadValue(entered, config.scale)}
+      resolve={(entered) => resolveKeypadValue(entered, scale)}
       onConfirm={(value) => updateSet(setId, config.patch(value))}
     />
   );

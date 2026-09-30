@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { LOAD_SCALE, REPS_SCALE, RPE_SCALE } from '@/lib/scale';
+import { useSettings } from '@/data/settings';
+import { loadScale, REPS_SCALE, RPE_SCALE } from '@/lib/scale';
 import { formatWeight } from '@/lib/units';
 import { percentOf1RM } from '@/lib/e1rm';
 import { size } from '@/theme';
@@ -22,12 +23,8 @@ function tapeRows(height: number) {
   return Math.max(3, Math.min(9, fit % 2 === 0 ? fit - 1 : fit));
 }
 
-/** The scale, unit and column each parameter drives. Load never leaves the ring. */
-const TAPES = {
-  load: { scale: LOAD_SCALE, unit: 'KG' },
-  reps: { scale: REPS_SCALE, unit: 'REPS' },
-  rpe: { scale: RPE_SCALE, unit: 'RPE' },
-} as const;
+/** The scale and unit each parameter drives. Load never leaves the ring. */
+const UNITS = { load: 'KG', reps: 'REPS', rpe: 'RPE' } as const;
 
 type Props = {
   editing: WorkoutParameter | null;
@@ -57,6 +54,12 @@ export function LiveInstrument({
   onLongPress,
   pulse,
 }: Props) {
+  const { weightIncrementKg } = useSettings();
+  const scales = {
+    load: loadScale(weightIncrementKg),
+    reps: REPS_SCALE,
+    rpe: RPE_SCALE,
+  };
   const params: WorkoutParameter[] = showRpe ? ['load', 'reps', 'rpe'] : ['load', 'reps'];
   const rpeText = rpe == null ? '—' : String(rpe);
 
@@ -101,7 +104,7 @@ export function LiveInstrument({
           >
             <LoadRing
               size={ring}
-              scale={LOAD_SCALE}
+              scale={scales.load}
               value={load}
               mark={oneRm}
               // The numerals mean the perimeter is live, which is only true of load.
@@ -114,9 +117,9 @@ export function LiveInstrument({
             <View style={{ position: 'absolute', right: 0, top: -6 }}>
               <Tape
                 key={editing}
-                scale={TAPES[editing].scale}
+                scale={scales[editing]}
                 value={editing === 'load' ? load : editing === 'reps' ? reps : (rpe ?? 5)}
-                unit={TAPES[editing].unit}
+                unit={UNITS[editing]}
                 onDetent={onDetent}
                 rows={tapeRows(ring + 6)}
               />

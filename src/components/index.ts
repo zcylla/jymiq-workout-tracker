@@ -37,6 +37,7 @@ export { SearchField } from './search-field';
 export { ScreenHeader } from './screen-header';
 export { Section } from './section';
 export { SessionRow } from './session-row';
+export { OptionSheet } from './option-sheet';
 export { Sheet } from './sheet';
 export { SetsSheet } from './sets-sheet';
 export { StatTiles, type Tile } from './tiles';
