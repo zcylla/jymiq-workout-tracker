@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { updateSet } from '@/data/mutations/sessions';
-import { useSettings } from '@/data/settings';
 import { resolveKeypadValue } from '@/lib/keypad';
-import { loadScale, REPS_SCALE, RPE_SCALE, type Scale } from '@/lib/scale';
+import { REPS_SCALE, RPE_SCALE, type Scale, TARGET_LOAD_SCALE } from '@/lib/scale';
 import { formatWeight } from '@/lib/units';
 import { color, hairline, lh, ls, mono, radius, sans, text, wash } from '@/theme';
 
@@ -53,9 +52,8 @@ type Props = {
  */
 export function KeypadSheet({ open, onClose, parameter, setId, currentValue }: Props) {
   const config = CONFIG[parameter];
-  const { weightIncrementKg } = useSettings();
   const scales: Record<WorkoutParameter, Scale> = {
-    load: loadScale(weightIncrementKg),
+    load: TARGET_LOAD_SCALE,
     reps: REPS_SCALE,
     rpe: RPE_SCALE,
   };

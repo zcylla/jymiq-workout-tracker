@@ -14,6 +14,8 @@ type Props = {
   onSelect: (parameter: WorkoutParameter) => void;
   /** Long press opens the numeric route for the same parameter. */
   onLongPress?: (parameter: WorkoutParameter) => void;
+  /** Opens the keypad for the active parameter, so a custom value never depends on the dial. */
+  onType?: (parameter: WorkoutParameter) => void;
   /** RPE is absent unless the exercise opts into tracking it. */
   parameters?: readonly WorkoutParameter[];
 };
@@ -31,6 +33,7 @@ export function ParamSelector({
   gloss,
   onSelect,
   onLongPress,
+  onType,
   parameters = PARAMETERS.map((parameter) => parameter.key),
 }: Props) {
   return (
@@ -88,6 +91,36 @@ export function ParamSelector({
           </Pressable>
         );
       })}
+      {onType ? (
+        <Pressable
+          onPress={() => onType(active)}
+          hitSlop={{ top: 4, bottom: 4 }}
+          accessibilityRole="button"
+          accessibilityLabel="Type a value"
+          style={({ pressed }) => ({
+            minWidth: 58,
+            minHeight: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: radius.row,
+            borderCurve: 'continuous',
+            backgroundColor: wash.field,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text
+            style={{
+              ...mono(400),
+              fontSize: 11,
+              lineHeight: lh(11),
+              letterSpacing: ls(0.12, 11),
+              color: color.mid,
+            }}
+          >
+            TYPE
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

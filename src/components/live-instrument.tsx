@@ -37,6 +37,7 @@ type Props = {
   onDetent: (value: number) => void;
   onSelect: (parameter: WorkoutParameter) => void;
   onLongPress: (parameter: WorkoutParameter) => void;
+  onType: (parameter: WorkoutParameter) => void;
   /** Bumped on every logged set. */
   pulse: number;
 };
@@ -52,6 +53,7 @@ export function LiveInstrument({
   onDetent,
   onSelect,
   onLongPress,
+  onType,
   pulse,
 }: Props) {
   const { weightIncrementKg } = useSettings();
@@ -135,6 +137,7 @@ export function LiveInstrument({
           values={{ load: formatWeight(load), reps: String(reps), rpe: rpeText }}
           onSelect={onSelect}
           onLongPress={onLongPress}
+          onType={onType}
         />
       ) : null}
     </View>

@@ -66,7 +66,7 @@ export function clampIndex(s: Scale, index: number): number {
  * The load steps Settings offers, in kilograms. The live screen is kilograms
  * whatever the display unit, so these are not converted.
  */
-export const LOAD_STEPS_KG = [1, 1.25, 2.5, 5] as const;
+export const LOAD_STEPS_KG = [1.25, 2.5, 5] as const;
 
 /**
  * Load 20–140 by `step`: every detent is a weight you can actually load. The

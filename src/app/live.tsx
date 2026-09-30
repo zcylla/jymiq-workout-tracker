@@ -99,7 +99,12 @@ function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: stri
  * training back in your own unit.
  */
 export default function LiveScreen() {
-  const id = useLiveQuery(activeSessionQuery()).data?.[0]?.id;
+  const { data, updatedAt } = useLiveQuery(activeSessionQuery());
+  const id = data?.[0]?.id;
+  const focused = useIsFocused();
+  useEffect(() => {
+    if (focused && !id && updatedAt) router.replace('/');
+  }, [focused, id, updatedAt]);
   if (!id) {
     return (
       <Screen>
@@ -488,6 +493,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
                 ? setKeypadParam(p)
                 : setEditing((current) => (current === p ? null : p))
             }
+            onType={setKeypadParam}
             onLongPress={(p) =>
               settings.tapOpensKeypad
                 ? setEditing((current) => (current === p ? null : p))
