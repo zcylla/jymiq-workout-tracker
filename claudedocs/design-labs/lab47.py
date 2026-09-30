@@ -623,9 +623,6 @@ INTERACTION = grid([
                        ('EDITORIAL / SPACING-ALONE', 'Validated on the live screen, which has '
                                                      'almost no stacked text, and failed on the '
                                                      'sixteen screens that do.'),
-                       ('A HISTORY LIST', 'The IA never had one. The calendar, the week strip, '
-                                          'LAST THREE and the PR timeline all answer it, and all '
-                                          'open the session detail.'),
                        ('DRAG-TO-REORDER GRIPS', 'The verbs are written and unused, so no grip is '
                                                  'drawn at all rather than drawn and inert.'),
                    ]) + '</div>', span=2),
