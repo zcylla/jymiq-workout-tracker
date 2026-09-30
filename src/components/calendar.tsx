@@ -1,13 +1,22 @@
+import { Canvas, DashPathEffect, Group, Path, rect, rrect, Skia } from '@shopify/react-native-skia';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { IntensityStep, MonthCell, TrainedDay } from '@/lib/calendar';
-import { NO_SCHEDULE, type Schedule, isMissed } from '@/lib/program';
-import { color, type Ink, radius, text, wash } from '@/theme';
+import { type IntensityStep, type MonthCell, type TrainedDay } from '@/lib/calendar';
+import { type DayMark, dayState } from '@/lib/day-state';
+import { NO_SCHEDULE, type Schedule } from '@/lib/program';
+import { color, dayMark, type Ink, radius, text } from '@/theme';
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 /** The board's grid gap. Half of it either side of a cell is also its hit slop. */
 const GAP = 4;
+
+const DASH_WIDTH = 1.5;
+const DASH = [4, 3];
+
+/** Perpendicular 5pt between hatch lines is 7pt along the cell's edge at 45deg. */
+const HATCH_STEP = 7;
 
 /**
  * Three steps and no more, composited against the plate (`color.raised`) rather
@@ -32,16 +41,24 @@ export type CalendarProps = {
   /** Keyed by `dayKey`. A day absent from the map was not trained. */
   trained: ReadonlyMap<string, TrainedDay>;
   todayKey: string;
-  /** The running program. With nothing running, nothing is missed. */
+  /** The running program. With nothing running, nothing is planned or missed. */
   schedule?: Schedule;
   onPressDay: (day: TrainedDay) => void;
 };
 
 /**
- * lab39.py's `month()`. A day you trained is a target that opens that session;
- * a day you did not is not a target at all, rather than a target that does
- * nothing. Adjacent-month days are dimmed, never omitted — the grid is always
- * whole weeks, and a missing leading cell reads as a bug.
+ * lab49.py's `month()`, with no key: solid is trained, dashed is planned,
+ * hatched is missed, empty is rest, and the ring is today's alone.
+ *
+ * A day you trained is a target that opens that session; a day you did not is
+ * not a target at all, rather than a target that does nothing. Adjacent-month
+ * days are dimmed, never omitted — the grid is always whole weeks, and a
+ * missing leading cell reads as a bug.
+ *
+ * The dashed and hatched cells are one Skia canvas behind the grid, not a
+ * border per cell: a dashed border on a rounded View misdraws on Android. The
+ * canvas only needs the grid's width, because a cell is (width - 6 gaps) / 7 and
+ * square.
  */
 export function Calendar({
   weeks,
@@ -50,6 +67,22 @@ export function Calendar({
   schedule = NO_SCHEDULE,
   onPressDay,
 }: CalendarProps) {
+  const [width, setWidth] = useState(0);
+  const cell = (width - 6 * GAP) / 7;
+
+  const rows = weeks.map((week) =>
+    week.map((c, weekday) => {
+      const day = c.adjacent ? undefined : trained.get(c.key);
+      const state = c.adjacent
+        ? { mark: 'rest' as DayMark, today: false }
+        : dayState(schedule, c.key, weekday, day !== undefined, todayKey);
+      return { cell: c, day, ...state };
+    }),
+  );
+
+  const marks =
+    width > 0 ? rows.flatMap((row, r) => row.flatMap((d, c) => markAt(d.mark, r, c, cell))) : [];
+
   return (
     <View style={{ gap: GAP }}>
       <View style={{ flexDirection: 'row', gap: GAP }}>
@@ -61,48 +94,88 @@ export function Calendar({
         ))}
       </View>
 
-      {weeks.map((week) => (
-        <View key={week[0]?.key} style={{ flexDirection: 'row', gap: GAP }}>
-          {/* The cell's position in its week IS the Monday-first weekday index,
-              which is what the schedule is keyed by. */}
-          {week.map((cell, weekday) => {
-            const day = cell.adjacent ? undefined : trained.get(cell.key);
-            return (
+      <View style={{ gap: GAP }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+        {marks.length ? (
+          <Canvas style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>{marks}</Canvas>
+        ) : null}
+        {rows.map((row) => (
+          <View key={row[0]?.cell.key} style={{ flexDirection: 'row', gap: GAP }}>
+            {row.map((d) => (
               <DayCell
-                key={cell.key}
-                cell={cell}
-                day={day}
-                today={cell.key === todayKey}
-                missed={
-                  !cell.adjacent &&
-                  isMissed(schedule, cell.key, weekday, day !== undefined, todayKey)
-                }
+                key={d.cell.key}
+                cell={d.cell}
+                day={d.day}
+                mark={d.mark}
+                today={d.today}
                 onPress={onPressDay}
               />
-            );
-          })}
-        </View>
-      ))}
-
-      <Key missed={schedule.days.size > 0} />
+            ))}
+          </View>
+        ))}
+      </View>
     </View>
   );
+}
+
+/** The canvas element for one cell, or nothing for a mark that is not drawn on it. */
+function markAt(mark: DayMark, row: number, col: number, size: number) {
+  if (mark !== 'planned' && mark !== 'missed') return [];
+  const x = col * (size + GAP);
+  const y = row * (size + GAP);
+  const key = `${row}-${col}`;
+
+  if (mark === 'planned') {
+    // A stroke is centred on its path, so the path sits half a stroke inside the cell.
+    const inset = DASH_WIDTH / 2;
+    const path = Skia.PathBuilder.Make()
+      .addRRect(
+        rrect(
+          rect(x + inset, y + inset, size - DASH_WIDTH, size - DASH_WIDTH),
+          radius.cell - inset,
+          radius.cell - inset,
+        ),
+      )
+      .build();
+    return [
+      <Path key={key} path={path} style="stroke" strokeWidth={DASH_WIDTH} color={dayMark.dash}>
+        <DashPathEffect intervals={DASH} />
+      </Path>,
+    ];
+  }
+
+  const lines = Skia.PathBuilder.Make();
+  for (let t = -size; t < size; t += HATCH_STEP)
+    lines.moveTo(x + t, y + size).lineTo(x + t + size, y);
+  return [
+    <Group key={key} clip={rrect(rect(x, y, size, size), radius.cell, radius.cell)}>
+      <Path path={lines.build()} style="stroke" strokeWidth={1.5} color={dayMark.hatch} />
+    </Group>,
+  ];
 }
 
 function DayCell({
   cell,
   day,
+  mark,
   today,
-  missed,
   onPress,
 }: {
   cell: MonthCell;
   day: TrainedDay | undefined;
+  mark: DayMark;
   today: boolean;
-  /** A past day the running program had a routine on, and you did not train. */
-  missed: boolean;
   onPress: (day: TrainedDay) => void;
 }) {
+  const ink: Ink = day
+    ? INK[day.step]
+    : today
+      ? mark === 'planned'
+        ? color.accent
+        : color.hi
+      : mark === 'planned'
+        ? color.mid
+        : color.lo;
+
   const face = (
     <View
       style={{
@@ -111,14 +184,7 @@ function DayCell({
         justifyContent: 'center',
         borderRadius: radius.cell,
         borderCurve: 'continuous',
-        // A rest day is a plate; an adjacent day is nothing at all but its
-        // numeral; a missed day drops the plate and rings its numeral instead,
-        // which is §0's rule and the only way the two stay different things.
-        backgroundColor: cell.adjacent || day || missed ? undefined : wash.field,
         opacity: cell.adjacent ? 0.4 : 1,
-        // The cell ring means today and only today. Missed rings the numeral —
-        // the same device the week strip uses — so one grid never carries two
-        // rings that mean different things.
         boxShadow: today ? `0 0 0 1.5px ${color.accent}` : undefined,
       }}
     >
@@ -130,21 +196,7 @@ function DayCell({
           ]}
         />
       ) : null}
-      <View
-        style={{
-          minWidth: 24,
-          alignItems: 'center',
-          paddingHorizontal: 4,
-          paddingVertical: 1,
-          borderRadius: radius.pill,
-          borderWidth: 1,
-          borderColor: missed ? color.tick2 : 'transparent',
-        }}
-      >
-        <Text style={[text.numSm, { color: day ? INK[day.step] : missed ? color.lo : color.dim }]}>
-          {cell.day}
-        </Text>
-      </View>
+      <Text style={[text.numSm, { color: ink }]}>{cell.day}</Text>
     </View>
   );
 
@@ -163,44 +215,5 @@ function DayCell({
     >
       {face}
     </Pressable>
-  );
-}
-
-/** The ramp, written out. Three steps is a thing to read, not a thing to learn.
- *  The ring joins it only while a program is running, because that is the only
- *  time a cell can carry one. */
-function Key({ missed }: { missed: boolean }) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 7 }}>
-      <Text style={text.label}>LIGHT</Text>
-      {([1, 2, 3] as const).map((step) => (
-        <View
-          key={step}
-          style={{
-            width: 15,
-            height: 9,
-            borderRadius: radius.pill,
-            backgroundColor: color.accent,
-            opacity: FILL[step],
-          }}
-        />
-      ))}
-      <Text style={text.label}>HARD</Text>
-      {missed ? (
-        <>
-          <View
-            style={{
-              width: 15,
-              height: 11,
-              marginLeft: 5,
-              borderRadius: radius.pill,
-              borderWidth: 1,
-              borderColor: color.tick2,
-            }}
-          />
-          <Text style={text.label}>MISSED</Text>
-        </>
-      ) : null}
-    </View>
   );
 }

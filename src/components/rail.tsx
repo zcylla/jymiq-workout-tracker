@@ -58,6 +58,8 @@ export function Rail({
             {item.onPress ? (
               <Pressable
                 onPress={item.onPress}
+                // A one-line row is ~20pt tall; the slop brings the target to 44.
+                hitSlop={{ top: 12, bottom: 12 }}
                 style={({ pressed }) => [{ flex: 1, minWidth: 0 }, pressed && { opacity: 0.7 }]}
               >
                 {body}
