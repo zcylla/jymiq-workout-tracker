@@ -94,16 +94,67 @@ tab roots, Settings, Account and the copy on nearly every screen; the main scree
 
 ### What remains, in order
 
-| # | What | Notes |
-|---|---|---|
-| 1 | Device pass, remainder | Not yet looked at: the program detail, exercise detail, bodyweight, summary and library screens; a live session with logged sets (finish now skips its confirm; a discard with zero sets is silent); the History month arrows on a month with no data; one-line rows at 360dp (the phone is wider, ~415dp) |
-| 2 | Verify incremental push and restore-from-cloud | "Cloud backup — Phase 8" |
-| 3 | Judgement calls to confirm | HOLD = one of two deload conditions; LIGHT and REST share the live red (no orange token); the recent rail draws nothing when empty (§0 says stay visible and dim); the "one phone at a time" warning was dropped from Account; a finished session skips the confirm dialog |
+**1. Performance and navigation (the owner: "the app feels laggy").** Start here.
+- *In flight, 2026-09-29:* the shared backdrop image (one cached image instead of a Skia canvas in
+  every `Screen`; `Backdrop` in `src/components/backdrop.tsx`) and brighter unlit dial ticks.
+- *Stashed, unverified:* `git stash list` holds `perf-agent-partial` — a half-finished attempt at a
+  ring rewrite (`src/lib/ring.ts`), a live render split (`live-deck.tsx`, `live.tsx`) and a backdrop
+  rewrite, from an agent stopped mid-task. Read it with `git stash show -p stash@{0}` before
+  starting; do not `pop` it blindly, it was never run.
+- *Measure first, with numbers:* `adb shell dumpsys gfxinfo com.zcylla.jymiq reset`, run a scripted
+  scenario, then `dumpsys gfxinfo` (janky frames %, 50/90/95/99th percentile). Scenarios: tabs
+  Today→Session→History→Load x3; push/pop routine detail x5; scroll History and the library; live
+  swipes x5 each way, exercises sheet open/close; 10 s idle on Today.
+- *Suspects to test, in order:* (a) all four tabs stay mounted — find a freeze/detach option for
+  inactive tab screens in `expo-router/ui` Tabs so History's Skia calendar and Load's two Skia body
+  figures stop working when hidden; (b) the load ring: ~49 tick Views each with a Reanimated CSS
+  transition — replace with one Skia canvas or transform-only updates; (c) live re-render scope (the
+  owner's idea): the pager translates the whole content block and `LiveSession` re-renders on a
+  cursor change — keep the header row, LAST TIME, the four plates, the readout and the action bar
+  still; drag only the title/image block and the set/dial values as a UI-thread shared value; split
+  `LiveSession` into small components that each subscribe to only what they need; (d) animated
+  wrappers on every row (`usePressFeel`, `Listed`/`Rail animate`, `RollingNumber` strips, `Waiting`)
+  — drop them on long lists; (e) `useRows`/`useLiveQuery` re-running on unrelated writes; (f)
+  navigation: stack animation choices, `freezeOnBlur`, `replace` remounts.
+- *A dev build is unoptimised JS.* Compare against a release build before trusting the feel:
+  `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk ANDROID_HOME=$HOME/Android/Sdk; pnpm expo run:android --variant release`
+  — this **replaces the dev client on the phone**; get it back with `pnpm expo run:android`. Ask the
+  owner first.
+- *Back stack:* the live screen's back handler is now focus-scoped (`useIsFocused`). Re-verify
+  live → HISTORY/SWAP/image → Android back returns to the live session; tab back goes to Today.
 
-**Known gaps from the refactor:** Records rows lost their `1RM · WAS 128` meta line; History's stats
-dropped the board's PRS number and delta; the board's neutral chip tone does not exist (`Pill` has
-accent, done, live, dim); `describeSync` in `lib/sync.ts` is unused; `TrendChart` draws a blank
-frame for a single weigh-in.
+**2. Device pass, remainder.** Not yet seen on the phone: the rest `DurationSheet` (tape 0:15-10:00,
+±15 s, Default), the haptics' feel (Android `Segment_Tick`/`Confirm`; try `Clock_Tick` if the tick is
+wrong), the animation pass (demo cross-fade may look like a constant morph because its fade equals
+its frame interval; list rows entering; History month slide; tab fade), skipping an exercise that has
+logged sets, swipe-swap on a lift with logged sets, a 360dp screen, the program detail, exercise
+detail, bodyweight, summary and library screens.
+
+**3. Unbuilt.** Routine target editing (sets / reps / weight / rest per lift — `updateRoutineExercise`
+has no caller; it is why a routine's null targets could once crash Log set); a routine-exercise
+reorder mutation (the grip on routine detail does nothing); the minimised tab bar on scroll (W5); the
+live pulse indicator (no board places it); exercise detail's YOUR NUMBERS / REP MAXES / WHAT TO DO
+NEXT; editing or deleting a weigh-in; D2's relative strength (needs standards tables); volume
+landmarks for eleven muscles (a sourcing job). PR overdrive was left out on purpose.
+
+**4. Cloud backup.** Verify an incremental push after an edit and restore-from-cloud ("Cloud backup —
+Phase 8"). Restore lost its "one phone at a time" warning in the one-line Account rewrite — consider
+putting it in the cloud-restore dialog.
+
+**5. Judgement calls to confirm with the owner.** HOLD = one of two deload conditions is met; LIGHT
+and REST share the live red (no orange token); Today's recent rail draws nothing when empty (§0 says
+stay visible and dim); a finished session skips its confirm dialog; Records rows on Load lost their
+`1RM · WAS 128` meta line; History stats dropped the board's PRS number and delta; the neutral chip
+tone from the board does not exist (`Pill` has accent, done, live, dim); Programs' week grid shows
+two-letter routine codes (`LA`).
+
+**6. Housekeeping.** `describeSync` in `lib/sync.ts` is unused; `claudedocs/live-gap-audit.md` still
+names `live-footer.tsx` (deleted); Lab 48's captions are stale (tabs, live states, built/drawn
+stamps) — fix `lab48.py`, re-run it and republish; Lab 49 has not been published to the Claude
+Design project (needs `/design-sync`); three old lint warnings (`history/[id].tsx` `allSets` memo,
+`lib/pr.ts` duplicate imports); a dev-only toast "Can't perform a React state update on a component
+that hasn't mounted yet" from expo-router's `useLinking` on launch; the tape does not close on a
+second tap of reps (only load was fixed).
 
 ### Smaller things, none of them blocking
 
