@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import {
   ExerciseStill,
@@ -10,6 +10,8 @@ import {
   Field,
   ListRow,
   NumberSheet,
+  ReorderList,
+  SwipeRow,
   RowPlate,
   RowPlates,
   Screen,
@@ -20,16 +22,18 @@ import {
 } from '@/components';
 import {
   removeRoutineExercise,
+  reorderRoutineExercises,
   updateRoutine,
   updateRoutineExercise,
 } from '@/data/mutations/routines';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
 import { useSettings } from '@/data/settings';
+import { moved } from '@/lib/reorder';
 import { resolveKeypadValue } from '@/lib/keypad';
 import { TARGET_REPS_SCALE, TARGET_SETS_SCALE, targetLoadScale } from '@/lib/scale';
 import { formatRest } from '@/lib/time';
 import { formatWeight, toKg, type Unit } from '@/lib/units';
-import { color, size, space, text } from '@/theme';
+import { space } from '@/theme';
 
 export default function EditRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -97,41 +101,43 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
 
         <Section label="EXERCISES" plated={false}>
           <RowPlates>
-            {rows.map((lift) => (
-              <RowPlate
-                key={lift.id}
-                onPress={() => setExpanded(expanded === lift.id ? null : lift.id)}
-              >
-                <ListRow
-                  thumb={<ExerciseStill exerciseId={lift.exerciseId} size={44} />}
-                  title={lift.name}
-                  meta={liftMeta(lift, unit)}
-                  chevron={false}
-                  right={
-                    <Pressable
-                      onPress={() => remove(lift.id, lift.name)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Remove ${lift.name}`}
-                      style={{
-                        width: size.hit,
-                        height: size.hit,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={[text.numRow, { color: color.live }]}>−</Text>
-                    </Pressable>
-                  }
-                />
-                {expanded === lift.id ? (
+            <ReorderList
+              items={rows}
+              rowHeight={58}
+              gap={space.row}
+              onReorder={(from, to) =>
+                reorderRoutineExercises(moved(rows, from, to).map((lift) => lift.id))
+              }
+              renderRow={(lift, _index, handle) => (
+                <SwipeRow key={lift.id} onDelete={() => remove(lift.id, lift.name)}>
+                  <RowPlate onPress={() => setExpanded(expanded === lift.id ? null : lift.id)}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', height: 58 }}>
+                      {handle}
+                      <View style={{ flex: 1 }}>
+                        <ListRow
+                          thumb={<ExerciseStill exerciseId={lift.exerciseId} size={44} />}
+                          title={lift.name}
+                          meta={liftMeta(lift, unit)}
+                          chevron={false}
+                        />
+                      </View>
+                    </View>
+                  </RowPlate>
+                </SwipeRow>
+              )}
+            />
+            {rows
+              .filter((lift) => lift.id === expanded)
+              .map((lift) => (
+                <RowPlate key={lift.id}>
+                  <ListRow title={lift.name} chevron={false} />
                   <Targets
                     lift={lift}
                     unit={unit}
                     onEdit={(target) => setEdit({ lift, target, open: true })}
                   />
-                ) : null}
-              </RowPlate>
-            ))}
+                </RowPlate>
+              ))}
             <RowPlate
               onPress={() =>
                 router.push({ pathname: '/session/library', params: { routineId: routine.id } })

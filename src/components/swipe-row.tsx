@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { type ColorValue, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
@@ -17,6 +17,7 @@ import { gestureEnd, gestureStart } from './haptics';
 
 type Props = {
   children: ReactNode;
+  surface?: ColorValue;
   /** Swipe left. Draws the red DELETE backdrop; omitted, the direction is inert. */
   onDelete?: () => void;
   /** Swipe right. Draws the SWAP backdrop; omitted, the direction is inert. */
@@ -37,7 +38,7 @@ const LABEL_PAD = 16;
  * A row you can swipe sideways. Nothing is left revealed: past the threshold
  * the row leaves and the callback fires; short of it the row springs home.
  */
-export function SwipeRow({ children, onDelete, onSwap }: Props) {
+export function SwipeRow({ children, onDelete, onSwap, surface = color.panel }: Props) {
   const xSV = useSharedValue(0);
   const widthSV = useSharedValue(0);
   const crossedSV = useSharedValue(false);
@@ -127,9 +128,7 @@ export function SwipeRow({ children, onDelete, onSwap }: Props) {
         </Animated.View>
       ) : null}
       <GestureDetector gesture={pan}>
-        <Animated.View style={[rowStyle, { backgroundColor: color.panel }]}>
-          {children}
-        </Animated.View>
+        <Animated.View style={[rowStyle, { backgroundColor: surface }]}>{children}</Animated.View>
       </GestureDetector>
     </View>
   );

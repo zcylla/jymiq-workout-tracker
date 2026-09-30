@@ -29,7 +29,7 @@ type Props<T extends Item> = {
 };
 
 const LIFT_SCALE = 1.03;
-export const HANDLE_WIDTH = 36;
+export const HANDLE_WIDTH = 44;
 
 /**
  * Rows of one fixed height that reorder by dragging their grip. Every row is
