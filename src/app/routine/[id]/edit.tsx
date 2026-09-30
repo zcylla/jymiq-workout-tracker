@@ -1,13 +1,15 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import {
   ExerciseStill,
   ActionBar,
+  DurationSheet,
   Field,
   ListRow,
+  NumberSheet,
   RowPlate,
   RowPlates,
   Screen,
@@ -16,12 +18,18 @@ import {
   useActionBarHeight,
   useDialog,
 } from '@/components';
-import { removeRoutineExercise, updateRoutine } from '@/data/mutations/routines';
+import {
+  removeRoutineExercise,
+  updateRoutine,
+  updateRoutineExercise,
+} from '@/data/mutations/routines';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
 import { useSettings } from '@/data/settings';
+import { resolveKeypadValue } from '@/lib/keypad';
+import { TARGET_REPS_SCALE, TARGET_SETS_SCALE, targetLoadScale } from '@/lib/scale';
 import { formatRest } from '@/lib/time';
-import { formatWeight, type Unit } from '@/lib/units';
-import { color, text } from '@/theme';
+import { formatWeight, toKg, type Unit } from '@/lib/units';
+import { color, size, space, text } from '@/theme';
 
 export default function EditRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -53,6 +61,9 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
   const settings = useSettings();
   const [name, setName] = useState(routine.name);
   const [note, setNote] = useState(routine.note ?? '');
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [edit, setEdit] = useState<Edit | null>(null);
+  const unit = settings.weightUnit;
 
   const save = () => {
     if (!name.trim()) return;
@@ -87,14 +98,38 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
         <Section label="EXERCISES" plated={false}>
           <RowPlates>
             {rows.map((lift) => (
-              <RowPlate key={lift.id} onPress={() => remove(lift.id, lift.name)}>
+              <RowPlate
+                key={lift.id}
+                onPress={() => setExpanded(expanded === lift.id ? null : lift.id)}
+              >
                 <ListRow
                   thumb={<ExerciseStill exerciseId={lift.exerciseId} size={44} />}
                   title={lift.name}
-                  meta={liftMeta(lift, settings.weightUnit)}
+                  meta={liftMeta(lift, unit)}
                   chevron={false}
-                  right={<Text style={[text.numRow, { color: color.live }]}>−</Text>}
+                  right={
+                    <Pressable
+                      onPress={() => remove(lift.id, lift.name)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${lift.name}`}
+                      style={{
+                        width: size.hit,
+                        height: size.hit,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={[text.numRow, { color: color.live }]}>−</Text>
+                    </Pressable>
+                  }
                 />
+                {expanded === lift.id ? (
+                  <Targets
+                    lift={lift}
+                    unit={unit}
+                    onEdit={(target) => setEdit({ lift, target, open: true })}
+                  />
+                ) : null}
               </RowPlate>
             ))}
             <RowPlate
@@ -107,6 +142,24 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
           </RowPlates>
         </Section>
       </Screen>
+      {edit && edit.target !== 'rest' ? (
+        <NumberSheet
+          key={`${edit.lift.id}-${edit.target}-${edit.open}`}
+          open={edit.open}
+          onClose={() => setEdit({ ...edit, open: false })}
+          {...numberEditor(edit.lift, edit.target, unit)}
+        />
+      ) : null}
+      {edit ? (
+        <DurationSheet
+          open={edit.target === 'rest' && edit.open}
+          title={`Rest · ${edit.lift.name}`}
+          value={edit.lift.restSec}
+          onConfirm={(restSec) => updateRoutineExercise(edit.lift.id, { restSec })}
+          onClear={() => updateRoutineExercise(edit.lift.id, { restSec: null })}
+          onClose={() => setEdit({ ...edit, open: false })}
+        />
+      ) : null}
       <ActionBar
         primary="Save"
         onPrimary={save}
@@ -119,6 +172,92 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
 
 type Lift = Awaited<ReturnType<typeof routineExercisesQuery>>[number];
 type Routine = Awaited<ReturnType<typeof routineQuery>>[number];
+
+type Target = 'sets' | 'reps' | 'weight' | 'rest';
+type Edit = { lift: Lift; target: Target; open: boolean };
+
+function Targets({
+  lift,
+  unit,
+  onEdit,
+}: {
+  lift: Lift;
+  unit: Unit;
+  onEdit: (target: Target) => void;
+}) {
+  const reps = lift.targetReps == null ? '—' : String(lift.targetReps);
+  const weight = lift.targetWeightKg == null ? '—' : formatWeight(lift.targetWeightKg, unit);
+  const rest = lift.restSec == null ? 'Default' : formatRest(lift.restSec);
+
+  return (
+    <View style={{ gap: space.within, paddingBottom: space.within }}>
+      <View style={{ flexDirection: 'row', gap: space.within }}>
+        <View style={{ flex: 1 }}>
+          <Field label="SETS" value={String(lift.targetSets)} onPress={() => onEdit('sets')} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Field
+            label="REPS"
+            value={reps}
+            placeholder={lift.targetReps == null}
+            onPress={() => onEdit('reps')}
+          />
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', gap: space.within }}>
+        <View style={{ flex: 1 }}>
+          <Field
+            label={`WEIGHT · ${unit.toUpperCase()}`}
+            value={weight}
+            placeholder={lift.targetWeightKg == null}
+            onPress={() => onEdit('weight')}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Field
+            label="REST"
+            value={rest}
+            placeholder={lift.restSec == null}
+            onPress={() => onEdit('rest')}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function numberEditor(lift: Lift, target: Exclude<Target, 'rest'>, unit: Unit) {
+  const save = (patch: Parameters<typeof updateRoutineExercise>[1]) =>
+    updateRoutineExercise(lift.id, patch);
+
+  if (target === 'sets') {
+    return {
+      label: 'SETS',
+      unit: 'SETS',
+      was: String(lift.targetSets),
+      resolve: (entered: string) => resolveKeypadValue(entered, TARGET_SETS_SCALE),
+      onConfirm: (targetSets: number) => save({ targetSets }),
+    };
+  }
+  if (target === 'reps') {
+    return {
+      label: 'REPS',
+      unit: 'REPS',
+      was: lift.targetReps == null ? '—' : String(lift.targetReps),
+      resolve: (entered: string) => resolveKeypadValue(entered, TARGET_REPS_SCALE),
+      onConfirm: (targetReps: number) => save({ targetReps }),
+      onClear: () => save({ targetReps: null }),
+    };
+  }
+  return {
+    label: 'WEIGHT',
+    unit: unit.toUpperCase(),
+    was: lift.targetWeightKg == null ? '—' : formatWeight(lift.targetWeightKg, unit),
+    resolve: (entered: string) => resolveKeypadValue(entered, targetLoadScale(unit)),
+    onConfirm: (value: number) => save({ targetWeightKg: toKg(value, unit) }),
+    onClear: () => save({ targetWeightKg: null }),
+  };
+}
 
 function liftMeta(lift: Lift, unit: Unit): string {
   const parts = [

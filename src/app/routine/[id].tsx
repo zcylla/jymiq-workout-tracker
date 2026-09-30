@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
+import { View } from 'react-native';
 
 import {
   ActionBar,
@@ -9,6 +10,7 @@ import {
   ListRow,
   Rail,
   type RailItem,
+  ReorderList,
   RowPlate,
   RowPlates,
   Screen,
@@ -19,6 +21,7 @@ import {
   type Tile,
   useActionBarHeight,
 } from '@/components';
+import { reorderRoutineExercises } from '@/data/mutations/routines';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
 import {
   routineSessionsQuery,
@@ -29,9 +32,15 @@ import { useRows } from '@/data/live';
 import { useSessionRunning } from '@/data/running';
 import { startSession } from '@/data/mutations/sessions';
 import { useSettings } from '@/data/settings';
+import { moved } from '@/lib/reorder';
 import { formatRest, formatSessionDuration, sessionDotTone } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
 import { formatTonnage, topSet } from '@/lib/volume';
+import { space } from '@/theme';
+
+const STILL = 44;
+/** The still plus the 7pt a `ListRow` pads above and below it: the plate's exact height, which the drag slots by. */
+const PLATE_HEIGHT = STILL + 14;
 
 /**
  * Lab 34 A2. A sibling of `(tabs)`, so the push loses the tab bar and the
@@ -162,18 +171,34 @@ export default function RoutineScreen() {
 
         <Section label="EXERCISES" plated={false}>
           <RowPlates>
-            {rows.map((lift, i) => (
-              <RowPlate key={lift.id} onPress={() => router.push(`/exercise/${lift.exerciseId}`)}>
-                <ListRow
-                  grip
-                  chevron={false}
-                  thumb={<ExerciseStill exerciseId={lift.exerciseId} size={44} />}
-                  quiet
-                  title={lift.name}
-                  meta={liftMeta(lift, settings.weightUnit)}
-                />
-              </RowPlate>
-            ))}
+            {rows.length > 0 ? (
+              <ReorderList
+                items={rows}
+                rowHeight={PLATE_HEIGHT}
+                gap={space.row}
+                onReorder={(from, to) =>
+                  reorderRoutineExercises(moved(rows, from, to).map((l) => l.id))
+                }
+                renderRow={(lift, _i, handle) => (
+                  <RowPlate onPress={() => router.push(`/exercise/${lift.exerciseId}`)}>
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'center', height: PLATE_HEIGHT }}
+                    >
+                      {handle}
+                      <View style={{ flex: 1 }}>
+                        <ListRow
+                          chevron={false}
+                          thumb={<ExerciseStill exerciseId={lift.exerciseId} size={STILL} />}
+                          quiet
+                          title={lift.name}
+                          meta={liftMeta(lift, settings.weightUnit)}
+                        />
+                      </View>
+                    </View>
+                  </RowPlate>
+                )}
+              />
+            ) : null}
             {lifts !== null && rows.length === 0 ? (
               <RowPlate
                 onPress={() =>
