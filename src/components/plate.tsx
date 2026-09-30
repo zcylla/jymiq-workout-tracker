@@ -21,13 +21,13 @@ export function Plate({
   pad,
 }: {
   children: ReactNode;
-  tone?: 'raised' | 'panel';
+  tone?: 'raised' | 'panel' | 'glass';
   pad?: number;
 }) {
   return (
     <View
       style={[
-        containment.groupedPlate,
+        tone === 'glass' ? containment.glassPlate : containment.groupedPlate,
         { gap: PLATE_GAP },
         tone === 'panel' && { backgroundColor: color.panel },
         pad !== undefined && { padding: pad },

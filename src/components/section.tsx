@@ -20,7 +20,7 @@ type Props = {
    * Plating those is containment twice.
    */
   plated?: boolean;
-  tone?: 'raised' | 'panel';
+  tone?: 'raised' | 'panel' | 'glass';
   pad?: number;
   /** The hairline running from the label to the right edge. */
   rule?: boolean;

@@ -121,6 +121,18 @@ export const containment = {
     padding: 15,
     boxShadow: litEdge,
   },
+  glassPlate: {
+    backgroundColor: 'rgba(38,34,27,0.58)',
+    borderRadius: radius.plate,
+    borderCurve: 'continuous',
+    padding: 15,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.13)',
+    experimental_backgroundImage:
+      'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.025) 55%, rgba(255,255,255,0.05) 100%)',
+    boxShadow:
+      'inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.30), 0 10px 28px rgba(0,0,0,0.42)',
+  },
   none: {},
 } as const;
 
