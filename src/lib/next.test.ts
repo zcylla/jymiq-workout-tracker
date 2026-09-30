@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { dueLabel, lastRunLabel } from './next.ts';
+import { dueLabel, lastRunLabel, nextKicker } from './next.ts';
 
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 8, 13, 12, 0);
@@ -22,4 +22,12 @@ test('the due label names the two near days and dates everything else', () => {
   assert.equal(dueLabel(0, NOW), 'TODAY');
   assert.equal(dueLabel(1, NOW), 'TOMORROW');
   assert.equal(dueLabel(5, fri), 'FRI 18 SEP');
+});
+
+test('the kicker drops the day count when the label already names the day', () => {
+  const fri = new Date(2026, 8, 18, 0, 0).getTime();
+  assert.equal(nextKicker(0, NOW, NOW - DAY, NOW), 'TODAY');
+  assert.equal(nextKicker(1, NOW, NOW - DAY, NOW), 'TOMORROW');
+  assert.equal(nextKicker(5, fri, NOW - 3 * DAY, NOW), 'FRI 18 SEP · 3D');
+  assert.equal(nextKicker(5, fri, null, NOW), 'FRI 18 SEP · NEW');
 });

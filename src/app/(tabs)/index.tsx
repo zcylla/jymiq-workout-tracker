@@ -34,7 +34,7 @@ import { lastRunPerRoutineQuery } from '@/data/queries/today';
 import { useSessionRunning } from '@/data/running';
 import { useActiveSchedule } from '@/data/schedule';
 import { trainedDays } from '@/lib/calendar';
-import { dueLabel, lastRunLabel } from '@/lib/next';
+import { nextKicker } from '@/lib/next';
 import { type ScheduledDay, nextScheduled } from '@/lib/program';
 import { dayStart, readinessStep } from '@/lib/readiness';
 import { dateLabel, sessionDotTone } from '@/lib/time';
@@ -212,9 +212,7 @@ function NextCard({
 
   return (
     <Section first pad={15}>
-      <Text style={text.label}>
-        {dueLabel(next.daysAway, next.at)} · {lastRunLabel(lastRunAt)}
-      </Text>
+      <Text style={text.label}>{nextKicker(next.daysAway, next.at, lastRunAt)}</Text>
       <Text style={text.lead}>{next.routine.name}</Text>
       <Text style={text.meta}>{meta.join(' · ')}</Text>
 

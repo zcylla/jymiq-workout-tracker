@@ -23,3 +23,14 @@ export function lastRunLabel(lastRunAt: number | null, now: number = Date.now())
   if (lastRunAt === null) return 'NEW';
   return `${Math.max(0, Math.floor((now - lastRunAt) / 86_400_000))}D`;
 }
+
+/** `"TODAY"` · `"TOMORROW"` on their own; `"FRI 19 SEP · 3D"` where the date does not already say how far off it is. */
+export function nextKicker(
+  daysAway: number,
+  atMs: number,
+  lastRunAt: number | null,
+  now: number = Date.now(),
+): string {
+  const due = dueLabel(daysAway, atMs);
+  return daysAway <= 1 ? due : `${due} · ${lastRunLabel(lastRunAt, now)}`;
+}
