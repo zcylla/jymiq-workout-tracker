@@ -142,7 +142,7 @@ function Demo({ frames }: { frames: readonly [number, number, number] }) {
         contentFit="contain"
         tintColor={color.hi}
         cachePolicy="memory-disk"
-        transition={0}
+        transition={{ duration: motion.slow, effect: 'cross-dissolve' }}
       />
     </View>
   );
