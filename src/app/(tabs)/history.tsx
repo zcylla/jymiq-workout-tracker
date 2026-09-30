@@ -26,7 +26,7 @@ import { useActiveSchedule } from '@/data/schedule';
 import { useSettings } from '@/data/settings';
 import { monthGrid, trainedDays, weekVolumes } from '@/lib/calendar';
 import { dayLabel } from '@/lib/time';
-import { formatTonnage } from '@/lib/volume';
+import { formatTonnage, formatTonnageAxis } from '@/lib/volume';
 import { color, size, text } from '@/theme';
 
 /**
@@ -139,7 +139,9 @@ export default function HistoryScreen() {
               xFirst={weeks[0]?.label ?? ''}
               xLast={weeks[weeks.length - 1]?.label ?? ''}
               value={formatTonnage(weeks[weeks.length - 1]?.volumeKg ?? 0, weightUnit)}
-              format={(v) => formatTonnage(v, weightUnit)}
+              format={(v) =>
+                formatTonnageAxis(v, Math.max(...weeks.map((w) => w.volumeKg)), weightUnit)
+              }
               h={58}
             />
           </View>

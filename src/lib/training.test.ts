@@ -23,6 +23,7 @@ import {
   countWorkingSets,
   countLoggedSets,
   formatTonnage,
+  formatTonnageAxis,
   isComparableSession,
   isLoggedSession,
   setVolume,
@@ -454,4 +455,13 @@ test('pounds keep one decimal, kilograms keep two', () => {
   assert.equal(formatWeight(100, 'lb'), '220.5');
   // A whole number stays whole in either unit.
   assert.equal(formatWeight(100), '100');
+});
+
+test('axis labels share the top label scale, and zero is bare', () => {
+  assert.equal(formatTonnageAxis(0, 22_600), '0');
+  assert.equal(formatTonnageAxis(450, 22_600), '0.5 T');
+  assert.equal(formatTonnageAxis(22_600, 22_600), '22.6 T');
+  assert.equal(formatTonnageAxis(0, 800), '0 KG');
+  assert.equal(formatTonnageAxis(0, 22_600, 'lb'), '0');
+  assert.equal(formatTonnageAxis(22_600, 22_600, 'lb'), '49.8 K LB');
 });

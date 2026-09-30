@@ -81,6 +81,15 @@ export function formatTonnage(kg: Kg, unit: Unit = 'kg'): string {
   return `${Math.round(kg)} KG`;
 }
 
+/** An axis label: every label shares the top one's scale ("22.6 T" over a bare "0", never "0 KG"). */
+export function formatTonnageAxis(kg: Kg, hiKg: Kg, unit: Unit = 'kg'): string {
+  const lb = unit === 'lb';
+  if ((lb ? toDisplay(hiKg, 'lb') : hiKg) < 1000) return formatTonnage(kg, unit);
+  if (kg === 0) return '0';
+  const big = Math.round(((lb ? toDisplay(kg, 'lb') : kg) / 1000) * 10) / 10;
+  return `${big.toFixed(1)} ${lb ? 'K LB' : 'T'}`;
+}
+
 export type SessionStatus = 'in_progress' | 'completed' | 'abandoned';
 
 /**
