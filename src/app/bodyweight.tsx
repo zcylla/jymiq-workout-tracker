@@ -119,7 +119,7 @@ export default function BodyweightScreen() {
       <Screen bottomInset={actionBar}>
         <ScreenHeader title="Bodyweight" onBack={() => router.back()} />
 
-        <Section first pad={13}>
+        <Section first hero pad={13}>
           <StatTiles
             surface="raised"
             items={[

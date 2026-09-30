@@ -144,7 +144,7 @@ export default function LoadScreen() {
         <BodyHero relative={relative} />
       </Section>
 
-      <Section pad={13}>
+      <Section hero pad={13}>
         <View style={{ gap: space.within }}>
           <StatTiles
             surface="raised"

@@ -145,6 +145,14 @@ export default function SettingsScreen() {
             </RowPlate>
           </RowPlates>
         </Section>
+
+        <Section plated={false}>
+          <RowPlates>
+            <RowPlate onPress={() => router.push('/dev/glass')}>
+              <ListRow quiet title="Glass lab" />
+            </RowPlate>
+          </RowPlates>
+        </Section>
       </Screen>
 
       <DurationSheet

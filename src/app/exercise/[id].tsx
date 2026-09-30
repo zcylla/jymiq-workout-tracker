@@ -162,7 +162,7 @@ export default function ExerciseScreen() {
         </Section>
       ) : null}
 
-      <Section label="YOUR NUMBERS" tone="raised" pad={13}>
+      <Section label="YOUR NUMBERS" tone="raised" hero pad={13}>
         <StatTiles
           surface="raised"
           items={[

@@ -166,7 +166,7 @@ function NextCard({
 
   if (!next) {
     return (
-      <Section first pad={15}>
+      <Section first hero pad={15}>
         <Pressable
           onPress={() => router.push('/session/programs')}
           accessibilityRole="button"
@@ -194,7 +194,7 @@ function NextCard({
   };
 
   return (
-    <Section first pad={15}>
+    <Section first hero pad={15}>
       <Text style={text.label}>{nextKicker(next.daysAway, next.at, lastRunAt)}</Text>
       <Text style={text.lead}>{next.routine.name}</Text>
       <Text style={text.meta}>{meta.join(' · ')}</Text>
