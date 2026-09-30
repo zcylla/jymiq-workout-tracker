@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   ListRow,
@@ -11,7 +11,11 @@ import {
   Sheet,
   Toggle,
 } from '@/components';
+import { ReadinessPill } from '@/components/pill';
+import { useRows } from '@/data/live';
+import { latestCheckInQuery } from '@/data/queries/readiness';
 import { setSettings, useSettings } from '@/data/settings';
+import { dayStart, readinessStep } from '@/lib/readiness';
 import { REST_CHOICES } from '@/lib/settings';
 import { formatRest } from '@/lib/time';
 
@@ -35,6 +39,16 @@ import { formatRest } from '@/lib/time';
 export default function SettingsScreen() {
   const settings = useSettings();
   const [picking, setPicking] = useState<'compound' | 'isolation' | null>(null);
+
+  const today = useMemo(() => dayStart(nowMs()), []);
+  const checkIns = useRows(
+    useMemo(() => latestCheckInQuery(today), [today]),
+    [today],
+  );
+  const checkIn = checkIns?.[0];
+  const step = checkIn
+    ? readinessStep({ sleep: checkIn.sleep, soreness: checkIn.soreness, energy: checkIn.energy })
+    : null;
 
   return (
     <>
@@ -60,6 +74,13 @@ export default function SettingsScreen() {
 
         <Section label="TRAINING" plated={false}>
           <RowPlates>
+            <RowPlate onPress={() => router.push('/check-in')}>
+              <ListRow
+                quiet
+                title="Check-in"
+                right={step ? <ReadinessPill step={step} /> : undefined}
+              />
+            </RowPlate>
             <RowPlate>
               <Toggle
                 label="Track RPE"
@@ -115,4 +136,8 @@ export default function SettingsScreen() {
       </Sheet>
     </>
   );
+}
+
+function nowMs(): number {
+  return Date.now();
 }

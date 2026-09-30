@@ -20,14 +20,12 @@ import {
   WeekStrip,
   useTabBarHeight,
 } from '@/components';
-import { ReadinessPill } from '@/components/pill';
 import { useRows } from '@/data/live';
 import { startSession } from '@/data/mutations/sessions';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { exerciseCountQuery } from '@/data/queries/exercises';
 import { loggedSessionIdsQuery } from '@/data/queries/load';
 import { useSettings } from '@/data/settings';
-import { latestCheckInQuery } from '@/data/queries/readiness';
 import { routineExercisesQuery, routineListQuery } from '@/data/queries/routines';
 import { recentSessionsQuery, sessionsWithRecordsQuery } from '@/data/queries/sessions';
 import { lastRunPerRoutineQuery } from '@/data/queries/today';
@@ -36,7 +34,6 @@ import { useActiveSchedule } from '@/data/schedule';
 import { trainedDays } from '@/lib/calendar';
 import { nextKicker } from '@/lib/next';
 import { type ScheduledDay, nextScheduled } from '@/lib/program';
-import { dayStart, readinessStep } from '@/lib/readiness';
 import { dateLabel, sessionDotTone } from '@/lib/time';
 import { formatTonnage } from '@/lib/volume';
 import { type StripDay, weekStrip } from '@/lib/week';
@@ -122,8 +119,6 @@ export default function TodayScreen() {
       ) : (
         <NextCard next={next} lastRunAt={lastRunAt} loading={active === null} />
       )}
-
-      <ReadinessRow />
 
       <Section label="THIS WEEK" pad={WEEK_PAD}>
         <WeekStrip
@@ -286,29 +281,6 @@ function FirstSteps() {
   );
 }
 
-/** Optional, and only a link. No chip until a check-in has been taken today. */
-function ReadinessRow() {
-  const today = useMemo(() => dayStart(nowMs()), []);
-  const rows = useRows(
-    useMemo(() => latestCheckInQuery(today), [today]),
-    [today],
-  );
-  const row = rows?.[0];
-  const step = row
-    ? readinessStep({ sleep: row.sleep, soreness: row.soreness, energy: row.energy })
-    : null;
-
-  return (
-    <Section plated={false}>
-      <RowPlates>
-        <RowPlate onPress={() => router.push('/check-in')}>
-          <ListRow title="Check-in" right={step ? <ReadinessPill step={step} /> : undefined} />
-        </RowPlate>
-      </RowPlates>
-    </Section>
-  );
-}
-
 /**
  * A number gets a visual only when there is something real to draw (§0). The
  * volume has last week to compare against, so it takes a delta; the session
@@ -412,8 +384,4 @@ function DevLinks() {
       </RowPlates>
     </Section>
   );
-}
-
-function nowMs(): number {
-  return Date.now();
 }
