@@ -157,7 +157,7 @@ export default function SummaryScreen() {
             <ListRow
               key={ex.id}
               chevron={false}
-              thumb={<ExerciseStill exerciseId={ex.exerciseId} />}
+              thumb={<ExerciseStill exerciseId={ex.exerciseId} size={44} />}
               title={ex.name}
               meta={`${ex.count} SETS${ex.top ? ` · TOP ${formatWeight(ex.top.weightKg ?? 0, settings.weightUnit)} × ${ex.top.reps}` : ''} · ${formatTonnage(ex.volumeKg, settings.weightUnit)}`}
             />

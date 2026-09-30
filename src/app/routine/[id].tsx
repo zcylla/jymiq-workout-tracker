@@ -167,7 +167,7 @@ export default function RoutineScreen() {
                 <ListRow
                   grip
                   chevron={false}
-                  thumb={<ExerciseStill exerciseId={lift.exerciseId} />}
+                  thumb={<ExerciseStill exerciseId={lift.exerciseId} size={44} />}
                   quiet
                   title={lift.name}
                   meta={liftMeta(lift, settings.weightUnit)}
