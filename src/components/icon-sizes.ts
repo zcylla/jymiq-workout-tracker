@@ -23,6 +23,12 @@ export const ICON_SIZE = {
   /** Inside the tab bar's start button, on the accent fill. */
   start: 22,
 
+  /** Lab 28's four live destinations, over their mono labels — 1.6 in 22 reads 1.38pt, the board's weight. */
+  hist: 19,
+  stat: 19,
+  note: 19,
+  swap: 19,
+
   /** In a list row and beside a field. */
   chev: 13,
   /** Inside a Delta, beside 13px mono. */
