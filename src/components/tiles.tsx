@@ -99,6 +99,15 @@ function TileValue({ tile }: { tile: Tile }) {
   const style = { ...text.numTile, color: color[toneOf(tile)] };
   if (/^\d+$/.test(tile.value) && !tile.pending)
     return <RollingNumber value={tile.value} style={style} />;
-  const value = <Text style={style}>{tile.value}</Text>;
+  const value = (
+    <Text
+      style={[style, { flexShrink: 1 }]}
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.7}
+    >
+      {tile.value}
+    </Text>
+  );
   return tile.pending ? <Waiting>{value}</Waiting> : value;
 }
