@@ -197,9 +197,7 @@ tone from the board does not exist (`Pill` has accent, done, live, dim); Program
 two-letter routine codes (`LA`).
 
 **6. Housekeeping.** `describeSync` in `lib/sync.ts` is unused; `claudedocs/live-gap-audit.md` still
-names `live-footer.tsx` (deleted); Lab 48's captions are stale (tabs, live states, built/drawn
-stamps) — fix `lab48.py`, re-run it and republish; Lab 49 has not been published to the Claude
-Design project (needs `/design-sync`); three old lint warnings (`history/[id].tsx` `allSets` memo,
+names `live-footer.tsx` (deleted); Lab 48's captions were corrected and Labs 48 and 49 were published to the Claude Design project on 2026-09-30 (the skill's web-component pipeline does not fit an Expo app, so the boards go up through `DesignSync` write_files; the tab bar drawn inside every imported phone still says Strength until `kit.py` is updated, and the boards still print tonnes); three old lint warnings (`history/[id].tsx` `allSets` memo,
 `lib/pr.ts` duplicate imports); a dev-only toast "Can't perform a React state update on a component
 that hasn't mounted yet" from expo-router's `useLinking` on launch; the tape does not close on a
 second tap of reps (only load was fixed).
