@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { BackHandler, Pressable, Text, useWindowDimensions, View } from 'react-native';
@@ -69,6 +70,8 @@ const SHORT_DP = 700;
 /** The air between the deck's readout and the action bar (the board's bar gap). */
 const DECK_GAP = 9;
 
+const KEEP_AWAKE_TAG = 'live-session';
+
 /** A record is named, never counted — "2 PRs" tells you nothing. */
 function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: string) {
   if (hits.length === 0) return;
@@ -86,7 +89,7 @@ function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: stri
 /**
  * **The live screen is kilograms, whatever Settings says, and that is the rule
  * rather than an omission.** This screen is the instrument: the tape's scale is
- * §0's, 20–140 by 2.5, and those steps are the plates that go on the bar. A
+ * §0's, 20–140, and its steps (2.5 unless Settings says otherwise) are plates that go on the bar. A
  * pounds scale would need increments §0 has not decided, and converting only
  * the readout would put 220.5 above a tape reading 100 — two units for one
  * number, on the one screen where the number matters most.
@@ -156,6 +159,15 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  const keepAwake = settings.keepScreenOn && session !== undefined;
+  useEffect(() => {
+    if (!keepAwake) return;
+    activateKeepAwakeAsync(KEEP_AWAKE_TAG);
+    return () => {
+      deactivateKeepAwake(KEEP_AWAKE_TAG);
+    };
+  }, [keepAwake]);
 
   const logged = countLoggedSets(allSets);
   /** Null until the sets are in — the dialog must not print a count of "0" it

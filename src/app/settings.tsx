@@ -5,6 +5,7 @@ import {
   DurationSheet,
   ListRow,
   NumberSheet,
+  OptionSheet,
   RowPlate,
   RowPlates,
   Screen,
@@ -18,8 +19,12 @@ import { latestCheckInQuery } from '@/data/queries/readiness';
 import { setSettings, useSettings } from '@/data/settings';
 import { resolveKeypadValue } from '@/lib/keypad';
 import { dayStart, readinessStep } from '@/lib/readiness';
-import { WEEKLY_GOAL_SCALE } from '@/lib/scale';
+import { LOAD_STEPS_KG, makeScale, WEEKLY_GOAL_SCALE } from '@/lib/scale';
+import { DEFAULT_SETS_MAX } from '@/lib/settings';
 import { formatRest } from '@/lib/time';
+
+const SETS_SCALE = makeScale(1, DEFAULT_SETS_MAX, 1, 1, 1);
+const INCREMENT_OPTIONS = LOAD_STEPS_KG.map((step) => ({ value: step, label: `${step} KG` }));
 
 /**
  * Lab 37 D4. §0 keeps Settings off the tab bar — it is the gear in the Today
@@ -42,6 +47,8 @@ export default function SettingsScreen() {
   const settings = useSettings();
   const [picking, setPicking] = useState<'compound' | 'isolation' | null>(null);
   const [goal, setGoal] = useState({ open: false, n: 0 });
+  const [pickingIncrement, setPickingIncrement] = useState(false);
+  const [pickingSets, setPickingSets] = useState(false);
 
   const today = useMemo(() => dayStart(nowMs()), []);
   const checkIns = useRows(
@@ -115,6 +122,19 @@ export default function SettingsScreen() {
                 onToggle={(tapOpensKeypad) => setSettings({ tapOpensKeypad })}
               />
             </RowPlate>
+            <RowPlate onPress={() => setPickingIncrement(true)}>
+              <ListRow quiet title="Weight increment" value={`${settings.weightIncrementKg} KG`} />
+            </RowPlate>
+            <RowPlate onPress={() => setPickingSets(true)}>
+              <ListRow quiet title="Default sets" value={String(settings.defaultSets)} />
+            </RowPlate>
+            <RowPlate>
+              <Toggle
+                label="Keep screen on"
+                on={settings.keepScreenOn}
+                onToggle={(keepScreenOn) => setSettings({ keepScreenOn })}
+              />
+            </RowPlate>
           </RowPlates>
         </Section>
 
@@ -146,6 +166,24 @@ export default function SettingsScreen() {
         resolve={(entered) => resolveKeypadValue(entered, WEEKLY_GOAL_SCALE)}
         onConfirm={(weeklyGoal) => setSettings({ weeklyGoal })}
         onClear={() => setSettings({ weeklyGoal: null })}
+      />
+      <OptionSheet
+        open={pickingIncrement}
+        title="Weight increment"
+        options={INCREMENT_OPTIONS}
+        value={settings.weightIncrementKg}
+        onPick={(weightIncrementKg) => setSettings({ weightIncrementKg })}
+        onClose={() => setPickingIncrement(false)}
+      />
+      <NumberSheet
+        key={`sets-${pickingSets}`}
+        open={pickingSets}
+        label="DEFAULT SETS"
+        unit="SETS"
+        was={String(settings.defaultSets)}
+        resolve={(entered) => resolveKeypadValue(entered, SETS_SCALE)}
+        onConfirm={(defaultSets) => setSettings({ defaultSets })}
+        onClose={() => setPickingSets(false)}
       />
     </>
   );
