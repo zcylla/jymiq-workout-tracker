@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 
 import { color, containment, type Ink, radius, space, text } from '@/theme';
 
+import { glassStyle, useGlass } from './glass';
 import { pop } from './haptics';
 import { Icon, type IconName } from './icon';
 import { AnimatedPressable, usePressFeel } from './press';
@@ -49,6 +50,7 @@ function Destination({
   dot?: boolean;
 }) {
   const press = usePressFeel();
+  const { recipe } = useGlass('chrome');
   return (
     <AnimatedPressable
       onPress={onPress}
@@ -65,6 +67,7 @@ function Destination({
           justifyContent: 'center',
           gap: 3,
         },
+        recipe && glassStyle(recipe, 0),
         press.style,
       ]}
     >
