@@ -23,3 +23,9 @@ test('with nothing logged, e1RM is what the dialled set implies', () => {
   assert.equal(liveE1rm([{ completedAt: null, e1rmKg: null }], 100, 1), 100);
   assert.equal(liveE1rm([], 0, 8), null);
 });
+
+test('live load delta follows the display unit', () => {
+  assert.deepEqual(loadDelta(102.5, 100, 'lb'), { text: '+5.5', sign: 1 });
+  assert.deepEqual(loadDelta(95, 100, 'lb'), { text: '−11', sign: -1 });
+  assert.deepEqual(loadDelta(100, 100, 'lb'), { text: '±0', sign: 0 });
+});

@@ -8,6 +8,7 @@ export type WorkoutParameter = 'load' | 'reps' | 'rpe';
 
 type Props = {
   active: WorkoutParameter;
+  weightUnit?: 'kg' | 'lb';
   values: Record<WorkoutParameter, string | number>;
   /** Appended only to the active RPE unit, e.g. `RPE · RIR 2`. */
   gloss?: string;
@@ -29,6 +30,7 @@ const PARAMETERS: { key: WorkoutParameter; unit: string }[] = [
 /** The active input parameter below a live-session dial. */
 export function ParamSelector({
   active,
+  weightUnit = 'kg',
   values,
   gloss,
   onSelect,
@@ -40,7 +42,8 @@ export function ParamSelector({
     <View style={{ width: '100%', flexDirection: 'row', gap: 6, paddingHorizontal: 4 }}>
       {PARAMETERS.filter(({ key }) => parameters.includes(key)).map(({ key, unit }) => {
         const selected = key === active;
-        const label = selected && gloss ? `${unit} · ${gloss}` : unit;
+        const unitLabel = key === 'load' ? weightUnit.toUpperCase() : unit;
+        const label = selected && gloss ? `${unitLabel} · ${gloss}` : unitLabel;
 
         return (
           <Pressable

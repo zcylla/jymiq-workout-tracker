@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { useSettings } from '@/data/settings';
 import { loadScale, REPS_SCALE, RPE_SCALE } from '@/lib/scale';
-import { formatWeight } from '@/lib/units';
+import { formatWeight, toDisplay, toKg } from '@/lib/units';
 import { percentOf1RM } from '@/lib/e1rm';
 import { size } from '@/theme';
 
@@ -22,9 +22,6 @@ function tapeRows(height: number) {
   const fit = Math.floor((height - TAPE_HEAD) / size.tapeRow);
   return Math.max(3, Math.min(9, fit % 2 === 0 ? fit - 1 : fit));
 }
-
-/** The scale and unit each parameter drives. Load never leaves the ring. */
-const UNITS = { load: 'KG', reps: 'REPS', rpe: 'RPE' } as const;
 
 type Props = {
   editing: WorkoutParameter | null;
@@ -56,9 +53,12 @@ export function LiveInstrument({
   onType,
   pulse,
 }: Props) {
-  const { weightIncrementKg } = useSettings();
+  const { weightIncrementKg, weightUnit } = useSettings();
+  const unitLabel = weightUnit.toUpperCase();
+  const displayLoad = toDisplay(load, weightUnit);
+  const units = { load: unitLabel, reps: 'REPS', rpe: 'RPE' };
   const scales = {
-    load: loadScale(weightIncrementKg),
+    load: loadScale(weightIncrementKg, weightUnit),
     reps: REPS_SCALE,
     rpe: RPE_SCALE,
   };
@@ -69,14 +69,14 @@ export function LiveInstrument({
   // are editing is said by the selector, not by the middle of the dial.
   const core = {
     label: 'LOAD',
-    value: formatWeight(load),
-    subline: oneRm ? `KG · ${percentOf1RM(load, oneRm)}%` : 'KG',
+    value: formatWeight(load, weightUnit),
+    subline: oneRm ? `${unitLabel} · ${percentOf1RM(load, oneRm)}%` : unitLabel,
     editing: editing !== null,
     chips: editing
       ? undefined
       : [
-          { value: String(reps), unit: 'REPS' },
-          ...(showRpe ? [{ value: rpeText, unit: 'RPE' }] : []),
+          { value: String(reps), unit: 'REPS', onPress: () => onEdit('reps') },
+          ...(showRpe ? [{ value: rpeText, unit: 'RPE', onPress: () => onEdit('rpe') }] : []),
         ],
   };
 
@@ -107,8 +107,8 @@ export function LiveInstrument({
             <LoadRing
               size={ring}
               scale={scales.load}
-              value={load}
-              mark={oneRm}
+              value={displayLoad}
+              mark={oneRm == null ? null : toDisplay(oneRm, weightUnit)}
               // The numerals mean the perimeter is live, which is only true of load.
               showNumerals={editing === 'load'}
               core={core}
@@ -118,11 +118,11 @@ export function LiveInstrument({
           {editing ? (
             <View style={{ position: 'absolute', right: 0, top: -6 }}>
               <Tape
-                key={editing}
+                key={`${editing}-${weightUnit}`}
                 scale={scales[editing]}
-                value={editing === 'load' ? load : editing === 'reps' ? reps : (rpe ?? 5)}
-                unit={UNITS[editing]}
-                onDetent={onDetent}
+                value={editing === 'load' ? displayLoad : editing === 'reps' ? reps : (rpe ?? 5)}
+                unit={units[editing]}
+                onDetent={(value) => onDetent(editing === 'load' ? toKg(value, weightUnit) : value)}
                 rows={tapeRows(ring + 6)}
               />
             </View>
@@ -133,8 +133,9 @@ export function LiveInstrument({
       {editing ? (
         <ParamSelector
           active={editing}
+          weightUnit={weightUnit}
           parameters={params}
-          values={{ load: formatWeight(load), reps: String(reps), rpe: rpeText }}
+          values={{ load: formatWeight(load, weightUnit), reps: String(reps), rpe: rpeText }}
           onSelect={onSelect}
           onLongPress={onLongPress}
           onType={onType}

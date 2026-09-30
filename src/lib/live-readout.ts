@@ -1,13 +1,17 @@
 import { estimate1RM } from './e1rm.ts';
-import { formatWeight, type Kg } from './units.ts';
+import { formatWeight, type Kg, type Unit } from './units.ts';
 
 /** This set's load against last time's, signed: "+2.5", "−2.5", or "±0" when it is the same. */
-export function loadDelta(nowKg: Kg, thenKg: Kg): { text: string; sign: -1 | 0 | 1 } {
+export function loadDelta(
+  nowKg: Kg,
+  thenKg: Kg,
+  unit: Unit = 'kg',
+): { text: string; sign: -1 | 0 | 1 } {
   const d = Math.round((nowKg - thenKg) * 100) / 100;
   if (d === 0) return { text: '±0', sign: 0 };
   return d > 0
-    ? { text: `+${formatWeight(d)}`, sign: 1 }
-    : { text: `−${formatWeight(-d)}`, sign: -1 };
+    ? { text: `+${formatWeight(d, unit)}`, sign: 1 }
+    : { text: `−${formatWeight(-d, unit)}`, sign: -1 };
 }
 
 /**

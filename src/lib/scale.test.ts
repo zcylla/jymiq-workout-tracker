@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { resolveKeypadValue } from './keypad.ts';
+import { formatWeight, toDisplay, toKg } from './units.ts';
 
 import {
   LOAD_SCALE,
@@ -7,6 +9,8 @@ import {
   REST_SCALE,
   indexOf,
   loadScale,
+  loadDisplayStep,
+  targetLoadScale,
   snapTo,
   stepBy,
   valueAt,
@@ -89,4 +93,41 @@ test('the default load scale is the 2.5 kg one the app shipped with', () => {
   assert.equal(LOAD_SCALE.n, 49);
   assert.equal(LOAD_SCALE.major, 4);
   assert.equal(LOAD_SCALE.label, 8);
+});
+
+test('live load increments use practical display-unit steps', () => {
+  for (const [kg, lb] of [
+    [1, 2],
+    [1.25, 2.5],
+    [2.5, 5],
+    [5, 10],
+  ]) {
+    assert.equal(loadDisplayStep(kg, 'kg'), kg);
+    assert.equal(loadDisplayStep(kg, 'lb'), lb);
+    assert.deepEqual(loadScale(kg, 'kg'), loadScale(kg));
+    const scale = loadScale(kg, 'lb');
+    assert.equal(scale.step, lb);
+    assert.equal(scale.major * lb, 20);
+    assert.equal(scale.label * lb, 40);
+  }
+});
+
+test('pound detents round trip through stored kg without a float tail', () => {
+  for (const step of [1, ...LOAD_STEPS_KG]) {
+    const scale = loadScale(step, 'lb');
+    for (let i = 0; i < scale.n; i++) {
+      const display = valueAt(scale, i);
+      const kg = toKg(display, 'lb');
+      assert.equal(kg, Number(kg.toFixed(3)));
+      assert.equal(formatWeight(kg, 'lb'), String(display));
+      assert.equal(indexOf(scale, toDisplay(kg, 'lb')), i);
+    }
+  }
+});
+
+test('live pound keypad input stores kilograms and reads back in pounds', () => {
+  const display = resolveKeypadValue('100', targetLoadScale('lb'));
+  assert.equal(display, 100);
+  assert.equal(toKg(display!, 'lb'), 45.359);
+  assert.equal(formatWeight(toKg(display!, 'lb'), 'lb'), '100');
 });

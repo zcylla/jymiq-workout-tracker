@@ -62,10 +62,7 @@ export function clampIndex(s: Scale, index: number): number {
   return index < 0 ? 0 : index > s.n - 1 ? s.n - 1 : index;
 }
 
-/**
- * The load steps Settings offers, in kilograms. The live screen is kilograms
- * whatever the display unit, so these are not converted.
- */
+/** The load steps Settings offers, in kilograms. */
 export const LOAD_STEPS_KG = [1.25, 2.5, 5] as const;
 
 /**
@@ -73,7 +70,15 @@ export const LOAD_STEPS_KG = [1.25, 2.5, 5] as const;
  * ends are multiples of every offered step, so the span never moves, and a rule
  * lands every 10 kg and a numeral every 20 whatever the step.
  */
-export const loadScale = (step: number) => makeScale(20, 140, step, 10 / step, 20 / step);
+export const loadDisplayStep = (stepKg: number, unit: 'kg' | 'lb'): number =>
+  unit === 'kg' ? stepKg : stepKg * 2;
+
+export const loadScale = (stepKg: number, unit: 'kg' | 'lb' = 'kg') => {
+  const step = loadDisplayStep(stepKg, unit);
+  return unit === 'kg'
+    ? makeScale(20, 140, step, 10 / step, 20 / step)
+    : makeScale(40, 280, step, 20 / step, 40 / step);
+};
 export const LOAD_SCALE = loadScale(2.5);
 export const REPS_SCALE = makeScale(1, 15, 1, 5, 5);
 /**

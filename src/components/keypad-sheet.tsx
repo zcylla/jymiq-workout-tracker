@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { useSettings } from '@/data/settings';
 import { updateSet } from '@/data/mutations/sessions';
 import { resolveKeypadValue } from '@/lib/keypad';
-import { REPS_SCALE, RPE_SCALE, type Scale, TARGET_LOAD_SCALE } from '@/lib/scale';
-import { formatWeight } from '@/lib/units';
+import { REPS_SCALE, RPE_SCALE, type Scale, targetLoadScale } from '@/lib/scale';
+import { formatWeight, toKg, type Unit } from '@/lib/units';
 import { color, hairline, lh, ls, mono, radius, sans, text, wash } from '@/theme';
 
 import { key, pop } from './haptics';
@@ -29,9 +30,9 @@ const ROWS = [
   ['.', '0', '⌫'],
 ];
 
-function wasText(parameter: WorkoutParameter, currentValue: number | null): string {
+function wasText(parameter: WorkoutParameter, currentValue: number | null, unit: Unit): string {
   if (currentValue == null) return '—';
-  return parameter === 'load' ? formatWeight(currentValue) : String(currentValue);
+  return parameter === 'load' ? formatWeight(currentValue, unit) : String(currentValue);
 }
 
 type Props = {
@@ -51,9 +52,10 @@ type Props = {
  * always remounts with blank entry, rather than resetting state in an effect.
  */
 export function KeypadSheet({ open, onClose, parameter, setId, currentValue }: Props) {
+  const { weightUnit } = useSettings();
   const config = CONFIG[parameter];
   const scales: Record<WorkoutParameter, Scale> = {
-    load: TARGET_LOAD_SCALE,
+    load: targetLoadScale(weightUnit),
     reps: REPS_SCALE,
     rpe: RPE_SCALE,
   };
@@ -63,10 +65,12 @@ export function KeypadSheet({ open, onClose, parameter, setId, currentValue }: P
       open={open}
       onClose={onClose}
       label={config.label}
-      unit={config.unit}
-      was={wasText(parameter, currentValue)}
+      unit={parameter === 'load' ? weightUnit.toUpperCase() : config.unit}
+      was={wasText(parameter, currentValue, weightUnit)}
       resolve={(entered) => resolveKeypadValue(entered, scale)}
-      onConfirm={(value) => updateSet(setId, config.patch(value))}
+      onConfirm={(value) =>
+        updateSet(setId, config.patch(parameter === 'load' ? toKg(value, weightUnit) : value))
+      }
     />
   );
 }

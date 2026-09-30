@@ -86,18 +86,6 @@ function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: stri
   });
 }
 
-/**
- * **The live screen is kilograms, whatever Settings says, and that is the rule
- * rather than an omission.** This screen is the instrument: the tape's scale is
- * §0's, 20–140, and its steps (2.5 unless Settings says otherwise) are plates that go on the bar. A
- * pounds scale would need increments §0 has not decided, and converting only
- * the readout would put 220.5 above a tape reading 100 — two units for one
- * number, on the one screen where the number matters most.
- *
- * Everything that *reports* a weight — history, summaries, records, routine
- * targets — follows the setting. You dial the kilograms you load; you read your
- * training back in your own unit.
- */
 export default function LiveScreen() {
   const { data, updatedAt } = useLiveQuery(activeSessionQuery());
   const id = data?.[0]?.id;
@@ -508,12 +496,12 @@ function LiveSession({ sessionId }: { sessionId: string }) {
             last={
               previous
                 ? {
-                    value: `${formatWeight(previous.weightKg ?? 0)} × ${previous.reps ?? 0}${
+                    value: `${formatWeight(previous.weightKg ?? 0, settings.weightUnit)} × ${previous.reps ?? 0}${
                       previous.rpe == null ? '' : ` @ ${previous.rpe}`
                     }`,
                     delta:
                       set.weightKg != null && previous.weightKg != null
-                        ? loadDelta(set.weightKg, previous.weightKg)
+                        ? loadDelta(set.weightKg, previous.weightKg, settings.weightUnit)
                         : null,
                   }
                 : null
@@ -528,7 +516,13 @@ function LiveSession({ sessionId }: { sessionId: string }) {
               settings.weightUnit,
             )}
             sets={String(logged)}
-            e1rm={e1rm == null ? '—' : String(Math.round(e1rm))}
+            e1rm={
+              e1rm == null
+                ? '—'
+                : settings.weightUnit === 'kg'
+                  ? String(Math.round(e1rm))
+                  : `${formatWeight(e1rm, settings.weightUnit)} LB`
+            }
             restUntil={session.restUntil}
             restLeftSec={restLeft}
             onExtendRest={() => extendRest(session.id, 30)}
