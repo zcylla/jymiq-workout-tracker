@@ -7,6 +7,7 @@ import { LOAD_SCALE, REPS_SCALE, RPE_SCALE, type Scale } from '@/lib/scale';
 import { formatWeight } from '@/lib/units';
 import { color, hairline, lh, ls, mono, radius, sans, text, wash } from '@/theme';
 
+import { key, pop } from './haptics';
 import type { WorkoutParameter } from './param-selector';
 import { Sheet } from './sheet';
 
@@ -56,6 +57,7 @@ export function KeypadSheet({ open, onClose, parameter, setId, currentValue }: P
   const resolved = resolveKeypadValue(entered, config.scale);
 
   const pressKey = (k: string) => {
+    key();
     if (k === '⌫') {
       setEntered((e) => e.slice(0, -1));
       return;
@@ -69,6 +71,7 @@ export function KeypadSheet({ open, onClose, parameter, setId, currentValue }: P
 
   const confirm = () => {
     if (resolved == null) return;
+    pop();
     updateSet(setId, config.patch(resolved));
     onClose();
   };

@@ -5,7 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chromeShadow, color, fabShadow, radius, text } from '@/theme';
 
+import { tick } from './haptics';
 import { Icon, type IconName } from './icon';
+import { AnimatedPressable, usePressFeel } from './press';
 
 /**
  * W2 (Lab 23) — four labelled tabs on one plane with an inset circular start
@@ -86,13 +88,19 @@ export function TabItem({
 
 /** The start button, sitting in the bar's middle slot rather than over it. */
 export function StartButton({ onPress }: { onPress?: () => void }) {
+  const press = usePressFeel(0.15);
   return (
     <View style={{ width: 66, alignItems: 'center' }}>
-      <Pressable
+      <AnimatedPressable
         onPress={onPress}
+        onPressIn={() => {
+          tick();
+          press.handlers.onPressIn();
+        }}
+        onPressOut={press.handlers.onPressOut}
         accessibilityRole="button"
         accessibilityLabel="Start a workout"
-        style={({ pressed }) => [
+        style={[
           {
             width: 52,
             height: 52,
@@ -102,11 +110,11 @@ export function StartButton({ onPress }: { onPress?: () => void }) {
             backgroundColor: color.accent,
             boxShadow: fabShadow,
           },
-          pressed && { opacity: 0.85 },
+          press.style,
         ]}
       >
         <Icon name="start" tone={color.ink} />
-      </Pressable>
+      </AnimatedPressable>
     </View>
   );
 }

@@ -2,6 +2,8 @@ import { Pressable, Text, View } from 'react-native';
 
 import { color, lh, ls, mono, radius, wash } from '@/theme';
 
+import { pop } from './haptics';
+
 export type WorkoutParameter = 'load' | 'reps' | 'rpe';
 
 type Props = {
@@ -40,7 +42,10 @@ export function ParamSelector({
         return (
           <Pressable
             key={key}
-            onPress={() => onSelect(key)}
+            onPress={() => {
+              if (!selected) pop();
+              onSelect(key);
+            }}
             onLongPress={() => onLongPress?.(key)}
             hitSlop={{ top: 4, bottom: 4 }}
             accessibilityRole="button"

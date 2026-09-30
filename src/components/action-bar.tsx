@@ -1,7 +1,10 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chromeShadow, color, fabShadow, radius, text } from '@/theme';
+
+import { tick } from './haptics';
+import { AnimatedPressable, usePressFeel } from './press';
 
 /** The plane the bar occupies, so a `Screen` under it can clear its last row. */
 export function useActionBarHeight() {
@@ -30,6 +33,8 @@ export function ActionBar({
   disabled?: boolean;
 }) {
   const insets = useSafeAreaInsets();
+  const secondaryPress = usePressFeel();
+  const primaryPress = usePressFeel(0.15);
   return (
     <View
       style={{
@@ -41,9 +46,10 @@ export function ActionBar({
       }}
     >
       {secondary ? (
-        <Pressable
+        <AnimatedPressable
           onPress={onSecondary}
-          style={({ pressed }) => [
+          {...secondaryPress.handlers}
+          style={[
             {
               minHeight: BAR_HEIGHT,
               paddingHorizontal: 18,
@@ -54,19 +60,23 @@ export function ActionBar({
               backgroundColor: color.raised,
               boxShadow: chromeShadow,
             },
-            pressed && { opacity: 0.7 },
+            secondaryPress.style,
           ]}
         >
           <Text style={[text.pill, { color: color.hi }]}>{secondary}</Text>
-        </Pressable>
+        </AnimatedPressable>
       ) : null}
 
-      <Pressable
+      <AnimatedPressable
         onPress={onPrimary}
+        onPressIn={() => {
+          tick();
+          primaryPress.handlers.onPressIn();
+        }}
+        onPressOut={primaryPress.handlers.onPressOut}
         disabled={disabled}
         accessibilityState={{ disabled }}
-        style={({ pressed }) => [
-          disabled && { opacity: 0.4 },
+        style={[
           {
             flex: 1,
             minHeight: BAR_HEIGHT,
@@ -77,11 +87,11 @@ export function ActionBar({
             backgroundColor: color.accent,
             boxShadow: fabShadow,
           },
-          pressed && { opacity: 0.85 },
+          disabled ? { opacity: 0.4 } : primaryPress.style,
         ]}
       >
         <Text style={text.action}>{primary}</Text>
-      </Pressable>
+      </AnimatedPressable>
     </View>
   );
 }

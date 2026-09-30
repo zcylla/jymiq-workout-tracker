@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { color, containment, space } from '@/theme';
+
+import { AnimatedPressable, usePressFeel } from './press';
 
 /**
  * kit's `prow()` — one row on its own plate (Lab 42 P5).
@@ -20,6 +22,7 @@ export function RowPlate({
   tone?: 'raised' | 'panel';
   disabled?: boolean;
 }) {
+  const press = usePressFeel();
   const style = [
     containment.rowPlate,
     { paddingHorizontal: 14 },
@@ -29,13 +32,14 @@ export function RowPlate({
   if (!onPress) return <View style={style}>{children}</View>;
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [style, (pressed || disabled) && { opacity: 0.7 }]}
+      {...press.handlers}
+      style={[style, disabled ? { opacity: 0.7 } : press.style]}
     >
       {children}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

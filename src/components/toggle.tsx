@@ -1,6 +1,10 @@
+import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { color, radius, size, text, wash } from '@/theme';
+import { color, motion, radius, size, text, wash } from '@/theme';
+
+import { pop } from './haptics';
 
 /**
  * kit's `toggle()`. The switch is drawn at 44x26, under the touch floor on its
@@ -17,9 +21,20 @@ export function Toggle({
   on: boolean;
   onToggle?: (next: boolean) => void;
 }) {
+  const knobSV = useSharedValue(on ? 1 : 0);
+
+  useEffect(() => {
+    knobSV.set(withTiming(on ? 1 : 0, { duration: motion.fast }));
+  }, [on, knobSV]);
+
+  const knob = useAnimatedStyle(() => ({ transform: [{ translateX: knobSV.get() * 18 }] }));
+
   return (
     <Pressable
-      onPress={() => onToggle?.(!on)}
+      onPress={() => {
+        pop();
+        onToggle?.(!on);
+      }}
       accessibilityRole="switch"
       accessibilityState={{ checked: on }}
       style={{
@@ -41,18 +56,19 @@ export function Toggle({
           height: 26,
           borderRadius: radius.full,
           padding: 3,
-          flexDirection: 'row',
-          justifyContent: on ? 'flex-end' : 'flex-start',
           backgroundColor: on ? color.accent : wash.off,
         }}
       >
-        <View
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: radius.full,
-            backgroundColor: on ? color.ink : color.lo,
-          }}
+        <Animated.View
+          style={[
+            {
+              width: 20,
+              height: 20,
+              borderRadius: radius.full,
+              backgroundColor: on ? color.ink : color.lo,
+            },
+            knob,
+          ]}
         />
       </View>
     </Pressable>

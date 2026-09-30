@@ -7,6 +7,8 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { clampIndex, indexOf, valueAt, type Scale } from '@/lib/scale';
 import { color, lh, mono, size, text } from '@/theme';
 
+import { pop, tick } from './haptics';
+
 type Props = {
   scale: Scale;
   value: number;
@@ -48,7 +50,11 @@ export function Tape({ scale, value, unit, onDetent }: Props) {
       );
       if (next === lastIndexSV.get()) return;
       lastIndexSV.set(next);
+      scheduleOnRN(tick);
       if (onDetent) scheduleOnRN(onDetent, valueAt(scale, next));
+    })
+    .onEnd((_event, success) => {
+      if (success && lastIndexSV.get() !== startIndexSV.get()) scheduleOnRN(pop);
     })
     .onFinalize(() => {
       draggingSV.set(false);
