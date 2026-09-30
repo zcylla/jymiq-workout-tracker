@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import {
   Chevron,
   Icon,
+  Listed,
   ListRow,
   Pill,
   ProgramWeek,
@@ -125,14 +126,16 @@ export default function ProgramsScreen() {
         {programs === null ? null : (
           <>
             <RowPlates>
-              {idle.map((p) => (
-                <RowPlate key={p.id} onPress={() => router.push(`/program/${p.id}`)}>
-                  <ListRow
-                    title={p.name}
-                    valueLabel={p.startedAt === null ? 'NEW' : 'PAUSED'}
-                    dim={p.startedAt === null}
-                  />
-                </RowPlate>
+              {idle.map((p, i) => (
+                <Listed key={p.id} index={i}>
+                  <RowPlate onPress={() => router.push(`/program/${p.id}`)}>
+                    <ListRow
+                      title={p.name}
+                      valueLabel={p.startedAt === null ? 'NEW' : 'PAUSED'}
+                      dim={p.startedAt === null}
+                    />
+                  </RowPlate>
+                </Listed>
               ))}
               <Link href="/program/new" asChild>
                 <RowPlate onPress={() => {}}>

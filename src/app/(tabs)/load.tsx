@@ -149,10 +149,15 @@ export default function LoadScreen() {
           <StatTiles
             surface="raised"
             items={[
-              { label: 'SETS', value: totals ? String(totals.sets) : '—' },
+              {
+                label: 'SETS',
+                value: totals ? String(totals.sets) : '—',
+                pending: totals === null,
+              },
               {
                 label: 'VOLUME',
                 value: totals && totals.volumeKg > 0 ? formatTonnage(totals.volumeKg, unit) : '—',
+                pending: totals === null,
                 below:
                   change === null ? undefined : (
                     <Delta value={`${change >= 0 ? '+' : ''}${change}%`} positive={change >= 0} />

@@ -32,7 +32,7 @@ export default function RecordsScreen() {
       <ScreenHeader title="Records" onBack={() => router.back()} />
 
       <Section first plated={false}>
-        {records.length ? <Rail items={railItems} air={26} /> : null}
+        {records.length ? <Rail items={railItems} air={26} animate /> : null}
       </Section>
     </Screen>
   );

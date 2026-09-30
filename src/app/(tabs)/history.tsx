@@ -1,6 +1,13 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import {
   Calendar,
@@ -11,11 +18,13 @@ import {
   Rail,
   type RailItem,
   RowPlate,
+  RollingNumber,
   RowPlates,
   Screen,
   ScreenHeader,
   Section,
   useTabBarHeight,
+  Waiting,
 } from '@/components';
 import { useRows } from '@/data/live';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
@@ -27,7 +36,7 @@ import { useSettings } from '@/data/settings';
 import { monthGrid, trainedDays, weekVolumes } from '@/lib/calendar';
 import { dayLabel } from '@/lib/time';
 import { formatTonnage, formatTonnageAxis } from '@/lib/volume';
-import { color, size, text } from '@/theme';
+import { color, motion, size, text } from '@/theme';
 
 /**
  * Lab 49 H-A with B2: the month is the period. The pager, the count, the chart,
@@ -119,87 +128,125 @@ export default function HistoryScreen() {
         }
       />
 
-      <Section first pad={15}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
-          <Text
-            style={[text.numCore, { color: month.length ? color.hi : color.lo }]}
-            accessibilityLabel={all === null ? undefined : `${month.length} sessions`}
-          >
-            {all === null ? '—' : month.length}
-          </Text>
-          <View style={{ paddingBottom: 6 }}>
-            <Text style={text.label}>SESSIONS</Text>
+      <MonthSwap step={back}>
+        <Section first pad={15}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+            {all === null ? (
+              <Waiting>
+                <Text style={[text.numCore, { color: color.lo }]}>—</Text>
+              </Waiting>
+            ) : (
+              <RollingNumber
+                value={month.length}
+                style={{ ...text.numCore, color: month.length ? color.hi : color.lo }}
+              />
+            )}
+            <View style={{ paddingBottom: 6 }}>
+              <Text style={text.label}>SESSIONS</Text>
+            </View>
           </View>
-        </View>
-        {month.length && weeks.length ? (
-          <View style={{ gap: 6, paddingTop: 5 }}>
-            <Text style={text.label}>{weightUnit === 'kg' ? 'TONNES / WEEK' : 'LB / WEEK'}</Text>
-            <ColumnChart
-              values={weeks.map((w) => w.volumeKg)}
-              xFirst={weeks[0]?.label ?? ''}
-              xLast={weeks[weeks.length - 1]?.label ?? ''}
-              value={formatTonnage(weeks[weeks.length - 1]?.volumeKg ?? 0, weightUnit)}
-              format={(v) =>
-                formatTonnageAxis(v, Math.max(...weeks.map((w) => w.volumeKg)), weightUnit)
-              }
-              h={58}
-            />
-          </View>
+          {month.length && weeks.length ? (
+            <View style={{ gap: 6, paddingTop: 5 }}>
+              <Text style={text.label}>{weightUnit === 'kg' ? 'TONNES / WEEK' : 'LB / WEEK'}</Text>
+              <ColumnChart
+                values={weeks.map((w) => w.volumeKg)}
+                xFirst={weeks[0]?.label ?? ''}
+                xLast={weeks[weeks.length - 1]?.label ?? ''}
+                value={formatTonnage(weeks[weeks.length - 1]?.volumeKg ?? 0, weightUnit)}
+                format={(v) =>
+                  formatTonnageAxis(v, Math.max(...weeks.map((w) => w.volumeKg)), weightUnit)
+                }
+                h={58}
+              />
+            </View>
+          ) : null}
+        </Section>
+
+        <Section pad={15}>
+          <Calendar
+            weeks={grid.weeks}
+            trained={trained}
+            todayKey={grid.todayKey}
+            schedule={active?.schedule}
+            onPressDay={(day) => router.push(`/history/${day.sessionId}`)}
+          />
+        </Section>
+
+        {fresh ? (
+          <Section label="SESSIONS" plated={false}>
+            <RowPlates>
+              {active?.program ? null : (
+                <RowPlate onPress={() => router.push('/program/new')}>
+                  <ListRow
+                    title="New program"
+                    right={<Icon name="plus" tone={color.accent} />}
+                    chevron={false}
+                  />
+                </RowPlate>
+              )}
+              <RowPlate onPress={() => router.push('/sign-in')}>
+                <ListRow title="Restore backup" />
+              </RowPlate>
+            </RowPlates>
+          </Section>
+        ) : items.length ? (
+          <Section label="SESSIONS" plated={false}>
+            <Rail items={items} air={24} animate />
+          </Section>
         ) : null}
-      </Section>
 
-      <Section pad={15}>
-        <Calendar
-          weeks={grid.weeks}
-          trained={trained}
-          todayKey={grid.todayKey}
-          schedule={active?.schedule}
-          onPressDay={(day) => router.push(`/history/${day.sessionId}`)}
-        />
-      </Section>
-
-      {fresh ? (
-        <Section label="SESSIONS" plated={false}>
-          <RowPlates>
-            {active?.program ? null : (
-              <RowPlate onPress={() => router.push('/program/new')}>
+        {logged === null || fresh ? null : (
+          <Section plated={false}>
+            <RowPlates>
+              <RowPlate onPress={() => router.push('/records')}>
                 <ListRow
-                  title="New program"
-                  right={<Icon name="plus" tone={color.accent} />}
-                  chevron={false}
+                  title="Records"
+                  right={
+                    records ? (
+                      <Text style={[text.num, { marginRight: 10 }]}>{records.length}</Text>
+                    ) : undefined
+                  }
                 />
               </RowPlate>
-            )}
-            <RowPlate onPress={() => router.push('/sign-in')}>
-              <ListRow title="Restore backup" />
-            </RowPlate>
-          </RowPlates>
-        </Section>
-      ) : items.length ? (
-        <Section label="SESSIONS" plated={false}>
-          <Rail items={items} air={24} />
-        </Section>
-      ) : null}
-
-      {logged === null || fresh ? null : (
-        <Section plated={false}>
-          <RowPlates>
-            <RowPlate onPress={() => router.push('/records')}>
-              <ListRow
-                title="Records"
-                right={
-                  records ? (
-                    <Text style={[text.num, { marginRight: 10 }]}>{records.length}</Text>
-                  ) : undefined
-                }
-              />
-            </RowPlate>
-          </RowPlates>
-        </Section>
-      )}
+            </RowPlates>
+          </Section>
+        )}
+      </MonthSwap>
     </Screen>
   );
 }
+
+/**
+ * Fades the month's content in from the direction of travel: going back in time it arrives from the
+ * left. It starts at zero opacity, which also hides the frame or two in which the new month's query
+ * has not answered and the grid holds the last month's rows.
+ */
+function MonthSwap({ step, children }: { step: number; children: ReactNode }) {
+  const inSV = useSharedValue(1);
+  const fromSV = useSharedValue(0);
+  const last = useRef(step);
+
+  useEffect(() => {
+    if (last.current === step) return;
+    fromSV.set(step > last.current ? -TRAVEL : TRAVEL);
+    last.current = step;
+    inSV.set(
+      withSequence(
+        withTiming(0, { duration: 0 }),
+        withTiming(1, { duration: motion.base, easing: Easing.out(Easing.cubic) }),
+      ),
+    );
+  }, [step, inSV, fromSV]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: inSV.get(),
+    transform: [{ translateX: (1 - inSV.get()) * fromSV.get() }],
+  }));
+
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
+const TRAVEL = 24;
 
 /** One arrow of the month pager: a 44pt target around a 22pt glyph. */
 function Pager({
