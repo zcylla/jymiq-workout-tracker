@@ -1,10 +1,13 @@
 import type { ReactNode, Ref } from 'react';
-import { ScrollView, View } from 'react-native';
+import type { ScrollView } from 'react-native';
+import { View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { color, space } from '@/theme';
 
 import { Backdrop } from './backdrop';
+import { useTabBarScroll } from './tab-bar';
 
 /**
  * The screen shell — kit's `.scr`. Ground, the 22pt side margin, and the real
@@ -31,6 +34,7 @@ export function Screen({
   scrollRef?: Ref<ScrollView>;
 }) {
   const insets = useSafeAreaInsets();
+  const onScroll = useTabBarScroll();
   const padding = {
     paddingHorizontal: space.pad,
     paddingTop: insets.top,
@@ -40,14 +44,16 @@ export function Screen({
     <View style={{ flex: 1, backgroundColor: color.ground }}>
       <Backdrop />
       {scroll ? (
-        <ScrollView
+        <Animated.ScrollView
           ref={scrollRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           style={{ flex: 1 }}
           contentContainerStyle={padding}
           showsVerticalScrollIndicator={false}
         >
           {children}
-        </ScrollView>
+        </Animated.ScrollView>
       ) : (
         <View style={[{ flex: 1 }, padding]}>{children}</View>
       )}

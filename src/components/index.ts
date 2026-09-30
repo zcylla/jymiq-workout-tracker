@@ -43,5 +43,12 @@ export { TrendChart } from './trend-chart';
 export { Toggle } from './toggle';
 export { Waiting } from './waiting';
 export { WeekStrip } from './week-strip';
-export { StartButton, TabBar, TabItem, useTabBarHeight } from './tab-bar';
+export {
+  StartButton,
+  TabBar,
+  TabBarProvider,
+  TabItem,
+  useTabBarHeight,
+  useTabBarScroll,
+} from './tab-bar';
 export { ZoneBar } from './zone-bar';

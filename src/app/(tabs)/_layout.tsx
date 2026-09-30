@@ -1,6 +1,6 @@
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
 
-import { StartButton, TabBar, TabItem } from '@/components';
+import { StartButton, TabBar, TabBarProvider, TabItem } from '@/components';
 import { useStartSession } from '@/data/start';
 
 /**
@@ -19,34 +19,36 @@ export default function TabsLayout() {
   const start = useStartSession();
 
   return (
-    <Tabs style={{ flex: 1 }} options={{ backBehavior: 'firstRoute' }}>
-      <TabSlot />
+    <TabBarProvider>
+      <Tabs style={{ flex: 1 }} options={{ backBehavior: 'firstRoute' }}>
+        <TabSlot />
 
-      <TabList style={{ display: 'none' }}>
-        <TabTrigger name="today" href="/" />
-        <TabTrigger name="session" href="/session" />
-        <TabTrigger name="history" href="/history" />
-        <TabTrigger name="load" href="/load" />
-      </TabList>
+        <TabList style={{ display: 'none' }}>
+          <TabTrigger name="today" href="/" />
+          <TabTrigger name="session" href="/session" />
+          <TabTrigger name="history" href="/history" />
+          <TabTrigger name="load" href="/load" />
+        </TabList>
 
-      <TabBar>
-        <TabTrigger name="today" asChild>
-          <TabItem icon="today" label="Today" />
-        </TabTrigger>
-        <TabTrigger name="session" asChild>
-          <TabItem icon="session" label="Session" />
-        </TabTrigger>
+        <TabBar onStart={start}>
+          <TabTrigger name="today" asChild>
+            <TabItem tab="today" />
+          </TabTrigger>
+          <TabTrigger name="session" asChild>
+            <TabItem tab="session" />
+          </TabTrigger>
 
-        {/* Not a tab — it resumes or starts a session, which owns the whole plane. */}
-        <StartButton onPress={start} />
+          {/* Not a tab — it resumes or starts a session, which owns the whole plane. */}
+          <StartButton onPress={start} />
 
-        <TabTrigger name="history" asChild>
-          <TabItem icon="cal" label="History" />
-        </TabTrigger>
-        <TabTrigger name="load" asChild>
-          <TabItem icon="load" label="Load" />
-        </TabTrigger>
-      </TabBar>
-    </Tabs>
+          <TabTrigger name="history" asChild>
+            <TabItem tab="history" />
+          </TabTrigger>
+          <TabTrigger name="load" asChild>
+            <TabItem tab="load" />
+          </TabTrigger>
+        </TabBar>
+      </Tabs>
+    </TabBarProvider>
   );
 }
