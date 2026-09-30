@@ -395,7 +395,7 @@ function insertSessionExercise(
 
 /**
  * Adds a lift the plan did not have. Its sets carry no plan, because there is none.
- * An empty session has no cursor yet, so the first lift added takes it.
+ * The cursor moves to it: you add a lift to do it.
  */
 export function addExerciseToSession(sessionId: string, exerciseId: string): string {
   return db.transaction((tx) => {
@@ -415,7 +415,7 @@ export function addExerciseToSession(sessionId: string, exerciseId: string): str
 
     tx.update(sessions)
       .set({ currentSessionExerciseId: sxId, currentSetId: firstSetId })
-      .where(and(eq(sessions.id, sessionId), isNull(sessions.currentSessionExerciseId)))
+      .where(eq(sessions.id, sessionId))
       .run();
 
     return sxId;
@@ -517,6 +517,57 @@ export function skipSessionExercise(id: string): void {
       })
       .where(eq(sessions.id, row.sessionId))
       .run();
+  });
+}
+
+/**
+ * A hard delete, for a lift with nothing logged on it: its sets go with it (the
+ * foreign key cascades), the survivors close the gap, and a cursor that pointed
+ * at it moves on. Anything logged is skipped instead, so history keeps it.
+ */
+export function removeSessionExercise(id: string): void {
+  db.transaction((tx) => {
+    const [row] = tx
+      .select({ sessionId: sessionExercises.sessionId, position: sessionExercises.position })
+      .from(sessionExercises)
+      .where(eq(sessionExercises.id, id))
+      .limit(1)
+      .all();
+    if (!row) return;
+
+    const [session] = tx
+      .select({ current: sessions.currentSessionExerciseId })
+      .from(sessions)
+      .where(eq(sessions.id, row.sessionId))
+      .limit(1)
+      .all();
+
+    tx.update(sessionExercises)
+      .set({ removedAt: Date.now() })
+      .where(eq(sessionExercises.id, id))
+      .run();
+    if (session?.current === id) {
+      const next = nextIncompleteSet(tx, row.sessionId, row.position, Number.MAX_SAFE_INTEGER);
+      tx.update(sessions)
+        .set({
+          currentSessionExerciseId: next?.sessionExerciseId ?? null,
+          currentSetId: next?.id ?? null,
+        })
+        .where(eq(sessions.id, row.sessionId))
+        .run();
+    }
+
+    tx.delete(sessionExercises).where(eq(sessionExercises.id, id)).run();
+
+    const rest = tx
+      .select({ id: sessionExercises.id })
+      .from(sessionExercises)
+      .where(eq(sessionExercises.sessionId, row.sessionId))
+      .orderBy(asc(sessionExercises.position))
+      .all();
+    rest.forEach((r, position) => {
+      tx.update(sessionExercises).set({ position }).where(eq(sessionExercises.id, r.id)).run();
+    });
   });
 }
 
