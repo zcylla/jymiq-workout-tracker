@@ -36,6 +36,38 @@ export function exerciseListQuery(opts: { search?: string; equipment?: Equipment
     .orderBy(asc(exercises.name));
 }
 
+/**
+ * The lifts last performed, newest first, one row each. A row counts only for a
+ * set that was logged in a session that is over and was not skipped, in the same
+ * shape as `exerciseListQuery` so the library draws them with the same row.
+ */
+export function recentExercisesQuery(limit = 8) {
+  const lastAt = max(sets.completedAt);
+  return db
+    .select({
+      id: exercises.id,
+      name: exercises.name,
+      equipment: exercises.equipment,
+      kind: exercises.kind,
+      isFavorite: exercises.isFavorite,
+    })
+    .from(sets)
+    .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+    .innerJoin(sessions, eq(sessions.id, sessionExercises.sessionId))
+    .innerJoin(exercises, eq(exercises.id, sessionExercises.exerciseId))
+    .where(
+      and(
+        ne(sessions.status, 'in_progress'),
+        isNull(sessionExercises.removedAt),
+        isNotNull(sets.completedAt),
+        isNull(exercises.archivedAt),
+      ),
+    )
+    .groupBy(exercises.id)
+    .orderBy(desc(lastAt))
+    .limit(limit);
+}
+
 export function exerciseQuery(id: string) {
   return db.select().from(exercises).where(eq(exercises.id, id)).limit(1);
 }
