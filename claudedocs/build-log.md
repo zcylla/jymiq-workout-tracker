@@ -3,7 +3,24 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-Last updated 2026-09-29. **The UI refactor against over-explaining text shipped and was checked on the
+Last updated 2026-09-29 (evening). **The live session was finished against its board, and the app
+got motion.** Audit: `claudedocs/live-gap-audit.md` (the earlier "every drawn screen is built" was
+wrong for the live screen). Now built and checked on the phone: swipe pager (left/right sets, up/down
+exercises, clamped, 40dp edge guard, `src/components/live-pager.tsx`, `src/lib/pager.ts`), tape
+inertia, rest countdown with +30s/Skip, rolling numerals, exercise image on the live title, SWAP and
+HISTORY text buttons, exercises sheet (reorder grip, swipe delete, swipe swap, Add exercise), sets
+sheet (delete, reorder), empty session with Add exercise, the centre + (resume / next routine /
+empty), rest durations set on the tape (`DurationSheet`, 0:15-10:00), Android system haptics
+(`src/components/haptics.ts`), sheet motion, meter/chart/list/tab/month motion, check-in moved to
+Settings, exercise stills on routine, summary and session detail (numbers dropped), two-line grips,
+both blooms the same gold. **Worklet lesson:** in a worklet file a function must be declared before
+any worklet that captures it (a swipe crashed on this). **Not yet verified on the phone:** the rest
+DurationSheet, the haptics' feel, the animation pass (demo cross-fade, list rows, month slide, tab
+fade), skip-with-logged-sets, swipe-swap on a lift with logged sets, a 360dp screen. Not built:
+minimised tab bar on scroll (W5), PR overdrive, the live pulse, STATS/NOTES buttons, routine target
+editing (sets/reps/weight), the routine-exercise reorder grip does nothing.
+
+Before that (2026-09-29, earlier): **The UI refactor against over-explaining text shipped and was checked on the
 phone (Today, History, Load, Session, Settings, Account, Records, routine, programs, session detail,
 live).** Owner-approved via Lab 49 (`design-labs/lab49.py`, §0 updated): **History replaces
 Strength** (month page: ‹ › header, session count + weekly-tonnes chart, the calendar, one line per
