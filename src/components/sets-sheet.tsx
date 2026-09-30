@@ -1,11 +1,27 @@
+import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { addSet, setSessionCursor } from '@/data/mutations/sessions';
 import { formatWeight } from '@/lib/units';
-import { color, hairline, type Ink, lh, ls, mono, radius, sans, space, text, wash } from '@/theme';
+import {
+  color,
+  hairline,
+  type Ink,
+  lh,
+  ls,
+  mono,
+  radius,
+  sans,
+  size,
+  space,
+  text,
+  wash,
+} from '@/theme';
 
 import { Chevron } from './icon';
+import { HANDLE_WIDTH, ReorderList } from './reorder-list';
 import { Sheet } from './sheet';
+import { SwipeRow } from './swipe-row';
 
 type SheetSet = {
   id: string;
@@ -27,6 +43,10 @@ type Props = {
   /** The screen's resolved current set — not necessarily `session.currentSetId`
    *  verbatim, since the screen falls back to the first open set. */
   currentSetId: string | null;
+  /** Drop on a new slot. Omitted, rows have no grip. */
+  onReorder?: (fromIndex: number, toIndex: number) => void;
+  /** Swipe left past the threshold, with the set's id. Omitted, the swipe is inert. */
+  onDelete?: (setId: string) => void;
 };
 
 const dash = (v: string | null) => v ?? '—';
@@ -47,10 +67,12 @@ function Col({ w, color: c, children }: { w: number; color: Ink; children: strin
 function SetRow({
   set,
   isCurrent,
+  handle,
   onPress,
 }: {
   set: SheetSet;
   isCurrent: boolean;
+  handle: ReactNode;
   onPress: () => void;
 }) {
   const done = set.completedAt != null;
@@ -75,7 +97,7 @@ function SetRow({
         {
           flexDirection: 'row',
           alignItems: 'center',
-          height: 38,
+          height: size.hit,
           gap: 9,
           paddingHorizontal: 8,
           borderRadius: radius.row,
@@ -84,6 +106,7 @@ function SetRow({
         },
       ]}
     >
+      {handle}
       <Text style={{ ...idx, fontSize: 11, lineHeight: lh(11), width: 22, color: indexColor }}>
         {String(set.position).padStart(2, '0')}
       </Text>
@@ -112,8 +135,8 @@ function SetRow({
  * moves the cursor there — there is deliberately no edit button, since you
  * edit a set with the ring on the live screen itself.
  *
- * Reordering is out of scope here: `reorderSets` exists but nothing in this
- * sheet draws a grip or calls it, so it stays unused on purpose.
+ * The grip and the left swipe are drawn only when `onReorder` / `onDelete` are
+ * passed — an inert control is worse than an absent one.
  */
 export function SetsSheet({
   open,
@@ -123,6 +146,8 @@ export function SetsSheet({
   sessionExerciseId,
   sets,
   currentSetId,
+  onReorder,
+  onDelete,
 }: Props) {
   const done = sets.filter((s) => s.completedAt != null).length;
 
@@ -153,6 +178,7 @@ export function SetsSheet({
           paddingHorizontal: 8,
         }}
       >
+        {onReorder ? <View style={{ width: HANDLE_WIDTH }} /> : null}
         <Text style={text.label} numberOfLines={1}>
           SET
         </Text>
@@ -164,14 +190,21 @@ export function SetsSheet({
         <View style={{ width: 26 }} />
       </View>
 
-      {sets.map((s) => (
-        <SetRow
-          key={s.id}
-          set={s}
-          isCurrent={s.id === currentSetId}
-          onPress={() => selectSet(s.id)}
-        />
-      ))}
+      <ReorderList
+        items={sets}
+        rowHeight={size.hit}
+        onReorder={onReorder}
+        renderRow={(s, _i, handle) => (
+          <SwipeRow key={s.id} onDelete={onDelete ? () => onDelete(s.id) : undefined}>
+            <SetRow
+              set={s}
+              isCurrent={s.id === currentSetId}
+              handle={handle}
+              onPress={() => selectSet(s.id)}
+            />
+          </SwipeRow>
+        )}
+      />
 
       <Pressable
         onPress={() => addSet(sessionExerciseId)}
