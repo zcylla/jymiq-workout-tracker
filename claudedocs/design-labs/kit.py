@@ -147,7 +147,7 @@ def ico(kind, col='var(--lo)', sw=1.6, sz=22):
 CHEV = ('<svg viewBox="0 0 16 16" style="width:13px;height:13px;flex:none" fill="none" '
         'stroke="var(--lo)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
         '<path d="M6 3l5 5-5 5"></path></svg>')
-GRIP = '<span class="hand"><span></span><span></span><span></span></span>'
+GRIP = '<span class="hand"><span></span><span></span></span>'
 
 TABS = [('today', 'Today'), ('session', 'Session'), ('strength', 'Strength'), ('load', 'Load')]
 
