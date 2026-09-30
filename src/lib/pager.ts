@@ -1,5 +1,6 @@
 /**
  * The live pager's release maths. Worklet-safe: plain functions, no closures.
+ * Order matters: the worklet plugin drops hoisting, so a worklet must be declared after any it calls.
  * Pager convention: a finger moving left asks for the next set, up for the next exercise.
  */
 export type Swipe = 'nextSet' | 'prevSet' | 'nextExercise' | 'prevExercise';
@@ -10,6 +11,13 @@ export const COMMIT_FRACTION = 0.3;
 export const FLING_VELOCITY = 500;
 /** Android's back gesture owns up to ~40dp of each edge at the widest sensitivity. */
 export const EDGE_BAND = 40;
+
+/** The swipe a drag in progress is heading for, so the page knows whether there is anywhere to go. */
+export function heading(axis: 'x' | 'y', translation: number): Swipe {
+  'worklet';
+  if (axis === 'x') return translation < 0 ? 'nextSet' : 'prevSet';
+  return translation < 0 ? 'nextExercise' : 'prevExercise';
+}
 
 export function swipeIntent(
   axis: 'x' | 'y',
@@ -24,13 +32,6 @@ export function swipeIntent(
     return null;
   }
   return heading(axis, translation);
-}
-
-/** The swipe a drag in progress is heading for, so the page knows whether there is anywhere to go. */
-export function heading(axis: 'x' | 'y', translation: number): Swipe {
-  'worklet';
-  if (axis === 'x') return translation < 0 ? 'nextSet' : 'prevSet';
-  return translation < 0 ? 'nextExercise' : 'prevExercise';
 }
 
 /** Travel past an end: approaches `extent * 0.55` and never reaches it. */
