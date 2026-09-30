@@ -4,6 +4,7 @@ import { newId } from '@/lib/id';
 
 import { db } from '../db';
 import { routineExercises, routines } from '../schema';
+import { getSettings } from '../settings';
 
 export function createRoutine(input: { name: string; note?: string | null }): string {
   const id = newId();
@@ -62,7 +63,7 @@ export function addExerciseToRoutine(input: NewRoutineExercise): string {
         routineId: input.routineId,
         exerciseId: input.exerciseId,
         position: (last?.max ?? -1) + 1,
-        targetSets: input.targetSets ?? 3,
+        targetSets: input.targetSets ?? getSettings().defaultSets,
         targetReps: input.targetReps ?? null,
         targetWeightKg: input.targetWeightKg ?? null,
         restSec: input.restSec ?? null,

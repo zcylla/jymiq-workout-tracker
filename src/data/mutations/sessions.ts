@@ -25,8 +25,8 @@ import {
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/** Sets given to an exercise added with no plan behind it. */
-const DEFAULT_SETS = 3;
+/** Sets given to an exercise added with no plan behind it: Settings' default sets. */
+const defaultSets = () => getSettings().defaultSets;
 
 /** The latest `completedAt` among a session's sets, or null if none logged. */
 function lastCompletedAt(rows: { completedAt: number | null }[]): number | null {
@@ -518,7 +518,7 @@ export function addExerciseToSession(sessionId: string, exerciseId: string): str
       exerciseId,
       position: (last?.max ?? -1) + 1,
       plannedSets: null,
-      setCount: DEFAULT_SETS,
+      setCount: defaultSets(),
     });
 
     tx.update(sessions)
@@ -555,7 +555,7 @@ export function replaceSessionExercise(sessionExerciseId: string, newExerciseId:
       .from(sets)
       .where(eq(sets.sessionExerciseId, sessionExerciseId))
       .all();
-    const setCount = old.plannedSets ?? (count?.n || DEFAULT_SETS);
+    const setCount = old.plannedSets ?? (count?.n || defaultSets());
 
     tx.update(sessionExercises)
       .set({ removedAt: Date.now() })
