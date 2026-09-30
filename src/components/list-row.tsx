@@ -22,6 +22,8 @@ type Props = {
   /** A mono caption over the value; alone, it becomes the whole right side. */
   valueLabel?: string;
   value?: string;
+  /** The title in the destructive red — the row's confirm dialog carries the words. */
+  danger?: boolean;
   /** The value is dim rather than mid — "never", an absent date. */
   valueDim?: boolean;
   /** Replaces the label/value stack entirely — a Pill, usually. */
@@ -61,6 +63,7 @@ export function ListRow({
   valueLabel,
   value,
   valueDim = false,
+  danger = false,
   right,
   grip = false,
   readOnly = false,
@@ -98,7 +101,10 @@ export function ListRow({
       ) : null}
 
       <View style={{ gap: 3, flexShrink: 1 }}>
-        <Text style={quiet ? text.rowName : text.rowTitle} numberOfLines={1}>
+        <Text
+          style={[quiet ? text.rowName : text.rowTitle, danger && { color: color.live }]}
+          numberOfLines={1}
+        >
           {title}
         </Text>
         {meta ? <Text style={text.meta}>{meta}</Text> : null}
