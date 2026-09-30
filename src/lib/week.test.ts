@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { TrainedDay } from './calendar.ts';
-import { weekBounds, weekStrip } from './week.ts';
+import { sessionsMeter, weekBounds, weekStrip } from './week.ts';
 
 /** Thursday 4 September 2026, local. The board's own date. */
 const THU = new Date(2026, 8, 4, 10, 0);
@@ -161,4 +161,21 @@ test('weekBounds: this week is the Monday-first week the strip puts today in', (
   assert.deepEqual(new Date(b.thisFrom), new Date(2026, 7, 31));
   assert.deepEqual(new Date(b.lastFrom), new Date(2026, 7, 24));
   assert.deepEqual(new Date(b.to), new Date(2026, 8, 7));
+});
+
+test('the sessions meter: a running program wins over the goal', () => {
+  assert.equal(sessionsMeter(2, 4, 6), 0.5);
+});
+
+test('the sessions meter falls back to the goal when no program runs', () => {
+  assert.equal(sessionsMeter(3, 0, 6), 0.5);
+});
+
+test('the sessions meter is absent with neither a program nor a goal', () => {
+  assert.equal(sessionsMeter(3, 0, null), null);
+});
+
+test('the sessions meter stops at full when sessions pass the target', () => {
+  assert.equal(sessionsMeter(8, 0, 6), 1);
+  assert.equal(sessionsMeter(5, 3, null), 1);
 });

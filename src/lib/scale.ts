@@ -79,6 +79,7 @@ export const targetLoadScale = (unit: 'kg' | 'lb') =>
   unit === 'kg' ? TARGET_LOAD_SCALE : TARGET_LOAD_SCALE_LB;
 /** Whole points only — RIR = 10 − RPE maps cleanly and half points on a
  *  subjective scale are mostly false precision. */
+export const WEEKLY_GOAL_SCALE = makeScale(1, 7, 1, 1, 1);
 export const RPE_SCALE = makeScale(1, 10, 1, 1, 1);
 
 /**

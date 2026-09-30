@@ -136,6 +136,20 @@ export function weekStrip(
 }
 
 /**
+ * How full the SESSIONS meter is, 0..1, or null for no meter. The running
+ * program's planned days are the denominator when there is one; otherwise the
+ * weekly goal; otherwise nothing is real enough to measure against (§0).
+ */
+export function sessionsMeter(
+  sessions: number,
+  plannedPerWeek: number,
+  weeklyGoal: number | null,
+): number | null {
+  const target = plannedPerWeek > 0 ? plannedPerWeek : weeklyGoal;
+  return target === null ? null : Math.min(1, sessions / target);
+}
+
+/**
  * This week and last week as `[from, to)` local-ms ranges, derived from the
  * strip so the Load tab and Today share one definition of "this week".
  */

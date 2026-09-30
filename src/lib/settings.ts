@@ -22,6 +22,8 @@ export interface Settings {
   trackRpe: boolean;
   /** Otherwise long-press does it, and a tap arms the tape (Lab 32). */
   tapOpensKeypad: boolean;
+  /** Sessions a week, 1-7. The SESSIONS meter's denominator when no program is running; null is unset. */
+  weeklyGoal: number | null;
 }
 
 /**
@@ -34,9 +36,13 @@ export const DEFAULT_SETTINGS: Settings = {
   restIsolationSec: 90,
   trackRpe: false,
   tapOpensKeypad: false,
+  weeklyGoal: null,
 };
 
 const isRest = (n: unknown): n is number => typeof n === 'number' && n >= 0 && n <= 3600;
+
+const isGoal = (n: unknown): n is number =>
+  Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 7;
 
 /**
  * Tolerant on purpose: settings are read at launch from a store an older build
@@ -57,5 +63,6 @@ export function coerceSettings(raw: unknown): Settings {
       : DEFAULT_SETTINGS.restIsolationSec,
     trackRpe: o.trackRpe === true,
     tapOpensKeypad: o.tapOpensKeypad === true,
+    weeklyGoal: isGoal(o.weeklyGoal) ? o.weeklyGoal : null,
   };
 }

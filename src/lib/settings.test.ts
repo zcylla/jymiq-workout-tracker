@@ -46,3 +46,10 @@ test('a stored rest is pulled onto the rest scale', () => {
 test('pounds round-trip', () => {
   assert.equal(coerceSettings({ weightUnit: 'lb' }).weightUnit, 'lb');
 });
+
+test('the weekly goal is unset by default and only a whole 1-7 survives', () => {
+  assert.equal(DEFAULT_SETTINGS.weeklyGoal, null);
+  assert.equal(coerceSettings({ weeklyGoal: 4 }).weeklyGoal, 4);
+  for (const bad of [0, 8, 2.5, '3', null, undefined])
+    assert.equal(coerceSettings({ weeklyGoal: bad }).weeklyGoal, null);
+});
