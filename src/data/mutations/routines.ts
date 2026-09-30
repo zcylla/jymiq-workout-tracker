@@ -91,6 +91,23 @@ export function updateRoutineExercise(
   });
 }
 
+/** The grip on a routine's lifts. Positions are rewritten wholesale, in order. */
+export function reorderRoutineExercises(orderedIds: readonly string[]): void {
+  db.transaction((tx) => {
+    let routineId: string | undefined;
+    orderedIds.forEach((id, position) => {
+      const [row] = tx
+        .update(routineExercises)
+        .set({ position })
+        .where(eq(routineExercises.id, id))
+        .returning({ routineId: routineExercises.routineId })
+        .all();
+      routineId ??= row?.routineId;
+    });
+    if (routineId) touch(tx, routineId);
+  });
+}
+
 /**
  * A hard delete: a routine line is a plan, not history. What was actually done
  * lives in `session_exercises`, which snapshots at session start and does not
