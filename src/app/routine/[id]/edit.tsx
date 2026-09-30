@@ -142,6 +142,12 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
           </RowPlates>
         </Section>
       </Screen>
+      <ActionBar
+        primary="Save"
+        onPrimary={save}
+        secondary="CANCEL"
+        onSecondary={() => router.back()}
+      />
       {edit && edit.target !== 'rest' ? (
         <NumberSheet
           key={`${edit.lift.id}-${edit.target}-${edit.open}`}
@@ -160,12 +166,6 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
           onClose={() => setEdit({ ...edit, open: false })}
         />
       ) : null}
-      <ActionBar
-        primary="Save"
-        onPrimary={save}
-        secondary="CANCEL"
-        onSecondary={() => router.back()}
-      />
     </>
   );
 }
