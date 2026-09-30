@@ -4,24 +4,60 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { type ScrollView, Text, View } from 'react-native';
 
-import { ColumnChart, Delta, Screen, ScreenHeader, Section, StatTiles } from '@/components';
+import {
+  Delta,
+  LineChart,
+  Screen,
+  ScreenHeader,
+  Section,
+  Segmented,
+  StatTiles,
+} from '@/components';
 import { exerciseArt } from '@/data/exercise-art';
 import { useRows } from '@/data/live';
-import {
-  exerciseE1rmQuery,
-  exerciseMusclesQuery,
-  exerciseQuery,
-  exerciseSetsQuery,
-} from '@/data/queries/exercises';
+import { exerciseMusclesQuery, exerciseQuery, exerciseSetsQuery } from '@/data/queries/exercises';
 import { useSettings } from '@/data/settings';
-import { e1rmTakeaway } from '@/lib/e1rm';
+import {
+  axisLabels,
+  buckets,
+  comparePeriods,
+  type Granularity,
+  type Metric,
+  periodChange,
+  progressSeries,
+  regression,
+  type Trend,
+  trendOf,
+} from '@/lib/exercise-progress';
 import { exerciseNumbers, repMaxes, WINDOW_WEEKS } from '@/lib/exercise-stats';
 import { formatPrValue } from '@/lib/pr';
 import { sessionDateLabel } from '@/lib/time';
-import { formatWeight, toDisplay } from '@/lib/units';
+import { formatWeight, toDisplay, toKg } from '@/lib/units';
+import { formatTonnage, formatTonnageAxis } from '@/lib/volume';
 import { color, motion, size, space, text } from '@/theme';
 
 const DASH = '—';
+
+const METRICS: { key: Metric; label: string }[] = [
+  { key: 'e1rm', label: '1RM' },
+  { key: 'weight', label: 'WEIGHT' },
+  { key: 'volume', label: 'VOLUME' },
+  { key: 'reps', label: 'REPS' },
+];
+
+const GRANULARITIES: { key: Granularity; label: string }[] = [
+  { key: 'day', label: 'D' },
+  { key: 'week', label: 'W' },
+  { key: 'month', label: 'M' },
+  { key: 'year', label: 'Y' },
+];
+
+const COMPARED: Record<Granularity, string> = {
+  day: 'LATEST DAY VS PREVIOUS',
+  week: 'THIS WEEK VS LAST',
+  month: 'THIS MONTH VS LAST',
+  year: 'THIS YEAR VS LAST',
+};
 
 /**
  * Lab 35 B2 (= Lab 39 Q1). A pushed detail screen: sibling of `(tabs)`, so it
@@ -42,10 +78,6 @@ export default function ExerciseScreen() {
     useMemo(() => exerciseMusclesQuery(id), [id]),
     [id],
   );
-  const rows = useRows(
-    useMemo(() => exerciseE1rmQuery(id), [id]),
-    [id],
-  );
   const logged = useRows(
     useMemo(() => exerciseSetsQuery(id), [id]),
     [id],
@@ -56,10 +88,27 @@ export default function ExerciseScreen() {
   const numbers = exerciseNumbers(logged ?? [], now, unit);
   const maxes = repMaxes(logged ?? []);
   const exercise = found?.[0];
-  const sessionsNewestFirst = rows ?? [];
-  const bests = sessionsNewestFirst
-    .flatMap((r) => (r.bestE1rmKg === null ? [] : [r.bestE1rmKg]))
-    .reverse();
+
+  const [metric, setMetric] = useState<Metric>('e1rm');
+  const [gran, setGran] = useState<Granularity>('week');
+  const binned = useMemo(() => buckets(logged ?? [], gran), [logged, gran]);
+  const series = useMemo(
+    () => progressSeries(binned, gran, metric, now),
+    [binned, gran, metric, now],
+  );
+  const fit = useMemo(() => regression(series.points), [series]);
+  const compared = useMemo(() => comparePeriods(binned, gran, now), [binned, gran, now]);
+  const peakKg = Math.max(0, ...series.points.map((p) => p.value));
+  const formatY = (v: number) =>
+    metric === 'reps'
+      ? String(v)
+      : metric === 'volume'
+        ? formatTonnageAxis(v, peakKg, unit)
+        : metric === 'e1rm'
+          ? formatPrValue('best_e1rm', v, unit)
+          : formatWeight(v, unit);
+  const { current, previous } = compared;
+  const toUnit = (kg: number) => toDisplay(kg, unit);
 
   const frames = exerciseArt(id);
   const cues: string[] = Array.isArray(exercise?.cues) ? exercise.cues : [];
@@ -151,32 +200,91 @@ export default function ExerciseScreen() {
         />
       </Section>
 
-      {bests.length >= 1 ? (
-        <View
-          onLayout={(e) => {
-            if (focus === 'stats') {
-              scrollRef.current?.scrollTo({ y: e.nativeEvent.layout.y, animated: true });
-            }
-          }}
-        >
-          <Section
-            label={bests.length >= 2 ? `1RM ${e1rmTakeaway(bests, unit)}` : '1RM'}
-            plated={false}
-          >
-            <ColumnChart
-              values={bests.map((kg) => toDisplay(kg, unit))}
-              format={(v) => String(Math.round(v))}
-              xFirst={sessionDateLabel(sessionsNewestFirst[sessionsNewestFirst.length - 1].at, {
-                upper: true,
-              })}
-              xLast={
-                bests.length >= 2
-                  ? sessionDateLabel(sessionsNewestFirst[0].at, { upper: true })
-                  : ''
+      {binned.length ? (
+        <>
+          <View
+            onLayout={(e) => {
+              if (focus === 'stats') {
+                scrollRef.current?.scrollTo({ y: e.nativeEvent.layout.y, animated: true });
               }
+            }}
+          >
+            <Section
+              label={`PROGRESS · ${metric === 'reps' ? 'REPS' : unitLabel}`}
+              right={<TrendFlag trend={trendOf(series.points)} />}
+              plated={false}
+            >
+              <Segmented options={METRICS} value={metric} onChange={setMetric} />
+              <Segmented options={GRANULARITIES} value={gran} onChange={setGran} />
+              <LineChart
+                points={series.points}
+                slots={series.slots}
+                trend={fit}
+                xLabels={axisLabels(series, gran)}
+                format={formatY}
+              />
+            </Section>
+          </View>
+
+          <Section label={COMPARED[gran]} plated={false}>
+            <StatTiles
+              items={[
+                {
+                  label: 'BEST e1RM',
+                  value:
+                    current?.e1rmKg == null
+                      ? DASH
+                      : formatPrValue('best_e1rm', current.e1rmKg, unit),
+                  visual: <Text style={text.label}>{unitLabel}</Text>,
+                  below: (
+                    <Change
+                      amount={periodChange(
+                        current?.e1rmKg ?? null,
+                        previous?.e1rmKg ?? null,
+                        toUnit,
+                      )}
+                      format={String}
+                    />
+                  ),
+                },
+                {
+                  label: 'VOLUME',
+                  value: current ? formatTonnage(current.volumeKg, unit) : DASH,
+                  below: (
+                    <Change
+                      amount={periodChange(
+                        current?.volumeKg ?? null,
+                        previous?.volumeKg ?? null,
+                        toUnit,
+                      )}
+                      format={(n) => formatTonnage(toKg(n, unit), unit)}
+                    />
+                  ),
+                },
+                {
+                  label: 'MOST REPS',
+                  value: current ? String(current.reps) : DASH,
+                  below: (
+                    <Change
+                      amount={periodChange(current?.reps ?? null, previous?.reps ?? null)}
+                      format={String}
+                    />
+                  ),
+                },
+                {
+                  label: 'SESSIONS',
+                  value: current ? String(current.sessions) : DASH,
+                  below: (
+                    <Change
+                      amount={periodChange(current?.sessions ?? null, previous?.sessions ?? null)}
+                      format={String}
+                    />
+                  ),
+                },
+              ]}
             />
           </Section>
-        </View>
+        </>
       ) : null}
 
       <Section label={`REP MAXES · ${unitLabel}`} plated={false}>
@@ -245,6 +353,21 @@ function Demo({ frames }: { frames: readonly [number, number, number] }) {
 }
 
 const DEMO = 190;
+
+function TrendFlag({ trend }: { trend: Trend | null }) {
+  if (trend === null) return null;
+  if (trend === 'flat') return <Text style={text.label}>FLAT</Text>;
+  return <Delta value={trend === 'up' ? 'UP' : 'DOWN'} positive={trend === 'up'} />;
+}
+
+/** A signed change in whole units. A dash when either period has no data, never a baseline made up. */
+function Change({ amount, format }: { amount: number | null; format: (abs: number) => string }) {
+  if (amount === null) return <Text style={[text.numSm, { color: color.lo }]}>{DASH}</Text>;
+  if (amount === 0) return <Text style={text.numSm}>0</Text>;
+  return (
+    <Delta value={`${amount > 0 ? '+' : '−'}${format(Math.abs(amount))}`} positive={amount > 0} />
+  );
+}
 
 function nowMs(): number {
   return Date.now();
