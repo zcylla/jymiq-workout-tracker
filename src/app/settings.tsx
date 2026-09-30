@@ -1,6 +1,5 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text } from 'react-native';
 
 import {
   ListRow,
@@ -15,7 +14,6 @@ import {
 import { setSettings, useSettings } from '@/data/settings';
 import { REST_CHOICES } from '@/lib/settings';
 import { formatRest } from '@/lib/time';
-import { text } from '@/theme';
 
 /**
  * Lab 37 D4. §0 keeps Settings off the tab bar — it is the gear in the Today
@@ -41,7 +39,7 @@ export default function SettingsScreen() {
   return (
     <>
       <Screen>
-        <ScreenHeader title="Settings" kicker="APP" onBack={() => router.back()} />
+        <ScreenHeader title="Settings" onBack={() => router.back()} />
 
         <Section first label="UNITS" plated={false}>
           <RowPlates>
@@ -51,8 +49,8 @@ export default function SettingsScreen() {
               }
             >
               <ListRow
+                quiet
                 title="Weight"
-                meta="KILOGRAMS ARE ALWAYS WHAT IS STORED"
                 value={settings.weightUnit.toUpperCase()}
                 chevron={false}
               />
@@ -65,33 +63,23 @@ export default function SettingsScreen() {
             <RowPlate>
               <Toggle
                 label="Track RPE"
-                meta={
-                  settings.trackRpe
-                    ? 'ON — LOGS UNSET UNLESS YOU DIAL IT'
-                    : 'OFF — SET IT ONLY IF YOU USE IT'
-                }
                 on={settings.trackRpe}
                 onToggle={(trackRpe) => setSettings({ trackRpe })}
               />
             </RowPlate>
             <RowPlate onPress={() => setPicking('compound')}>
-              <ListRow
-                title="Default rest · compound"
-                meta="WHEN THE ROUTINE AND THE EXERCISE SAY NOTHING"
-                value={formatRest(settings.restCompoundSec)}
-              />
+              <ListRow quiet title="Rest · compound" value={formatRest(settings.restCompoundSec)} />
             </RowPlate>
             <RowPlate onPress={() => setPicking('isolation')}>
               <ListRow
-                title="Default rest · isolation"
-                meta="THE SAME, FOR A LIFT THAT NEEDS LESS"
+                quiet
+                title="Rest · isolation"
                 value={formatRest(settings.restIsolationSec)}
               />
             </RowPlate>
             <RowPlate>
               <Toggle
-                label="Tap opens the keypad"
-                meta="OTHERWISE LONG-PRESS · TAP ARMS THE TAPE"
+                label="Tap opens keypad"
                 on={settings.tapOpensKeypad}
                 onToggle={(tapOpensKeypad) => setSettings({ tapOpensKeypad })}
               />
@@ -99,15 +87,12 @@ export default function SettingsScreen() {
           </RowPlates>
         </Section>
 
-        <Section label="ACCOUNT" plated={false}>
+        <Section plated={false}>
           <RowPlates>
             <RowPlate onPress={() => router.push('/sign-in')}>
-              <ListRow title="Account and your data" meta="SYNC, EXPORT AND RESTORE" />
+              <ListRow quiet title="Account" />
             </RowPlate>
           </RowPlates>
-          <Text style={text.prose}>
-            Your workouts are on this phone. Export is the only copy that leaves it.
-          </Text>
         </Section>
       </Screen>
 
