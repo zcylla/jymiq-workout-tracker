@@ -17,6 +17,7 @@ import {
 } from '@/components';
 import { exerciseStill } from '@/data/exercise-art';
 import { addExerciseToRoutine } from '@/data/mutations/routines';
+import { addExerciseToSession, replaceSessionExercise } from '@/data/mutations/sessions';
 import { exerciseListQuery } from '@/data/queries/exercises';
 import type { Equipment } from '@/data/schema';
 import { color, space } from '@/theme';
@@ -36,11 +37,20 @@ const FILTERS: { label: string; value: Equipment | null }[] = [
  *
  * The board's per-row BEST is a session-derived number, so it is absent until
  * Phase 6 writes sessions — not faked, and not a permanently empty column.
+ *
+ * It is also the exercise picker. `routineId` adds to a routine, `sessionId` adds to the
+ * live session, and `replace` (a session-exercise id) swaps that lift for the tapped one.
+ * `tabbed` is false when the picker is pushed over /live, where there is no tab bar.
  */
-export default function LibraryScreen() {
+export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
   const insets = useSafeAreaInsets();
   const tabBar = useTabBarHeight();
-  const { routineId } = useLocalSearchParams<{ routineId?: string }>();
+  const { routineId, sessionId, replace } = useLocalSearchParams<{
+    routineId?: string;
+    sessionId?: string;
+    replace?: string;
+  }>();
+  const picking = Boolean(routineId || sessionId || replace);
   const [search, setSearch] = useState('');
   const [equipment, setEquipment] = useState<Equipment | null>(null);
 
@@ -54,7 +64,7 @@ export default function LibraryScreen() {
       contentContainerStyle={{
         paddingHorizontal: space.pad,
         paddingTop: insets.top,
-        paddingBottom: space.between + tabBar,
+        paddingBottom: space.between + (tabbed ? tabBar : insets.bottom),
       }}
       ItemSeparatorComponent={() => <View style={{ height: space.row }} />}
       showsVerticalScrollIndicator={false}
@@ -63,7 +73,7 @@ export default function LibraryScreen() {
       ListHeaderComponent={
         <View style={{ gap: space.within, paddingBottom: space.within }}>
           <ScreenHeader
-            title={routineId ? 'Add exercise' : 'Library'}
+            title={replace ? 'Replace exercise' : picking ? 'Add exercise' : 'Library'}
             onBack={() => router.back()}
             right={
               <Pressable onPress={() => router.push('/exercise/new')} hitSlop={12}>
@@ -98,6 +108,16 @@ export default function LibraryScreen() {
       renderItem={({ item }) => (
         <RowPlate
           onPress={() => {
+            if (replace) {
+              replaceSessionExercise(replace, item.id);
+              router.back();
+              return;
+            }
+            if (sessionId) {
+              addExerciseToSession(sessionId, item.id);
+              router.back();
+              return;
+            }
             if (routineId) {
               addExerciseToRoutine({ routineId, exerciseId: item.id });
               router.back();
@@ -116,4 +136,8 @@ export default function LibraryScreen() {
       )}
     />
   );
+}
+
+export default function LibraryScreen() {
+  return <ExercisePicker tabbed />;
 }

@@ -299,57 +299,186 @@ export function addSet(sessionExerciseId: string, kind: SetLike['kind'] = 'worki
   return id;
 }
 
-/** A hard delete: an unwanted set is a mistake, not history. */
+/**
+ * A hard delete: an unwanted set is a mistake, not history. The survivors are
+ * renumbered so positions stay 1-based and gapless, and a cursor that pointed at
+ * the deleted set moves to the one that took its place.
+ */
 export function removeSet(id: string): void {
-  db.delete(sets).where(eq(sets.id, id)).run();
+  db.transaction((tx) => {
+    const [row] = tx
+      .select({ sessionExerciseId: sets.sessionExerciseId, sessionId: sessionExercises.sessionId })
+      .from(sets)
+      .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+      .where(eq(sets.id, id))
+      .limit(1)
+      .all();
+    if (!row) return;
+
+    const before = tx
+      .select({ id: sets.id })
+      .from(sets)
+      .where(eq(sets.sessionExerciseId, row.sessionExerciseId))
+      .orderBy(asc(sets.position))
+      .all();
+    const at = before.findIndex((s) => s.id === id);
+
+    tx.delete(sets).where(eq(sets.id, id)).run();
+
+    const after = before.filter((s) => s.id !== id);
+    after.forEach((s, i) => {
+      tx.update(sets)
+        .set({ position: i + 1 })
+        .where(eq(sets.id, s.id))
+        .run();
+    });
+
+    const heir = after[Math.min(at, after.length - 1)];
+    tx.update(sessions)
+      .set({ currentSetId: heir?.id ?? null })
+      .where(and(eq(sessions.id, row.sessionId), eq(sessions.currentSetId, id)))
+      .run();
+  });
 }
 
-/** Adds a lift the plan did not have. Its sets carry no plan, because there is none. */
-export function addExerciseToSession(sessionId: string, exerciseId: string): string {
+/** Snapshots an exercise into a session with `setCount` blank sets. */
+function insertSessionExercise(
+  tx: Tx,
+  input: {
+    sessionId: string;
+    exerciseId: string;
+    position: number;
+    plannedSets: number | null;
+    setCount: number;
+  },
+): { sxId: string; firstSetId: string | null } {
   const sxId = newId();
   const now = Date.now();
 
-  db.transaction((tx) => {
-    const [ex] = tx
-      .select({ kind: exercises.kind, defaultRestSec: exercises.defaultRestSec })
-      .from(exercises)
-      .where(eq(exercises.id, exerciseId))
-      .limit(1)
-      .all();
-    if (!ex) throw new Error(`No such exercise: ${exerciseId}`);
+  const [ex] = tx
+    .select({ kind: exercises.kind, defaultRestSec: exercises.defaultRestSec })
+    .from(exercises)
+    .where(eq(exercises.id, input.exerciseId))
+    .limit(1)
+    .all();
+  if (!ex) throw new Error(`No such exercise: ${input.exerciseId}`);
 
+  tx.insert(sessionExercises)
+    .values({
+      id: sxId,
+      sessionId: input.sessionId,
+      exerciseId: input.exerciseId,
+      position: input.position,
+      plannedSets: input.plannedSets,
+      restSec: resolveRestSec(null, ex.defaultRestSec, ex.kind, restDefaults()),
+      addedMidSession: true,
+    })
+    .run();
+
+  let firstSetId: string | null = null;
+  for (let i = 0; i < input.setCount; i++) {
+    const setId = newId();
+    firstSetId ??= setId;
+    tx.insert(sets)
+      .values({
+        id: setId,
+        sessionExerciseId: sxId,
+        position: i + 1,
+        kind: 'working',
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run();
+  }
+  return { sxId, firstSetId };
+}
+
+/**
+ * Adds a lift the plan did not have. Its sets carry no plan, because there is none.
+ * An empty session has no cursor yet, so the first lift added takes it.
+ */
+export function addExerciseToSession(sessionId: string, exerciseId: string): string {
+  return db.transaction((tx) => {
     const [last] = tx
       .select({ max: sql<number | null>`max(${sessionExercises.position})` })
       .from(sessionExercises)
       .where(eq(sessionExercises.sessionId, sessionId))
       .all();
 
-    tx.insert(sessionExercises)
-      .values({
-        id: sxId,
-        sessionId,
-        exerciseId,
-        position: (last?.max ?? -1) + 1,
-        restSec: resolveRestSec(null, ex.defaultRestSec, ex.kind, restDefaults()),
-        addedMidSession: true,
-      })
+    const { sxId, firstSetId } = insertSessionExercise(tx, {
+      sessionId,
+      exerciseId,
+      position: (last?.max ?? -1) + 1,
+      plannedSets: null,
+      setCount: DEFAULT_SETS,
+    });
+
+    tx.update(sessions)
+      .set({ currentSessionExerciseId: sxId, currentSetId: firstSetId })
+      .where(and(eq(sessions.id, sessionId), isNull(sessions.currentSessionExerciseId)))
       .run();
 
-    for (let i = 0; i < DEFAULT_SETS; i++) {
-      tx.insert(sets)
-        .values({
-          id: newId(),
-          sessionExerciseId: sxId,
-          position: i + 1,
-          kind: 'working',
-          createdAt: now,
-          updatedAt: now,
-        })
-        .run();
-    }
+    return sxId;
   });
+}
 
-  return sxId;
+/**
+ * Swap: the old lift is skipped, keeping whatever was logged on it, and the new
+ * one is inserted straight after it with the old one's target sets. The tail is
+ * shifted up by one so no two rows share a position. The cursor moves to the
+ * newcomer. Returns its session-exercise id.
+ */
+export function replaceSessionExercise(sessionExerciseId: string, newExerciseId: string): string {
+  return db.transaction((tx) => {
+    const [old] = tx
+      .select({
+        sessionId: sessionExercises.sessionId,
+        position: sessionExercises.position,
+        plannedSets: sessionExercises.plannedSets,
+      })
+      .from(sessionExercises)
+      .where(eq(sessionExercises.id, sessionExerciseId))
+      .limit(1)
+      .all();
+    if (!old) throw new Error(`No such session exercise: ${sessionExerciseId}`);
+
+    const [count] = tx
+      .select({ n: sql<number>`count(*)` })
+      .from(sets)
+      .where(eq(sets.sessionExerciseId, sessionExerciseId))
+      .all();
+    const setCount = old.plannedSets ?? (count?.n || DEFAULT_SETS);
+
+    tx.update(sessionExercises)
+      .set({ removedAt: Date.now() })
+      .where(eq(sessionExercises.id, sessionExerciseId))
+      .run();
+
+    tx.update(sessionExercises)
+      .set({ position: sql`${sessionExercises.position} + 1` })
+      .where(
+        and(
+          eq(sessionExercises.sessionId, old.sessionId),
+          sql`${sessionExercises.position} > ${old.position}`,
+        ),
+      )
+      .run();
+
+    const { sxId, firstSetId } = insertSessionExercise(tx, {
+      sessionId: old.sessionId,
+      exerciseId: newExerciseId,
+      position: old.position + 1,
+      plannedSets: old.plannedSets,
+      setCount,
+    });
+
+    tx.update(sessions)
+      .set({ currentSessionExerciseId: sxId, currentSetId: firstSetId })
+      .where(eq(sessions.id, old.sessionId))
+      .run();
+
+    return sxId;
+  });
 }
 
 /**
@@ -358,10 +487,37 @@ export function addExerciseToSession(sessionId: string, exerciseId: string): str
  * were logged before the skip.
  */
 export function skipSessionExercise(id: string): void {
-  db.update(sessionExercises)
-    .set({ removedAt: Date.now() })
-    .where(eq(sessionExercises.id, id))
-    .run();
+  db.transaction((tx) => {
+    const [row] = tx
+      .select({ sessionId: sessionExercises.sessionId, position: sessionExercises.position })
+      .from(sessionExercises)
+      .where(eq(sessionExercises.id, id))
+      .limit(1)
+      .all();
+    if (!row) return;
+
+    tx.update(sessionExercises)
+      .set({ removedAt: Date.now() })
+      .where(eq(sessionExercises.id, id))
+      .run();
+
+    const [session] = tx
+      .select({ current: sessions.currentSessionExerciseId })
+      .from(sessions)
+      .where(eq(sessions.id, row.sessionId))
+      .limit(1)
+      .all();
+    if (session?.current !== id) return;
+
+    const next = nextIncompleteSet(tx, row.sessionId, row.position, Number.MAX_SAFE_INTEGER);
+    tx.update(sessions)
+      .set({
+        currentSessionExerciseId: next?.sessionExerciseId ?? null,
+        currentSetId: next?.id ?? null,
+      })
+      .where(eq(sessions.id, row.sessionId))
+      .run();
+  });
 }
 
 export function unskipSessionExercise(id: string): void {
@@ -406,6 +562,23 @@ export function setSessionCursor(
 
 export function clearRest(sessionId: string): void {
   db.update(sessions).set({ restUntil: null }).where(eq(sessions.id, sessionId)).run();
+}
+
+/** +30s on the countdown. Nothing is running, nothing to extend; an expired clock restarts from now. */
+export function extendRest(sessionId: string, seconds: number): void {
+  const now = Date.now();
+  db.update(sessions)
+    .set({ restUntil: sql`max(${sessions.restUntil}, ${now}) + ${Math.round(seconds * 1000)}` })
+    .where(and(eq(sessions.id, sessionId), sql`${sessions.restUntil} is not null`))
+    .run();
+}
+
+/** A blank note is no note. */
+export function setSessionExerciseNote(sessionExerciseId: string, note: string | null): void {
+  db.update(sessionExercises)
+    .set({ note: note?.trim() || null })
+    .where(eq(sessionExercises.id, sessionExerciseId))
+    .run();
 }
 
 /**
