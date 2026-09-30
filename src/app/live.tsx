@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { BackHandler, Pressable, Text, View } from 'react-native';
+import { BackHandler, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import {
   ActionBar,
@@ -28,6 +28,7 @@ import {
   finishSession,
   removeSessionExercise,
   removeSet,
+  setSessionExerciseNote,
   reorderSessionExercises,
   reorderSets,
   setSessionCursor,
@@ -44,19 +45,28 @@ import {
 } from '@/data/queries/sessions';
 import { exerciseStill } from '@/data/exercise-art';
 import { estimate1RM } from '@/lib/e1rm';
+import { liveE1rm, loadDelta } from '@/lib/live-readout';
 import { nextExercise, nextSet, prevExercise, prevSet } from '@/lib/live-nav';
 import type { Swipe } from '@/lib/pager';
 import { formatPrValue, type PrHit, PR_LABELS } from '@/lib/pr';
-import { elapsedSec, restRemainingSec } from '@/lib/time';
+import { elapsedSec, formatClock, restRemainingSec } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
-import { countLoggedSets } from '@/lib/volume';
+import { countLoggedSets, formatTonnage, totalVolume } from '@/lib/volume';
 import { ExerciseLadder } from '@/components/exercise-ladder';
-import { LiveFooter } from '@/components/live-footer';
-import { LiveActions } from '@/components/live-actions';
+import { LiveDeck } from '@/components/live-deck';
 import { LiveInstrument } from '@/components/live-instrument';
 import { LivePager } from '@/components/live-pager';
+import { NoteSheet } from '@/components/note-sheet';
 import { pop } from '@/components/haptics';
 import { color, hairline, size, space, text } from '@/theme';
+
+/** The still beside the title; a short phone gives the ring the difference. */
+const STILL = 92;
+const STILL_SHORT = 52;
+/** Below this the screen goes compact: smaller still, the set line folds into the kicker, the deck closes up. */
+const SHORT_DP = 700;
+/** The air between the deck's readout and the action bar (the board's bar gap). */
+const DECK_GAP = 9;
 
 /** A record is named, never counted — "2 PRs" tells you nothing. */
 function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: string) {
@@ -108,13 +118,15 @@ function moved<T>(items: readonly T[], from: number, to: number): T[] {
 
 function LiveSession({ sessionId }: { sessionId: string }) {
   const [editing, setEditing] = useState<WorkoutParameter | null>(null);
-  const [sheet, setSheet] = useState<'sets' | 'exercises' | null>(null);
+  const [sheet, setSheet] = useState<'sets' | 'exercises' | 'notes' | null>(null);
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [pulse, setPulse] = useState(0);
   const barHeight = useActionBarHeight();
   const show = useDialog();
   const settings = useSettings();
+  const focused = useIsFocused();
+  const { height: windowHeight } = useWindowDimensions();
 
   // `useLiveQuery`'s second argument is a dependency list and it defaults to
   // `[]`, so a query built from a value that arrives later subscribes once with
@@ -140,8 +152,8 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     sets[0];
 
   const previous = useLiveQuery(
-    lastCompletedExerciseSetQuery(exercise?.exerciseId ?? '', sessionId),
-    [exercise?.exerciseId, sessionId],
+    lastCompletedExerciseSetQuery(exercise?.exerciseId ?? '', sessionId, set?.position ?? 1),
+    [exercise?.exerciseId, sessionId, set?.position],
   ).data?.[0];
 
   // The clock is derived from the wall clock, never counted, so a suspended app
@@ -222,7 +234,11 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     router.push({ pathname: '/pick-exercise', params });
   };
 
+  // Only while focused: /live stays mounted under the exercise page and the
+  // picker, and a handler left registered there would discard the session from
+  // their back press.
   useEffect(() => {
+    if (!focused) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (keypadParam !== null) {
         setKeypadParam(null);
@@ -276,6 +292,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   const load = set.weightKg ?? 0;
   const reps = set.reps ?? 0;
   const oneRm = estimate1RM(load, reps);
+  const e1rm = liveE1rm(sets, load, reps);
   const restLeft = restRemainingSec(session.restUntil, now);
   const exerciseIndex = exercises.findIndex((e) => e.id === exercise.id);
   const setIndex = sets.findIndex((s) => s.id === set.id);
@@ -338,21 +355,64 @@ function LiveSession({ sessionId }: { sessionId: string }) {
 
   const finish = () => leave('finish');
 
-  const openHistory = () => router.push(`/exercise/${exercise.exerciseId}`);
+  const openExercise = (focus?: 'stats') =>
+    router.push({
+      pathname: '/exercise/[id]',
+      params: focus ? { id: exercise.exerciseId, focus } : { id: exercise.exerciseId },
+    });
+
+  const still = exerciseStill(exercise.exerciseId);
+  const compact = windowHeight < SHORT_DP;
+  const stillSize = compact ? STILL_SHORT : STILL;
 
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
-      <Screen bottomInset={barHeight} scroll={false}>
-        {/* The back row stays put; everything under it is the page. */}
-        <View style={{ paddingTop: 6, minHeight: size.hit, justifyContent: 'center' }}>
+      <Screen bottomInset={barHeight + DECK_GAP} scroll={false}>
+        {/* The back row stays put, and carries the clock and Finish the deck has no room for. */}
+        <View
+          style={{
+            paddingTop: 6,
+            minHeight: size.hit,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              top: 6,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={text.numSm}>
+              {formatClock(elapsedSec(session.startedAt, session.pausedMs, now))}
+            </Text>
+          </View>
           <Pressable
             onPress={discard}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Back"
-            style={{ alignSelf: 'flex-start' }}
           >
             <Icon name="back" tone={color.mid} />
+          </Pressable>
+          <View style={{ flex: 1 }} />
+          <Pressable
+            onPress={finish}
+            hitSlop={{ left: 12, right: 12 }}
+            accessibilityRole="button"
+            style={({ pressed }) => ({
+              minHeight: size.hit,
+              justifyContent: 'center',
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={text.body}>Finish</Text>
           </Pressable>
         </View>
 
@@ -366,38 +426,44 @@ function LiveSession({ sessionId }: { sessionId: string }) {
             onPress={() => setSheet('exercises')}
             accessibilityRole="button"
             accessibilityLabel="Exercises"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: space.within, paddingTop: 4 }}
           >
-            <ScreenHeader
-              title={exercise.name}
-              kicker={`EXERCISE ${exerciseIndex + 1} OF ${exercises.length}`}
-              right={
-                exerciseStill(exercise.exerciseId) ? (
-                  <Pressable
-                    onPress={openHistory}
-                    accessibilityRole="button"
-                    accessibilityLabel="Exercise history"
-                  >
-                    <ExerciseStill exerciseId={exercise.exerciseId} size={56} />
-                  </Pressable>
-                ) : undefined
-              }
-            />
+            <View style={{ flex: 1, gap: 5 }}>
+              <Text style={text.label}>
+                EXERCISE {exerciseIndex + 1} OF {exercises.length}
+                {compact ? ` · SET ${setIndex + 1} OF ${sets.length}` : ''}
+              </Text>
+              <Text style={text.h1} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
+                {exercise.name}
+              </Text>
+            </View>
+            {still ? (
+              <Pressable
+                onPress={() => openExercise()}
+                accessibilityRole="button"
+                accessibilityLabel="Exercise history"
+              >
+                <ExerciseStill exerciseId={exercise.exerciseId} size={stillSize} />
+              </Pressable>
+            ) : null}
           </Pressable>
 
           {/* Written, between two hairlines. A set strip was proposed and rejected. */}
-          <Pressable
-            onPress={() => setSheet('sets')}
-            accessibilityRole="button"
-            accessibilityLabel="Sets"
-          >
-            <View style={{ marginTop: space.within }}>
-              <View style={{ height: 1, backgroundColor: hairline.onGround }} />
-              <Text style={[text.label, { paddingVertical: 9, textAlign: 'center' }]}>
-                SET {setIndex + 1} OF {sets.length}
-              </Text>
-              <View style={{ height: 1, backgroundColor: hairline.onGround }} />
-            </View>
-          </Pressable>
+          {compact ? null : (
+            <Pressable
+              onPress={() => setSheet('sets')}
+              accessibilityRole="button"
+              accessibilityLabel="Sets"
+            >
+              <View style={{ marginTop: space.within }}>
+                <View style={{ height: 1, backgroundColor: hairline.onGround }} />
+                <Text style={[text.label, { paddingVertical: 9, textAlign: 'center' }]}>
+                  SET {setIndex + 1} OF {sets.length}
+                </Text>
+                <View style={{ height: 1, backgroundColor: hairline.onGround }} />
+              </View>
+            </Pressable>
+          )}
 
           <LiveInstrument
             editing={editing}
@@ -422,29 +488,41 @@ function LiveSession({ sessionId }: { sessionId: string }) {
                 : setKeypadParam(p)
             }
           />
-
-          {editing === null ? (
-            <LiveActions onSwap={() => pick({ replace: exercise.id })} onHistory={openHistory} />
-          ) : null}
-
-          {previous ? (
-            <Section label="LAST TIME" plated={false} first={editing === null}>
-              <Text style={text.body}>
-                {formatWeight(previous.weightKg ?? 0)} KG × {previous.reps ?? 0}
-                {previous.rpe == null ? '' : ` @ RPE ${previous.rpe}`}
-              </Text>
-            </Section>
-          ) : null}
         </LivePager>
 
-        <LiveFooter
-          elapsedSec={elapsedSec(session.startedAt, session.pausedMs, now)}
-          restUntil={session.restUntil}
-          restLeftSec={restLeft}
-          onExtendRest={() => extendRest(session.id, 30)}
-          onSkipRest={() => clearRest(session.id)}
-          onFinish={finish}
-        />
+        <View style={{ paddingTop: space.within }}>
+          <LiveDeck
+            compact={compact}
+            last={
+              previous
+                ? {
+                    value: `${formatWeight(previous.weightKg ?? 0)} × ${previous.reps ?? 0}${
+                      previous.rpe == null ? '' : ` @ ${previous.rpe}`
+                    }`,
+                    delta:
+                      set.weightKg != null && previous.weightKg != null
+                        ? loadDelta(set.weightKg, previous.weightKg)
+                        : null,
+                  }
+                : null
+            }
+            hasNote={!!exercise.note}
+            onHistory={() => openExercise()}
+            onStats={() => openExercise('stats')}
+            onNotes={() => setSheet('notes')}
+            onSwap={() => pick({ replace: exercise.id })}
+            volume={formatTonnage(
+              totalVolume(allSets, { includeWarmup: true }),
+              settings.weightUnit,
+            )}
+            sets={String(logged)}
+            e1rm={e1rm == null ? '—' : String(Math.round(e1rm))}
+            restUntil={session.restUntil}
+            restLeftSec={restLeft}
+            onExtendRest={() => extendRest(session.id, 30)}
+            onSkipRest={() => clearRest(session.id)}
+          />
+        </View>
       </Screen>
 
       <ExerciseLadder
@@ -454,8 +532,23 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         onPress={() => setSheet('exercises')}
       />
 
-      <ActionBar primary="Log set" onPrimary={log} disabled={!ready} />
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
+        <ActionBar
+          primary={`Log set ${setIndex + 1}`}
+          onPrimary={log}
+          disabled={!ready}
+          secondary="SETS"
+          onSecondary={() => setSheet('sets')}
+        />
+      </View>
 
+      <NoteSheet
+        open={sheet === 'notes'}
+        onClose={() => setSheet(null)}
+        exerciseName={exercise.name}
+        note={exercise.note}
+        onChange={(note) => setSessionExerciseNote(exercise.id, note)}
+      />
       <SetsSheet
         open={sheet === 'sets'}
         onClose={() => setSheet(null)}

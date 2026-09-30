@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,24 +17,31 @@ export function Screen({
   children,
   bottomInset = 0,
   scroll = true,
+  scrollRef,
 }: {
   children: ReactNode;
   /** Height of any chrome the content scrolls under — the tab bar, or an action bar. */
   bottomInset?: number;
-  /** False renders a fixed, non-scrolling body — the live screen keeps vertical drags for gestures. */
+  /**
+   * False renders a fixed, non-scrolling body — the live screen keeps vertical drags for gestures.
+   * Nothing scrolls under the chrome then, so the bottom pad is `bottomInset` alone.
+   */
   scroll?: boolean;
+  /** For a screen that opens scrolled to one of its sections. */
+  scrollRef?: Ref<ScrollView>;
 }) {
   const insets = useSafeAreaInsets();
   const padding = {
     paddingHorizontal: space.pad,
     paddingTop: insets.top,
-    paddingBottom: insets.bottom + space.between + bottomInset,
+    paddingBottom: scroll ? insets.bottom + space.between + bottomInset : bottomInset,
   };
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
       <Backdrop />
       {scroll ? (
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={padding}
           showsVerticalScrollIndicator={false}

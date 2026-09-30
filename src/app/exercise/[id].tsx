@@ -1,8 +1,8 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ScrollView, Text, View } from 'react-native';
 
 import { ColumnChart, Screen, ScreenHeader, Section } from '@/components';
 import { exerciseArt } from '@/data/exercise-art';
@@ -22,7 +22,9 @@ import { color, motion, space, text } from '@/theme';
  * not built yet.
  */
 export default function ExerciseScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `focus=stats` is the live screen's STATS: the same page, opened on the 1RM chart.
+  const { id, focus } = useLocalSearchParams<{ id: string; focus?: 'stats' }>();
+  const scrollRef = useRef<ScrollView>(null);
   const { data: found } = useLiveQuery(
     useMemo(() => exerciseQuery(id), [id]),
     [id],
@@ -48,7 +50,7 @@ export default function ExerciseScreen() {
   const assist = muscles?.filter((m) => m.role === 'assist').map((m) => m.muscle) ?? [];
 
   return (
-    <Screen>
+    <Screen scrollRef={scrollRef}>
       <ScreenHeader
         title={exercise?.name ?? ''}
         kicker={
@@ -94,21 +96,31 @@ export default function ExerciseScreen() {
       ) : null}
 
       {bests.length >= 1 ? (
-        <Section
-          label={bests.length >= 2 ? `1RM ${e1rmTakeaway(bests, unit)}` : '1RM'}
-          plated={false}
-        >
-          <ColumnChart
-            values={bests.map((kg) => toDisplay(kg, unit))}
-            format={(v) => String(Math.round(v))}
-            xFirst={sessionDateLabel(sessionsNewestFirst[sessionsNewestFirst.length - 1].at, {
-              upper: true,
-            })}
-            xLast={
-              bests.length >= 2 ? sessionDateLabel(sessionsNewestFirst[0].at, { upper: true }) : ''
+        <View
+          onLayout={(e) => {
+            if (focus === 'stats') {
+              scrollRef.current?.scrollTo({ y: e.nativeEvent.layout.y, animated: true });
             }
-          />
-        </Section>
+          }}
+        >
+          <Section
+            label={bests.length >= 2 ? `1RM ${e1rmTakeaway(bests, unit)}` : '1RM'}
+            plated={false}
+          >
+            <ColumnChart
+              values={bests.map((kg) => toDisplay(kg, unit))}
+              format={(v) => String(Math.round(v))}
+              xFirst={sessionDateLabel(sessionsNewestFirst[sessionsNewestFirst.length - 1].at, {
+                upper: true,
+              })}
+              xLast={
+                bests.length >= 2
+                  ? sessionDateLabel(sessionsNewestFirst[0].at, { upper: true })
+                  : ''
+              }
+            />
+          </Section>
+        </View>
       ) : null}
 
       {/* CC BY-SA asks for credit wherever the work is distributed, and the

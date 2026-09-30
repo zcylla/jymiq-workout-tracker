@@ -232,8 +232,16 @@ export function sessionsWithRecordsQuery(sessionIds: readonly string[]) {
     .where(inArray(personalRecords.sessionId, sessionIds.length ? sessionIds : ['']));
 }
 
-/** The most recently logged set for an exercise before the current session. */
-export function lastCompletedExerciseSetQuery(exerciseId: string, currentSessionId: string) {
+/**
+ * LAST TIME for one set: the latest other session that logged this exercise,
+ * and in it the set at the same `position` — or its last logged set when that
+ * session did fewer.
+ */
+export function lastCompletedExerciseSetQuery(
+  exerciseId: string,
+  currentSessionId: string,
+  position: number,
+) {
   return db
     .select({
       weightKg: sets.weightKg,
@@ -252,7 +260,11 @@ export function lastCompletedExerciseSetQuery(exerciseId: string, currentSession
         isNotNull(sets.completedAt),
       ),
     )
-    .orderBy(desc(sessions.startedAt), desc(sets.position))
+    .orderBy(
+      desc(sessions.startedAt),
+      desc(sql`${sets.position} = ${position}`),
+      desc(sets.position),
+    )
     .limit(1);
 }
 

@@ -22,10 +22,9 @@ type Props = {
   unit: string;
   /** Called once per crossed detent; the live row persists it immediately. */
   onDetent?: (value: number) => void;
+  /** Visible detents, odd so one sits in the centre. A short screen shows fewer. */
+  rows?: number;
 };
-
-const ROWS = 9;
-const CENTRE = 4;
 /** Lab 06 tile 02: underdamped on purpose — the overshoot is what reads as mechanical. */
 const SETTLE = { damping: 26, stiffness: 220, mass: 0.6 };
 
@@ -35,7 +34,8 @@ const SETTLE = { damping: 26, stiffness: 220, mass: 0.6 };
  * the UI thread; every detent it crosses — dragged or coasting — ticks and
  * writes through `onDetent` exactly once.
  */
-export function Tape({ scale, value, unit, onDetent }: Props) {
+export function Tape({ scale, value, unit, onDetent, rows = 9 }: Props) {
+  const centre = (rows - 1) / 2;
   const active = indexOf(scale, value);
   const posSV = useSharedValue(active);
   const startSV = useSharedValue(active);
@@ -102,14 +102,14 @@ export function Tape({ scale, value, unit, onDetent }: Props) {
     });
 
   const strip = useAnimatedStyle(() => ({
-    transform: [{ translateY: (CENTRE - posSV.get()) * size.tapeRow }],
+    transform: [{ translateY: (centre - posSV.get()) * size.tapeRow }],
   }));
 
   return (
     <GestureDetector gesture={pan}>
       <View style={{ width: 72 }}>
         <Text style={[text.label, { marginBottom: 8, textAlign: 'right' }]}>{unit}</Text>
-        <View style={{ height: size.tapeRow * ROWS, overflow: 'hidden' }}>
+        <View style={{ height: size.tapeRow * rows, overflow: 'hidden' }}>
           <Animated.View style={strip}>
             {Array.from({ length: scale.n }, (_, index) => {
               const distance = index - active;

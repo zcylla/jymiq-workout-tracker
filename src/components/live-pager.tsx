@@ -146,8 +146,8 @@ export function LivePager({ pageKey, can, disabled, onSwipe, children }: Props) 
 
   return (
     <GestureDetector gesture={pan}>
-      <View style={{ overflow: 'hidden' }}>
-        <Animated.View style={style}>{children}</Animated.View>
+      <View style={{ flex: 1, overflow: 'hidden' }}>
+        <Animated.View style={[{ flex: 1 }, style]}>{children}</Animated.View>
       </View>
     </GestureDetector>
   );

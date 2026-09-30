@@ -20,6 +20,10 @@ const A1 = 60;
  *  change of value is a transform transition rather than a relayout. */
 const TICK_BOX = 40;
 const TICK_THICK = 3;
+const NUMERALS_MIN = 220;
+const CHIPS_MIN = 80;
+const SUBLINE_MIN = 50;
+const LABEL_MIN = 30;
 const TICK_TRANSITION: CSSTransitionProperties<ViewStyle> = {
   transitionProperty: ['transform', 'backgroundColor'],
   transitionDuration: 200,
@@ -39,7 +43,8 @@ export type LoadRingCore = {
 };
 
 type Props = {
-  size: 330 | 290;
+  /** 330 at rest and 290 while editing (Lab 33); a short screen passes less. */
+  size: number;
   scale: Scale;
   value: number;
   /** The e1RM notch. Omit when one is not available. */
@@ -70,15 +75,23 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
 
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: popSV.get() }] }));
 
+  // A short screen hands this less than 290: the numerals need 19pt of radius
+  // they no longer have, and the core sheds its lines rather than run into the ticks.
+  const numerals = showNumerals && size >= NUMERALS_MIN;
   const center = size / 2;
-  const ringRadius = size / 2 - (showNumerals ? 45 : 26);
+  const ringRadius = size / 2 - (numerals ? 45 : 26);
   const cursor = indexOf(scale, value);
   const markIndex = mark === null ? null : indexOf(scale, mark);
-  const s = (ringRadius - 22) / 123;
-  const big = Math.round(54 * s);
+  const s = Math.max(0, (ringRadius - 22) / 123);
+  const big = Math.max(16, Math.round(54 * s));
   const sub = Math.max(11, Math.round(13 * s));
   const small = Math.max(11, Math.round((core.editing ? 18 : 26) * s));
   const gap = Math.round((core.editing ? 9 : 13) * s);
+  /** The clear diameter inside the longest lit tick. */
+  const clear = 2 * (ringRadius - 32);
+  const chips = clear >= CHIPS_MIN ? core.chips : undefined;
+  const subline = clear >= SUBLINE_MIN;
+  const label = clear >= LABEL_MIN;
 
   return (
     <View style={{ width: size, height: size }}>
@@ -135,7 +148,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
                 ...TICK_TRANSITION,
               }}
             />
-            {showNumerals && i % scale.label === 0 ? (
+            {numerals && i % scale.label === 0 ? (
               <Text
                 style={{
                   ...mono(400),
@@ -173,19 +186,21 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
           popStyle,
         ]}
       >
-        <View
-          style={{
-            paddingVertical: 2,
-            paddingHorizontal: 7,
-            borderRadius: radius.cell,
-            borderCurve: 'continuous',
-            backgroundColor: core.editing ? wash.accent : undefined,
-          }}
-        >
-          <Text style={[text.label, { color: core.editing ? color.accent : color.lo }]}>
-            {core.label}
-          </Text>
-        </View>
+        {label ? (
+          <View
+            style={{
+              paddingVertical: 2,
+              paddingHorizontal: 7,
+              borderRadius: radius.cell,
+              borderCurve: 'continuous',
+              backgroundColor: core.editing ? wash.accent : undefined,
+            }}
+          >
+            <Text style={[text.label, { color: core.editing ? color.accent : color.lo }]}>
+              {core.label}
+            </Text>
+          </View>
+        ) : null}
         <RollingNumber
           value={core.value}
           style={{
@@ -196,19 +211,21 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
             color: color.hi,
           }}
         />
-        <Text
-          style={{
-            ...mono(400),
-            fontSize: sub,
-            lineHeight: lh(sub),
-            color: color.mid,
-          }}
-        >
-          {core.subline}
-        </Text>
-        {core.chips?.length ? (
+        {subline ? (
+          <Text
+            style={{
+              ...mono(400),
+              fontSize: sub,
+              lineHeight: lh(sub),
+              color: color.mid,
+            }}
+          >
+            {core.subline}
+          </Text>
+        ) : null}
+        {chips?.length ? (
           <View style={{ flexDirection: 'row', gap: 4, marginTop: gap }}>
-            {core.chips.map((chip) => (
+            {chips.map((chip) => (
               <View
                 key={chip.unit}
                 style={{
