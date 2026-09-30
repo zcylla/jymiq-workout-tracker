@@ -134,20 +134,20 @@ export const glassRecipes = {
   },
   frost: {
     fill: {
-      backgroundColor: 'rgba(255,255,255,0.09)',
+      backgroundColor: 'rgba(255,255,255,0.035)',
       borderWidth: 0.5,
-      borderColor: 'rgba(255,255,255,0.19)',
+      borderColor: 'rgba(255,255,255,0.14)',
       experimental_backgroundImage:
-        'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 60%)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.36)',
+        'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 55%)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.24)',
     },
     drop: '0 10px 28px rgba(0,0,0,0.42)',
     tile: {
-      backgroundColor: 'rgba(255,255,255,0.07)',
+      backgroundColor: 'rgba(255,255,255,0.05)',
       borderWidth: 0.5,
-      borderColor: 'rgba(255,255,255,0.14)',
+      borderColor: 'rgba(255,255,255,0.10)',
     },
-    blurTint: 'default',
+    blurTint: 'dark',
   },
   smoke: {
     fill: {
