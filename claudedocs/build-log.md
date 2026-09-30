@@ -102,10 +102,22 @@ tab roots, Settings, Account and the copy on nearly every screen; the main scree
   p99 89 ms; median and p90 unchanged. So the backdrop was NOT the main cost: the remaining ~10% jank
   is in the suspects below. Scripts were in `/tmp/claude-1000/scenario.sh` (recreate from the
   scenario list). Unlit dial ticks now use `color.tick1`.
-- *Stashed, unverified:* `git stash list` holds `perf-agent-partial` — a half-finished attempt at a
-  ring rewrite (`src/lib/ring.ts`), a live render split (`live-deck.tsx`, `live.tsx`) and a backdrop
-  rewrite, from an agent stopped mid-task. Read it with `git stash show -p stash@{0}` before
-  starting; do not `pop` it blindly, it was never run.
+- *Measured 2026-09-30 (dev build, phone, DND on, `scenario` = tabs x3, routine push/pop x3, History
+  scroll x3; per-phase `dumpsys gfxinfo` with a foreground guard — never run it blind, a Back press on
+  a tab root exits the app and later taps open other apps):* baseline is ~6.6% janky, p90 18-20 ms,
+  p99 69-85 ms. By phase: tab switching 8-17% janky (p99 ~100 ms), routine push/pop 13-19% (p90
+  ~35 ms), History scroll 2.3% (fine), idle 0 frames (no idle cost). **Tried and rejected:**
+  `freezeOnBlur` on the tabs made it worse (6.6% -> 13-14% janky: thawing re-renders the subtree);
+  dropping the push animation and swapping `RowPlate`'s press feel for a plain `Pressable` or removing
+  the exercise stills changed nothing measurable. **The routine screen's mount is one ~160 ms React
+  commit** (Profiler, dev build): exercises 76 ms (4 rows), rail 43 ms (3 rows), tiles 37 ms, three
+  renders in total as its five live queries resolve (t=0, +145 ms, +470 ms). The cost is spread evenly
+  per component (~10-19 ms a row), which is what unoptimised dev JS looks like — **the next step is a
+  release-build comparison before changing code** (see below; it replaces the dev client, ask first).
+- *Metro and worktrees:* agent worktrees live in `.claude/worktrees/` inside the project; a
+  `pnpm install` in one crashed Metro's watcher, and nested worktrees make Biome refuse to run.
+  `metro.config.js` now ignores them, but **remove a worktree when its work is merged**.
+- *The stash from the earlier perf agent (`perf-agent-partial`) no longer exists.*
 - *Measure first, with numbers:* `adb shell dumpsys gfxinfo com.zcylla.jymiq reset`, run a scripted
   scenario, then `dumpsys gfxinfo` (janky frames %, 50/90/95/99th percentile). Scenarios: tabs
   Today→Session→History→Load x3; push/pop routine detail x5; scroll History and the library; live
