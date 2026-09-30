@@ -107,6 +107,107 @@ export const size = {
  */
 export const litEdge = 'inset 0 1px 0 rgba(255,255,255,0.075), inset 0 -1px 0 rgba(0,0,0,0.28)';
 
+/**
+ * The glass lab's recipes. `fill` is the translucent surface, drawn over a
+ * BlurView when the trial blurs and as the plate's own background when it does
+ * not; `drop` is the shadow, which stays on the plate either way; `tile` is a
+ * stat tile inside a glass hero card. `tint` is the blur-less glass that shipped,
+ * and `frost` is §0's G1.
+ */
+export const glassRecipes = {
+  tint: {
+    fill: {
+      backgroundColor: 'rgba(38,34,27,0.58)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.13)',
+      experimental_backgroundImage:
+        'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.025) 55%, rgba(255,255,255,0.05) 100%)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.30)',
+    },
+    drop: '0 10px 28px rgba(0,0,0,0.42)',
+    tile: {
+      backgroundColor: 'rgba(255,255,255,0.05)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.10)',
+    },
+    blurTint: 'dark',
+  },
+  frost: {
+    fill: {
+      backgroundColor: 'rgba(255,255,255,0.09)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.19)',
+      experimental_backgroundImage:
+        'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 60%)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.36)',
+    },
+    drop: '0 10px 28px rgba(0,0,0,0.42)',
+    tile: {
+      backgroundColor: 'rgba(255,255,255,0.07)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.14)',
+    },
+    blurTint: 'default',
+  },
+  smoke: {
+    fill: {
+      backgroundColor: 'rgba(10,9,8,0.45)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.08)',
+      experimental_backgroundImage:
+        'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 50%)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.35)',
+    },
+    drop: '0 12px 30px rgba(0,0,0,0.55)',
+    tile: {
+      backgroundColor: 'rgba(0,0,0,0.25)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.06)',
+    },
+    blurTint: 'dark',
+  },
+  /** CSS's `saturate(180%)` has no Android BlurView equivalent; a warm accent cast stands in for it. */
+  crystal: {
+    fill: {
+      backgroundColor: 'rgba(228,198,140,0.05)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.32)',
+      experimental_backgroundImage:
+        'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 35%, rgba(255,255,255,0) 70%, rgba(255,255,255,0.06) 100%)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(255,255,255,0.08)',
+    },
+    drop: '0 14px 32px rgba(0,0,0,0.45)',
+    tile: {
+      backgroundColor: 'rgba(255,255,255,0.06)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.22)',
+    },
+    blurTint: 'default',
+  },
+} as const;
+
+export type GlassRecipe = (typeof glassRecipes)[keyof typeof glassRecipes];
+
+/** The glass lab's grounds, drawn by `Backdrop` in place of the dot field. */
+export const backgrounds = {
+  grid: { line: 'rgba(255,255,255,0.06)', pitch: 36 },
+  hatch: { line: 'rgba(255,255,255,0.05)', pitch: 22 },
+  mesh: {
+    blooms: ['rgba(228,198,140,0.42)', 'rgba(159,174,58,0.34)', 'rgba(196,120,72,0.40)'],
+    blur: 70,
+  },
+  orbs: {
+    colors: [
+      'rgba(228,198,140,0.55)',
+      'rgba(196,120,72,0.50)',
+      'rgba(159,174,58,0.45)',
+      'rgba(228,198,140,0.50)',
+    ],
+    radius: 90,
+    blur: 34,
+  },
+} as const;
+
 export const containment = {
   rowPlate: {
     backgroundColor: color.raised,
@@ -122,16 +223,11 @@ export const containment = {
     boxShadow: litEdge,
   },
   glassPlate: {
-    backgroundColor: 'rgba(38,34,27,0.58)',
+    ...glassRecipes.tint.fill,
     borderRadius: radius.plate,
     borderCurve: 'continuous',
     padding: 15,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.13)',
-    experimental_backgroundImage:
-      'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.025) 55%, rgba(255,255,255,0.05) 100%)',
-    boxShadow:
-      'inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.30), 0 10px 28px rgba(0,0,0,0.42)',
+    boxShadow: `${glassRecipes.tint.fill.boxShadow}, ${glassRecipes.tint.drop}`,
   },
   none: {},
 } as const;

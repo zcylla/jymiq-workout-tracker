@@ -2,7 +2,10 @@ export { heat } from './heat';
 export { mono, sans, type MonoWeight, type SansWeight } from './fonts';
 export { lh, ls, text, type TextVariant } from './type';
 export {
+  backgrounds,
   chromeShadow,
+  glassRecipes,
+  type GlassRecipe,
   color,
   containment,
   dayMark,
