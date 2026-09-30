@@ -194,7 +194,7 @@ def phone(scr, active='today', sheet='', bloom=True, chrome=None, scroll=0, surf
     blooms = ('<div class="bloom" style="top:40px;right:-40px;width:300px;height:280px;'
               'background:rgba(228,198,140,0.13)"></div>'
               '<div class="bloom" style="bottom:120px;left:-60px;width:280px;height:220px;'
-              'background:rgba(159,174,58,0.07)"></div>') if bloom else ''
+              'background:rgba(228,198,140,0.13)"></div>') if bloom else ''
     return ('<div class="phone"><div class="field"></div>' + blooms
             + '<div class="sb"><span class="mono">9:41</span><i></i></div>'
             + '<div class="scr">' + scr + '</div>'
