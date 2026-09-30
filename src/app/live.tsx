@@ -49,6 +49,7 @@ import { liveE1rm, loadDelta } from '@/lib/live-readout';
 import { nextExercise, nextSet, prevExercise, prevSet } from '@/lib/live-nav';
 import type { Swipe } from '@/lib/pager';
 import { formatPrValue, type PrHit, PR_LABELS } from '@/lib/pr';
+import { moved } from '@/lib/reorder';
 import { elapsedSec, formatClock, restRemainingSec } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
 import { countLoggedSets, formatTonnage, totalVolume } from '@/lib/volume';
@@ -107,13 +108,6 @@ export default function LiveScreen() {
   // keeps its last rows when its deps change, and an id-less first answer of
   // `[]` would otherwise read as an empty session.
   return <LiveSession key={id} sessionId={id} />;
-}
-
-/** A new array with the item at `from` moved to `to`. */
-function moved<T>(items: readonly T[], from: number, to: number): T[] {
-  const next = [...items];
-  next.splice(to, 0, ...next.splice(from, 1));
-  return next;
 }
 
 function LiveSession({ sessionId }: { sessionId: string }) {
