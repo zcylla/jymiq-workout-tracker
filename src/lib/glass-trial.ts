@@ -29,12 +29,12 @@ export type GlassTrial = {
   scope: Scope;
 };
 
-/** Exactly what shipped before the lab: the blur-less tint on the two shipped hero cards. */
+/** The owner's pick from the lab (2026-09-30): frost with minimal blur on every main card, today's ground. */
 export const DEFAULT_TRIAL: GlassTrial = {
-  style: 'tint',
-  blur: 0,
+  style: 'frost',
+  blur: 20,
   background: 'dots',
-  scope: 'hero',
+  scope: 'cards',
 };
 
 const SCOPE_ELEMENTS: Record<Scope, readonly Element[]> = {
@@ -66,24 +66,12 @@ export function coerceTrial(raw: unknown): GlassTrial {
   };
 }
 
-export const isShipped = (t: GlassTrial): boolean =>
-  t.style === DEFAULT_TRIAL.style &&
-  t.blur === DEFAULT_TRIAL.blur &&
-  t.background === DEFAULT_TRIAL.background &&
-  t.scope === DEFAULT_TRIAL.scope;
-
 /**
  * Whether one surface is glass under a trial, and the BlurView intensity it
- * takes (0 is no BlurView). `added` marks a hero card the lab brought into
- * scope: it stays opaque under the shipped trial, so the default changes nothing.
- * Inner tiles never blur — they sit on a plate that already does.
+ * takes (0 is no BlurView). Inner tiles never blur — they sit on a plate that already does.
  */
-export function glassOf(
-  t: GlassTrial,
-  element: Element,
-  added = false,
-): { glass: boolean; blur: number } {
-  const glass = t.style !== 'off' && appliesTo(t.scope, element) && !(added && isShipped(t));
+export function glassOf(t: GlassTrial, element: Element): { glass: boolean; blur: number } {
+  const glass = t.style !== 'off' && appliesTo(t.scope, element);
   const blur = glass && element !== 'inner' && BLURRING.includes(t.style) ? t.blur : 0;
   return { glass, blur };
 }
@@ -97,7 +85,7 @@ export const screenBlurs = (t: GlassTrial): boolean =>
   (['hero', 'plate', 'row'] as const).some((element) => glassOf(t, element).blur > 0);
 
 export const PRESETS: readonly { label: string; trial: GlassTrial }[] = [
-  { label: 'A · Today', trial: DEFAULT_TRIAL },
+  { label: 'A · Frost 20 cards', trial: DEFAULT_TRIAL },
   {
     label: 'B · Frost 40 mesh',
     trial: { style: 'frost', blur: 40, background: 'mesh', scope: 'hero' },

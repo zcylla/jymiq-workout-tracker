@@ -17,10 +17,10 @@ export const BlurTargetContext = createContext<RefObject<View | null> | null>(nu
 export const GlassHeroContext = createContext(false);
 
 /** The glass lab's verdict for one surface: its recipe (null is opaque) and blur intensity (0 is no BlurView). */
-export function useGlass(element: Element, added = false) {
+export function useGlass(element: Element) {
   const trial = useGlassTrial();
   const target = useContext(BlurTargetContext);
-  const { glass, blur } = glassOf(trial, element, added);
+  const { glass, blur } = glassOf(trial, element);
   const recipe = glass && trial.style !== 'off' ? glassRecipes[trial.style] : null;
   return { recipe, blur: target ? blur : 0, target };
 }

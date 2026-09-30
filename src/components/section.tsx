@@ -21,7 +21,7 @@ type Props = {
    */
   plated?: boolean;
   tone?: 'raised' | 'panel' | 'glass';
-  /** A hero card the glass lab added — see `Plate`. */
+  /** The screen's main card — see `Plate`. */
   hero?: boolean;
   pad?: number;
   /** The hairline running from the label to the right edge. */

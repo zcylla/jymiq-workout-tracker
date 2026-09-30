@@ -14,13 +14,11 @@ import {
   appliesTo,
   coerceTrial,
   glassOf,
-  isShipped,
   screenBlurs,
 } from './glass-trial.ts';
 
 test('the default trial is the look that already shipped', () => {
-  assert.deepEqual(DEFAULT_TRIAL, { style: 'tint', blur: 0, background: 'dots', scope: 'hero' });
-  assert.equal(isShipped(DEFAULT_TRIAL), true);
+  assert.deepEqual(DEFAULT_TRIAL, { style: 'frost', blur: 20, background: 'dots', scope: 'cards' });
 });
 
 test('nothing readable in the store gives the default trial', () => {
@@ -31,7 +29,7 @@ test('nothing readable in the store gives the default trial', () => {
 
 test('one bad key falls back alone and the rest survive', () => {
   const t = coerceTrial({ style: 'frost', blur: 35, background: 'stripes', scope: 'cards' });
-  assert.deepEqual(t, { style: 'frost', blur: 0, background: 'dots', scope: 'cards' });
+  assert.deepEqual(t, { style: 'frost', blur: 20, background: 'dots', scope: 'cards' });
 });
 
 test('every level of every axis survives a round trip', () => {
@@ -72,11 +70,11 @@ test('every preset is a valid trial, and the first is today', () => {
   assert.equal(new Set(PRESETS.map((p) => p.label)).size, PRESETS.length);
 });
 
-test('the shipped trial glasses only the two shipped cards', () => {
-  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'hero'), { glass: true, blur: 0 });
-  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'hero', true), { glass: false, blur: 0 });
-  const changed = { ...DEFAULT_TRIAL, background: 'grid' } as const;
-  assert.deepEqual(glassOf(changed, 'hero', true), { glass: true, blur: 0 });
+test('the default glasses heroes and plates with a light blur, never rows or chrome', () => {
+  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'hero'), { glass: true, blur: 20 });
+  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'plate'), { glass: true, blur: 20 });
+  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'row'), { glass: false, blur: 0 });
+  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'chrome'), { glass: false, blur: 0 });
 });
 
 test('style off or scope off is opaque everywhere', () => {
@@ -96,7 +94,8 @@ test('blur only for a blurring style, a level above zero, and never on inner til
 });
 
 test('a screen carries a blur target only when a surface on it blurs', () => {
-  assert.equal(screenBlurs(DEFAULT_TRIAL), false);
+  assert.equal(screenBlurs(DEFAULT_TRIAL), true);
+  assert.equal(screenBlurs({ ...DEFAULT_TRIAL, blur: 0 }), false);
   assert.equal(screenBlurs({ style: 'frost', blur: 40, background: 'dots', scope: 'hero' }), true);
   assert.equal(
     screenBlurs({ style: 'frost', blur: 40, background: 'dots', scope: 'chrome' }),

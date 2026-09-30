@@ -19,8 +19,7 @@ const { backgroundColor: _fill, boxShadow: _edge, ...glassShell } = containment.
  * on a near-black ground starts reading as cheap frosted glass, and glass is
  * reserved for chrome.
  *
- * `tone="glass"` and `hero` both mark a hero card for the glass lab; `hero` is
- * one the lab added, which stays opaque under the shipped trial.
+ * `tone="glass"` and `hero` both mark a screen's main card, which takes the glass trial.
  */
 export function Plate({
   children,
@@ -34,7 +33,7 @@ export function Plate({
   pad?: number;
 }) {
   const isHero = tone === 'glass' || hero;
-  const { recipe, blur, target } = useGlass(isHero ? 'hero' : 'plate', hero && tone !== 'glass');
+  const { recipe, blur, target } = useGlass(isHero ? 'hero' : 'plate');
   return (
     <View
       style={[
