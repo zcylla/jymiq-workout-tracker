@@ -6,6 +6,7 @@ import { type ScrollView, Text, View } from 'react-native';
 
 import {
   Delta,
+  ExerciseLog,
   LineChart,
   Screen,
   ScreenHeader,
@@ -314,6 +315,7 @@ export default function ExerciseScreen() {
           ))}
         </View>
       </Section>
+      <ExerciseLog exerciseId={id} />
 
       {/* CC BY-SA asks for credit wherever the work is distributed, and the
             app is where this app distributes it. */}
