@@ -21,7 +21,6 @@ import {
   useTabBarHeight,
 } from '@/components';
 import { useRows } from '@/data/live';
-import { startSession } from '@/data/mutations/sessions';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { exerciseCountQuery } from '@/data/queries/exercises';
 import { loggedSessionIdsQuery } from '@/data/queries/load';
@@ -31,6 +30,7 @@ import { recentSessionsQuery, sessionsWithRecordsQuery } from '@/data/queries/se
 import { lastRunPerRoutineQuery } from '@/data/queries/today';
 import { useSessionRunning } from '@/data/running';
 import { useActiveSchedule } from '@/data/schedule';
+import { useStartSession } from '@/data/start';
 import { trainedDays } from '@/lib/calendar';
 import { nextKicker } from '@/lib/next';
 import { type ScheduledDay, nextScheduled } from '@/lib/program';
@@ -153,6 +153,7 @@ function NextCard({
   loading: boolean;
 }) {
   const running = useSessionRunning();
+  const start = useStartSession();
   const lifts = useRows(
     useMemo(() => routineExercisesQuery(next?.routine.id ?? ''), [next?.routine.id]),
     [next?.routine.id],
@@ -189,20 +190,7 @@ function NextCard({
   const disabled = running === null || lifts === null || (!resume && lifts.length === 0);
 
   const press = () => {
-    if (disabled) return;
-    if (resume) {
-      router.push('/live');
-      return;
-    }
-    try {
-      startSession({ routineId: next.routine.id });
-      // Replace, not push: going "back" to the card that started a running
-      // session is not a state this screen should be able to return to.
-      router.replace('/live');
-    } catch {
-      // Another start won the race. What is running is the place to be.
-      router.push('/live');
-    }
+    if (!disabled) start();
   };
 
   return (
@@ -243,26 +231,13 @@ function NextCard({
 
 /** Lab 43 T3 — the empty state is a set of actions, not an apology. */
 function FirstSteps() {
+  const start = useStartSession();
   const running = useSessionRunning();
   const count = useRows(
     useMemo(() => exerciseCountQuery(), []),
     [],
   );
   const exercises = count?.[0]?.n;
-
-  const startEmpty = () => {
-    if (running === null) return;
-    if (running) {
-      router.push('/live');
-      return;
-    }
-    try {
-      startSession();
-      router.replace('/live');
-    } catch {
-      router.push('/live');
-    }
-  };
 
   return (
     <Section first plated={false}>
@@ -273,7 +248,7 @@ function FirstSteps() {
         <RowPlate onPress={() => router.push('/session/library')}>
           <ListRow title="Browse the library" meta={exercises ? String(exercises) : undefined} />
         </RowPlate>
-        <RowPlate onPress={startEmpty}>
+        <RowPlate onPress={start}>
           <ListRow title={running ? 'Resume' : 'Empty session'} />
         </RowPlate>
       </RowPlates>

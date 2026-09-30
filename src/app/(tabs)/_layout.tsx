@@ -1,7 +1,7 @@
-import { router } from 'expo-router';
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
 
 import { StartButton, TabBar, TabItem } from '@/components';
+import { useStartSession } from '@/data/start';
 
 /**
  * W2 — four labelled tabs on one plane with an inset start button.
@@ -16,6 +16,8 @@ import { StartButton, TabBar, TabItem } from '@/components';
  * restated here or the whole navigator collapses.
  */
 export default function TabsLayout() {
+  const start = useStartSession();
+
   return (
     <Tabs style={{ flex: 1 }} options={{ backBehavior: 'firstRoute' }}>
       <TabSlot />
@@ -35,8 +37,8 @@ export default function TabsLayout() {
           <TabItem icon="session" label="Session" />
         </TabTrigger>
 
-        {/* Not a tab — it pushes the live session, which owns the whole plane. */}
-        <StartButton onPress={() => router.push('/live')} />
+        {/* Not a tab — it resumes or starts a session, which owns the whole plane. */}
+        <StartButton onPress={start} />
 
         <TabTrigger name="history" asChild>
           <TabItem icon="cal" label="History" />
