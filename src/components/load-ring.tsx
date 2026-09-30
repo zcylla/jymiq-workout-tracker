@@ -102,7 +102,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
         let length = lit ? (major ? 16 : 10) : major ? 10 : 5;
         let outRadius = 0;
         let width = lit ? (major ? 2 : 1.4) : 1;
-        let tickColor: Ink = lit ? (major ? color.tick3 : color.tick2) : color.off;
+        let tickColor: Ink = lit ? (major ? color.tick3 : color.tick2) : color.tick1;
         const distance = Math.abs(i - cursor);
 
         if (distance <= 6) {
