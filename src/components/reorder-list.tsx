@@ -20,6 +20,8 @@ type Props<T extends Item> = {
   items: readonly T[];
   /** Every row is exactly this tall — the slots the drag snaps between. */
   rowHeight: number;
+  /** Space between rows, for plates that are not flush. */
+  gap?: number;
   /** Omitted, nothing is draggable and `renderRow` gets no handle. */
   onReorder?: (fromIndex: number, toIndex: number) => void;
   /** Place `handle` as the row's first child; it is null when reordering is off. */
@@ -35,21 +37,35 @@ export const HANDLE_WIDTH = 36;
  * array and the siblings slide to their new slots on the UI thread. The
  * callback fires once, on drop.
  */
-export function ReorderList<T extends Item>({ items, rowHeight, onReorder, renderRow }: Props<T>) {
+export function ReorderList<T extends Item>({
+  items,
+  rowHeight,
+  gap = 0,
+  onReorder,
+  renderRow,
+}: Props<T>) {
   if (!onReorder) {
-    return <View>{items.map((item, i) => renderRow(item, i, null))}</View>;
+    return <View style={{ gap }}>{items.map((item, i) => renderRow(item, i, null))}</View>;
   }
   return (
-    <Sortable items={items} rowHeight={rowHeight} onReorder={onReorder} renderRow={renderRow} />
+    <Sortable
+      items={items}
+      rowHeight={rowHeight}
+      gap={gap}
+      onReorder={onReorder}
+      renderRow={renderRow}
+    />
   );
 }
 
 function Sortable<T extends Item>({
   items,
   rowHeight,
+  gap = 0,
   onReorder,
   renderRow,
 }: Props<T> & { onReorder: (from: number, to: number) => void }) {
+  const pitch = rowHeight + gap;
   const orderSV = useSharedValue(items.map((i) => i.id));
   const activeIdSV = useSharedValue<string | null>(null);
   const dragTopSV = useSharedValue(0);
@@ -60,13 +76,14 @@ function Sortable<T extends Item>({
   }, [key, orderSV]);
 
   return (
-    <View style={{ height: items.length * rowHeight }}>
+    <View style={{ height: Math.max(0, items.length * pitch - gap) }}>
       {items.map((item, i) => (
         <SortRow
           key={item.id}
           id={item.id}
           index={i}
           rowHeight={rowHeight}
+          pitch={pitch}
           orderSV={orderSV}
           activeIdSV={activeIdSV}
           dragTopSV={dragTopSV}
@@ -83,6 +100,7 @@ function SortRow({
   id,
   index,
   rowHeight,
+  pitch,
   orderSV,
   activeIdSV,
   dragTopSV,
@@ -92,6 +110,7 @@ function SortRow({
   id: string;
   index: number;
   rowHeight: number;
+  pitch: number;
   orderSV: SharedValue<string[]>;
   activeIdSV: SharedValue<string | null>;
   dragTopSV: SharedValue<number>;
@@ -107,18 +126,18 @@ function SortRow({
     .onStart(() => {
       const from = orderSV.get().indexOf(id);
       fromSV.set(from);
-      dragTopSV.set(from * rowHeight);
+      dragTopSV.set(from * pitch);
       activeIdSV.set(id);
       scheduleOnRN(gestureStart);
     })
     .onUpdate((event) => {
       const order = orderSV.get();
       const top = Math.min(
-        Math.max(fromSV.get() * rowHeight + event.translationY, 0),
-        (order.length - 1) * rowHeight,
+        Math.max(fromSV.get() * pitch + event.translationY, 0),
+        (order.length - 1) * pitch,
       );
       dragTopSV.set(top);
-      const target = Math.round(top / rowHeight);
+      const target = Math.round(top / pitch);
       if (target !== order.indexOf(id)) {
         const next = order.filter((x) => x !== id);
         next.splice(target, 0, id);
@@ -143,7 +162,7 @@ function SortRow({
   const rowStyle = useAnimatedStyle(() => {
     const active = activeIdSV.get() === id;
     const at = orderSV.get().indexOf(id);
-    const slot = (at < 0 ? index : at) * rowHeight;
+    const slot = (at < 0 ? index : at) * pitch;
     return {
       zIndex: active ? 10 : 0,
       transform: [

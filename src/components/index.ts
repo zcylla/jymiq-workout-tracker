@@ -13,7 +13,7 @@ export {
 export { DurationSheet } from './duration-sheet';
 export { ExercisesSheet } from './exercises-sheet';
 export { ExerciseStill } from './exercise-still';
-export { KeypadSheet } from './keypad-sheet';
+export { KeypadSheet, NumberSheet } from './keypad-sheet';
 export { Field } from './field';
 export { Chevron, Grip, Icon, type IconName } from './icon';
 export { ListRow } from './list-row';
@@ -26,6 +26,7 @@ export { Plate } from './plate';
 export { ProgramWeek } from './program-week';
 export { Rail, type RailItem } from './rail';
 export { RollingNumber } from './rolling-number';
+export { ReorderList } from './reorder-list';
 export { RowPlate, RowPlates } from './row-plate';
 export { Scale } from './scale';
 export { Screen } from './screen';
