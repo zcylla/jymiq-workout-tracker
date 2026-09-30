@@ -131,7 +131,7 @@ export default function HistoryScreen() {
       />
 
       <MonthSwap step={back}>
-        <Section first pad={15}>
+        <Section first pad={15} tone="glass">
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
             {all === null ? (
               <Waiting>

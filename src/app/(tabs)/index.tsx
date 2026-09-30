@@ -120,7 +120,7 @@ export default function TodayScreen() {
         <NextCard next={next} lastRunAt={lastRunAt} loading={active === null} />
       )}
 
-      <Section label="THIS WEEK" pad={WEEK_PAD}>
+      <Section label="THIS WEEK" pad={WEEK_PAD} tone="glass">
         <WeekStrip
           bleed={WEEK_PAD}
           days={week.days}
