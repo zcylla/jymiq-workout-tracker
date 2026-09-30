@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { type DaySession, dayKey, intensityStep, monthGrid, trainedDays } from './calendar.ts';
+import {
+  type DaySession,
+  dayKey,
+  intensityStep,
+  isoWeek,
+  monthGrid,
+  trainedDays,
+  weekVolumes,
+} from './calendar.ts';
 
 /** September 2026 starts on a Tuesday — lab39.py's own month. */
 const SEPT = new Date(2026, 8, 6, 12, 0, 0);
@@ -98,4 +106,49 @@ test('trainedDays keeps a session that logged no volume', () => {
 
 test('trainedDays on an empty month is empty, not a grid of zeroes', () => {
   assert.equal(trainedDays([]).size, 0);
+});
+
+test('monthGrid takes today separately, so another month still knows which day is today', () => {
+  const aug = monthGrid(new Date(2026, 7, 1), SEPT);
+  assert.equal(aug.title, 'August');
+  assert.equal(aug.year, 2026);
+  assert.equal(aug.todayKey, '2026-09-06');
+});
+
+test('monthGrid reports the whole weeks it draws as a query range', () => {
+  const grid = monthGrid(SEPT);
+  assert.equal(grid.gridFrom, new Date(2026, 7, 31).getTime());
+  assert.equal(grid.gridTo, new Date(2026, 9, 5).getTime());
+});
+
+test('isoWeek follows ISO 8601 across a year boundary', () => {
+  assert.equal(isoWeek(new Date(2026, 8, 28)), 40);
+  assert.equal(isoWeek(new Date(2026, 8, 27)), 39);
+  assert.equal(isoWeek(new Date(2026, 0, 1)), 1);
+  assert.equal(isoWeek(new Date(2027, 0, 1)), 53);
+});
+
+test('weekVolumes sums whole weeks, including the days the neighbouring month owns', () => {
+  const grid = monthGrid(SEPT);
+  const trained = trainedDays([
+    { id: 'aug31', startedAt: at(1) - 86_400_000, totalVolumeKg: 1000 },
+    { id: 'a', startedAt: at(1), totalVolumeKg: 2000 },
+    { id: 'b', startedAt: at(2), totalVolumeKg: 500 },
+  ]);
+  const weeks = weekVolumes(grid, trained);
+  assert.equal(weeks[0]?.label, 'W36');
+  assert.equal(weeks[0]?.volumeKg, 3500);
+});
+
+test('weekVolumes drops a week that has not started, and keeps the one under way', () => {
+  const grid = monthGrid(SEPT);
+  // 2026-09-06 is a Sunday: weeks starting Aug 31 and Sep 7 onwards; only the first has begun.
+  const weeks = weekVolumes(grid, new Map());
+  assert.equal(weeks.length, 1);
+  assert.equal(weeks[0]?.volumeKg, 0);
+});
+
+test('weekVolumes covers every week of a month already over', () => {
+  const grid = monthGrid(new Date(2026, 7, 1), SEPT);
+  assert.equal(weekVolumes(grid, new Map()).length, grid.weeks.length);
 });

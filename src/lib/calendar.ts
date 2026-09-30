@@ -23,6 +23,11 @@ export interface MonthGrid {
   to: number;
   /** The screen title: the month's own name. */
   title: string;
+  year: number;
+  /** Local ms bounds of the whole weeks the grid draws, `[from, to)`. A week's
+   *  total needs its adjacent-month days, so this is the range to query. */
+  gridFrom: number;
+  gridTo: number;
   /** Days in the month — the denominator of "trained N of M". */
   days: number;
   todayKey: string;
@@ -49,7 +54,11 @@ export function dayKey(at: number | Date): string {
  */
 export const mondayIndex = (d: Date) => (d.getDay() + 6) % 7;
 
-export function monthGrid(at: number | Date = Date.now()): MonthGrid {
+/**
+ * `today` is separate from `at` so a month other than the current one still
+ * knows which day is today; it defaults to `at`.
+ */
+export function monthGrid(at: number | Date = Date.now(), today: number | Date = at): MonthGrid {
   const now = asDate(at);
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -73,8 +82,11 @@ export function monthGrid(at: number | Date = Date.now()): MonthGrid {
     from: first.getTime(),
     to: new Date(year, month + 1, 1).getTime(),
     title: first.toLocaleDateString('en-US', { month: 'long' }),
+    year,
+    gridFrom: new Date(year, month, 1 - lead).getTime(),
+    gridTo: new Date(year, month, 1 - lead + weeks.length * 7).getTime(),
     days,
-    todayKey: dayKey(now),
+    todayKey: dayKey(today),
     weeks,
   };
 }
@@ -146,5 +158,41 @@ export function trainedDays(rows: readonly DaySession[]): Map<string, TrainedDay
 
   const out = new Map<string, TrainedDay>();
   for (const [key, day] of acc) out.set(key, { ...day, step: intensityStep(day.volumeKg, max) });
+  return out;
+}
+
+/** ISO 8601 week number: the week containing the year's first Thursday is week 1. */
+export function isoWeek(d: Date): number {
+  const thursday = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate() + 3 - mondayIndex(d));
+  const jan1 = Date.UTC(new Date(thursday).getUTCFullYear(), 0, 1);
+  return 1 + Math.floor((thursday - jan1) / (7 * 86_400_000));
+}
+
+export interface WeekVolume {
+  /** `W36`. */
+  label: string;
+  volumeKg: number;
+}
+
+/**
+ * Tonnage per Monday-first week the grid draws, oldest first.
+ *
+ * `trained` must cover `gridFrom`..`gridTo`, or the first and last weeks come
+ * out short. A week that has not started yet is dropped rather than drawn as
+ * zero — nothing has been lifted in it, and a zero column reads as a lapse.
+ */
+export function weekVolumes(
+  grid: MonthGrid,
+  trained: ReadonlyMap<string, TrainedDay>,
+): WeekVolume[] {
+  const out: WeekVolume[] = [];
+  for (const week of grid.weeks) {
+    const monday = week[0];
+    if (!monday || monday.key > grid.todayKey) continue;
+    let volumeKg = 0;
+    for (const cell of week) volumeKg += trained.get(cell.key)?.volumeKg ?? 0;
+    const [y, m, d] = monday.key.split('-').map(Number) as [number, number, number];
+    out.push({ label: `W${isoWeek(new Date(y, m - 1, d))}`, volumeKg });
+  }
   return out;
 }

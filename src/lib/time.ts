@@ -107,6 +107,12 @@ export function sessionDotTone(atMs: number, now = Date.now()): DotTone {
   return 'tick1';
 }
 
+/** "Tue 29" — a row inside one month, where the month is already in the header. */
+export function dayLabel(atMs: number): string {
+  const d = new Date(atMs);
+  return `${d.toLocaleDateString('en-US', { weekday: 'short' })} ${d.getDate()}`;
+}
+
 /** "Tue 2 Sep" — always the date, never a relative word. The Today header's
  *  kicker, which must say which day it is even when that day is today. */
 export function dateLabel(atMs: number): string {

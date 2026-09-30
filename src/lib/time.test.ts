@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import {
   SESSION_DURATION_CEILING_SEC,
   dateLabel,
+  dayLabel,
   isPlausibleDuration,
   sessionDateLabel,
 } from './time.ts';
@@ -24,4 +25,9 @@ test('a duration that cannot be true is rejected at both ends', () => {
   assert.equal(isPlausibleDuration(SESSION_DURATION_CEILING_SEC), true);
   // The session left open since 7 September, which printed "7364 MIN".
   assert.equal(isPlausibleDuration(7364 * 60), false);
+});
+
+test('a month row names the weekday and the day, and nothing else', () => {
+  assert.equal(dayLabel(new Date(2026, 8, 29, 18, 30).getTime()), 'Tue 29');
+  assert.equal(dayLabel(new Date(2026, 8, 1).getTime()), 'Tue 1');
 });
