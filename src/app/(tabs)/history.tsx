@@ -147,7 +147,7 @@ export default function HistoryScreen() {
           </View>
           {month.length && weeks.length ? (
             <View style={{ gap: 6, paddingTop: 5 }}>
-              <Text style={text.label}>{weightUnit === 'kg' ? 'TONNES / WEEK' : 'LB / WEEK'}</Text>
+              <Text style={text.label}>{weightUnit === 'kg' ? 'KG / WEEK' : 'LB / WEEK'}</Text>
               <ColumnChart
                 values={weeks.map((w) => w.volumeKg)}
                 xFirst={weeks[0]?.label ?? ''}
