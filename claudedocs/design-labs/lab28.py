@@ -143,7 +143,7 @@ def sess():
       '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">'
       '<span class="mono" style="font-size:11px;letter-spacing:0.14em;color:var(--dim)">%s</span>'
       '<span class="mono" style="font-size:15px;font-weight:500;color:%s">%s</span></div>' % (n, c, v)
-      for n, v, c in [('VOLUME','3.7 T','var(--mid)'),('SETS','12','var(--mid)'),
+      for n, v, c in [('VOLUME','3,700 KG','var(--mid)'),('SETS','12','var(--mid)'),
                       ('e1RM','130','var(--accent)')]) + '</div>')
 
 def phone(vert, sub='', size=352):

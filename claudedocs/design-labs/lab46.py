@@ -15,22 +15,22 @@ import kit as K
 
 # Two months of training, newest first. (date, routine, tonnes, minutes, sets, pr)
 SESSIONS = [
-    ('Thu 4 Sep', 'Lower A', '8.6 T', '64 MIN', '20 SETS', True),
-    ('Tue 2 Sep', 'Upper A', '7.4 T', '58 MIN', '18 SETS', False),
-    ('Mon 1 Sep', 'Lower B', '8.1 T', '61 MIN', '20 SETS', True),
-    ('Fri 29 Aug', 'Upper B', '6.9 T', '55 MIN', '17 SETS', False),
-    ('Thu 28 Aug', 'Lower A', '8.2 T', '63 MIN', '20 SETS', False),
-    ('Tue 26 Aug', 'Upper A', '7.1 T', '57 MIN', '18 SETS', True),
-    ('Mon 25 Aug', 'Lower B', '7.8 T', '60 MIN', '19 SETS', False),
-    ('Fri 22 Aug', 'Upper B', '6.6 T', '54 MIN', '17 SETS', False),
-    ('Wed 20 Aug', 'Lower A', '2.1 T', '18 MIN', '5 SETS', False),   # ended early
-    ('Mon 18 Aug', 'Upper A', '7.0 T', '56 MIN', '18 SETS', False),
+    ('Thu 4 Sep', 'Lower A', '8,600 KG', '64 MIN', '20 SETS', True),
+    ('Tue 2 Sep', 'Upper A', '7,400 KG', '58 MIN', '18 SETS', False),
+    ('Mon 1 Sep', 'Lower B', '8,100 KG', '61 MIN', '20 SETS', True),
+    ('Fri 29 Aug', 'Upper B', '6,900 KG', '55 MIN', '17 SETS', False),
+    ('Thu 28 Aug', 'Lower A', '8,200 KG', '63 MIN', '20 SETS', False),
+    ('Tue 26 Aug', 'Upper A', '7,100 KG', '57 MIN', '18 SETS', True),
+    ('Mon 25 Aug', 'Lower B', '7,800 KG', '60 MIN', '19 SETS', False),
+    ('Fri 22 Aug', 'Upper B', '6,600 KG', '54 MIN', '17 SETS', False),
+    ('Wed 20 Aug', 'Lower A', '2,100 KG', '18 MIN', '5 SETS', False),   # ended early
+    ('Mon 18 Aug', 'Upper A', '7,000 KG', '56 MIN', '18 SETS', False),
 ]
 AUG_START = 3   # index into SESSIONS where August begins
 
 MONTHS = [
-    ('SEPTEMBER', '3 SESSIONS &middot; 24.1 T', SESSIONS[:3]),
-    ('AUGUST', '7 SESSIONS &middot; 45.7 T', SESSIONS[3:]),
+    ('SEPTEMBER', '3 SESSIONS &middot; 24,100 KG', SESSIONS[:3]),
+    ('AUGUST', '7 SESSIONS &middot; 45,700 KG', SESSIONS[3:]),
 ]
 
 

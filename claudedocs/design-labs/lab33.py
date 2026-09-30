@@ -36,7 +36,8 @@ SHORT = dict(R.SHORT, rpe=('8', 'RPE'))
 
 def selector(active, gloss=''):
     """R.selector, with room for a gloss on the active cell — RPE 8 should never
-    be shown bare."""
+    be shown bare, and a TYPE button after the three cells that opens the keypad
+    for the active parameter (param-selector.tsx)."""
     out = []
     for k in ('load', 'reps', 'rpe'):
         on = k == active
@@ -49,6 +50,10 @@ def selector(active, gloss=''):
                    % ('background:rgba(228,198,140,0.13)' if on else '',
                       GOLD if on else 'var(--lo)', (u + ' &middot; ' + gloss) if (on and gloss) else u,
                       'var(--hi)' if on else 'var(--mid)', v))
+    out.append('<div style="min-width:58px;min-height:44px;display:flex;align-items:center;'
+               'justify-content:center;border-radius:12px;background:rgba(255,255,255,0.05)">'
+               '<span class="mono" style="font-size:11px;letter-spacing:0.12em;color:var(--mid)">'
+               'TYPE</span></div>')
     return '<div class="r" style="width:100%;flex:none;gap:6px;padding:0 4px">' + ''.join(out) + '</div>' 
 
 
@@ -78,10 +83,10 @@ TAPE_WRAP = 'padding-right:62px'
 
 G1 = screen(ring_dial(330, False, True))
 G2 = screen(ring_dial(290, True, False), ladder_dim=True,
-            tapehtml=R.tape(R.LOAD, 102.5, 'KG'), below=R.selector('load'),
+            tapehtml=R.tape(R.LOAD, 102.5, 'KG'), below=selector('load'),
             wrap_style=TAPE_WRAP)
 G3 = screen(ring_dial(290, False, False), ladder_dim=True,
-            tapehtml=R.tape(R.REPS, 8, 'REPS'), below=R.selector('reps'),
+            tapehtml=R.tape(R.REPS, 8, 'REPS'), below=selector('reps'),
             wrap_style=TAPE_WRAP)
 G4 = screen(ring_dial(290, False, False), ladder_dim=True,
             tapehtml=R.tape(RPE, 8, 'RPE'), below=selector('rpe', 'RIR 2'),

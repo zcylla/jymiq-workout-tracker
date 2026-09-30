@@ -328,7 +328,7 @@ LIVE = [
   'Recap screens carry numbers and deltas; history and stats screens carry the charts. An absent '
   'duration renders as an em dash and dim rather than as a zero &mdash; a missing number is honest, '
   'an invented one is not. ' + B('Built, with its own headings:') + ' RECORDS and LIFTS, each lift '
-  'on its exercise still, and Done returns to Today. Volume reads kg or lb where the board says T. '
+  'on its exercise still, and Done returns to Today. Volume reads kg or lb, never tonnes. '
   'A session finished with nothing logged never gets here: it is deleted.' + BUILT,
   lab36.C2),
 
@@ -406,13 +406,13 @@ INTRO = (
   + K.para('Every phone here is imported from the board that settled it, not redrawn, so a screen '
            'cannot say one thing on its own board and something else here. The caption under each '
            'one carries the decisions inside it and whether it is on the device today &mdash; and '
-           'where the build departed from the drawing, it says so and why. Several boards print '
-           'volume in tonnes; the app prints kg or lb, abbreviated k or mil from 100,000.',
+           'where the build departed from the drawing, it says so and why. Volume reads '
+           'kg or lb on every board, abbreviated k or mil from 100,000, never tonnes.',
            '#96938c')
   + K.para('<span style="color:#96938c">Lab 47</span> is the system these are built from: the '
            'tokens, every primitive in every state, and the composition rules. '
            '<span style="color:#96938c">Lab 49</span> replaced Strength with History and moved the '
-           'body map onto Load; its own boards are not imported here, so the tab bar drawn in each phone still says Strength. The labs before that are the '
+           'body map onto Load; its own boards are not imported here, but the tab bar in every phone reads History. The labs before that are the '
            'arguments that got here and are not state. '
            '<b style="color:#c9c3b6;font-weight:500">Four built screens are missing from this page '
            'because they were never drawn:</b> sign-in, which is now Account and carries the cloud '

@@ -116,9 +116,18 @@ def q1(scroll=0):
         ('SESSIONS', '34', '<span class="mono lbl">/ 12 WK</span>', K.HI),
         ('FREQUENCY', '1.4', '<span class="mono lbl">/ WK</span>', K.HI)],
         tone='raised'), tone='raised')
-    # The chart has a baseline and two axes of its own, so it sits on the canvas.
-    + K.psec('ESTIMATED 1RM &middot; UP 18 KG OVER 10 SESSIONS',
-             K.chart(E1RM, '10 AGO', 'TODAY', w=316), plated=False)
+    # Built as PROGRESS (app/exercise/[id].tsx): metric and range segments over a line chart,
+    # then this period against the last. On the canvas: the chart has its own baseline and axes.
+    + K.psec('PROGRESS &middot; KG', K.segmented(['1RM', 'WEIGHT', 'VOLUME', 'REPS'], '1RM')
+             + K.segmented(['D', 'W', 'M', 'Y'], 'W')
+             + K.linechart(list(enumerate(E1RM)), len(E1RM), ['JUL 6', 'AUG 10', 'SEP 7'],
+                           fmt=lambda v: '%d' % v),
+             plated=False, right=K.delta('UP'))
+    + K.psec('THIS WEEK VS LAST', K.tiles([
+        ('BEST e1RM', '130', '<span class="mono lbl">KG</span>', K.HI, K.delta('+2')),
+        ('VOLUME', '8,600 KG', '', K.HI, K.delta('+400 KG')),
+        ('MOST REPS', '8', '', K.HI, K.delta('+1')),
+        ('SESSIONS', '2', '', K.HI, K.delta('+1'))], tone='raised'), plated=False)
     + K.psec('REP MAXES', REP_MAXES, plated=False)
     + K.psec('WHAT TO DO NEXT', NEXT, plated=False),
     chrome=K.actionbar('Add to routine', 'LOG'), scroll=scroll)
@@ -200,8 +209,8 @@ def month():
             + heads + grid + '</div>' + key)
 
 
-WEEKS = [('WEEK 36', '4 SESSIONS', '18.4', 0.83), ('WEEK 35', '5 SESSIONS', '22.1', 1.0),
-         ('WEEK 34', '3 SESSIONS', '13.8', 0.62)]
+WEEKS = [('WEEK 36', '4 SESSIONS', '18,400', 0.83), ('WEEK 35', '5 SESSIONS', '22,100', 1.0),
+         ('WEEK 34', '3 SESSIONS', '13,800', 0.62)]
 
 Q2 = K.phone(
     K.head('September', 'CALENDAR', K.ico('cal', 'var(--lo)', 1.7))
@@ -218,14 +227,14 @@ Q2 = K.phone(
              tone='raised', first=True)
     + K.psec('', K.tiles([
         ('SESSIONS', '12', K.delta('+1'), K.HI),
-        ('VOLUME', '54.3 T', K.delta('+6%'), K.HI),
+        ('VOLUME', '54,300 KG', K.delta('+6%'), K.HI),
         ('TIME', '11H 20', '', K.HI),
         ('MISSED', '1', '', K.LIVE)], tone='raised'), tone='raised')
-    + K.psec('VOLUME BY WEEK &middot; TONNES', ''.join(
+    + K.psec('VOLUME BY WEEK &middot; KG', ''.join(
         '<div class="r" style="gap:11px;height:36px">'
         '<span class="mono lbl" style="width:62px">' + w + '</span>'
         + K.meter(p, w=None, h=7) +
-        '<span class="num" style="font-size:13px;width:38px;text-align:right;'
+        '<span class="num" style="font-size:13px;width:56px;text-align:right;'
         'white-space:nowrap">' + v + '</span></div>'
         for w, sN, v, p in WEEKS), tone='raised'),
     active='load')
@@ -261,6 +270,7 @@ INTRO = (
 CLOSING = (
   '<div class="sect"><h2 style="margin:0;font-size:20px;font-weight:600;letter-spacing:-0.02em;'
   'color:#f0efec">The chart, and the rule I had broken</h2>'
+  + K.para('<b style="color:#c9c3b6;font-weight:500">Superseded in the build:</b> the column chart below became PROGRESS, a line chart with 1RM, WEIGHT, VOLUME and REPS segments, D, W, M and Y ranges, a dashed trend and an UP, DOWN or FLAT flag (<code>kit.linechart</code>, <code>kit.segmented</code>). The labelling rules still hold.')
   + K.para('The 1RM chart was not the wrong chart type. Columns are right for ten discrete '
            'sessions &mdash; a 1RM only exists <em>at</em> a session, and a line between them would '
            'imply a rate of change across whatever gap separates them. What was missing was every '

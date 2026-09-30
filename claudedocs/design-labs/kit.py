@@ -77,6 +77,14 @@ CSS = """
      and panel() emit classes for, so they live here rather than in one board. */
   .lit{box-shadow:inset 0 1px 0 rgba(255,255,255,0.075),
                   inset 0 -1px 0 rgba(0,0,0,0.28)}
+  /* Frost glass (src/theme/tokens.ts glassRecipes.frost; DEFAULT_TRIAL blur 20, scope cards).
+     Every main card wears it; rows, tiles and chrome stay solid. expo-blur's intensity 20 is a
+     light blur, drawn as 6px here. */
+  .frost{background-color:rgba(255,255,255,0.035);
+         background-image:linear-gradient(180deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0) 55%);
+         border:0.5px solid rgba(255,255,255,0.14);
+         backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+         box-shadow:inset 0 1px 0 rgba(255,255,255,0.24), 0 10px 28px rgba(0,0,0,0.42)}
   .ins > .lrow + .lrow{border-top:1px solid rgba(255,255,255,0.07)}
   .ins > .lrow{padding-left:0}
 
@@ -149,7 +157,8 @@ CHEV = ('<svg viewBox="0 0 16 16" style="width:13px;height:13px;flex:none" fill=
         '<path d="M6 3l5 5-5 5"></path></svg>')
 GRIP = '<span class="hand"><span></span><span></span></span>'
 
-TABS = [('today', 'Today'), ('session', 'Session'), ('strength', 'Strength'), ('load', 'Load')]
+ICONS['history'] = ICONS['cal']
+TABS = [('today', 'Today'), ('session', 'Session'), ('history', 'History'), ('load', 'Load')]
 
 
 def nav(active='today', surface='glass'):
@@ -323,6 +332,7 @@ def chart(vals, xfirst, xlast, value=None, w=316, h=76, col=None, fmt='%g', acti
     label carries the takeaway. Text never wears the series colour.
     """
     col = col or ACCENT
+    f = fmt if callable(fmt) else (lambda v: fmt % v)
     lo, hi = min(vals), max(vals)
     n = len(vals)
     cw = (w - (n - 1) * 5) / n
@@ -334,7 +344,7 @@ def chart(vals, xfirst, xlast, value=None, w=316, h=76, col=None, fmt='%g', acti
         for i, v in enumerate(vals))
     top = ('<div class="r" style="justify-content:flex-end;padding-bottom:3px">'
            '<span class="num" style="font-size:13px;color:var(--hi)">'
-           + (value if value is not None else fmt % vals[active]) + '</span></div>')
+           + (value if value is not None else f(vals[active])) + '</span></div>')
     return (top
             + '<div class="r" style="gap:9px;align-items:flex-end">'
               '<div style="display:flex;flex-direction:column;justify-content:space-between;'
@@ -345,11 +355,77 @@ def chart(vals, xfirst, xlast, value=None, w=316, h=76, col=None, fmt='%g', acti
               '<div style="height:1px;background:rgba(255,255,255,0.15)"></div>'
               '<div class="r"><span class="mono lbl">%s</span><span class="sp"></span>'
               '<span class="mono lbl">%s</span></div></div></div>'
-              % (h, fmt % hi, fmt % lo, h, cols, xfirst, xlast))
+              % (h, f(hi), f(lo), h, cols, xfirst, xlast))
 
 
-def panel(body, tone='raised', pad=15, radius=14, cls='lit'):
-    """A flat, opaque, lighter plate. NOT a card and NOT glass.
+def segmented(options, on):
+    """One choice out of a few, full width (src/components/segmented.tsx): every
+    segment is 44pt tall, the chosen one on the chip wash with the accent label."""
+    return ('<div style="display:flex;gap:6px">' + ''.join(
+        '<span class="pill" style="flex:1;min-height:44px;display:flex;align-items:center;'
+        'justify-content:center;border-radius:11px;padding:0;background:%s;color:%s">%s</span>'
+        % ('rgba(228,198,140,0.15)' if o == on else 'rgba(255,255,255,0.05)',
+           ACCENT if o == on else LO, o) for o in options) + '</div>')
+
+
+def linechart(points, slots, xlabels, fmt=lambda v: '%g' % v, trend=True, w=312, h=96):
+    """The exercise PROGRESS line (src/components/line-chart.tsx, lib/line-chart.ts).
+
+    `points` is [(slot, value)] on `slots` evenly spaced columns. Fill under the
+    line, a dot per point, the peak (latest of equal highs) lifted in HI, a
+    dashed least-squares fit, the data's own range named top and bottom. No plate
+    and text never wears the series colour.
+    """
+    inset = 4
+    vals = [v for _, v in points]
+    lo, hi = min(vals), max(vals)
+    flat = hi == lo
+    n = len(points)
+    xo = lambda s: inset + (w - 2 * inset) * s / (slots - 1) if slots > 1 else w - inset
+    yo = lambda v: h / 2.0 if flat else h - inset - (h - 2 * inset) * (v - lo) / (hi - lo)
+    pts = [(xo(s), yo(v)) for s, v in points]
+    peak = max(i for i, v in enumerate(vals) if v == hi)
+    fit = ''
+    if trend and n > 1:
+        mx, my = sum(s for s, _ in points) / n, sum(vals) / n
+        sl = (sum((s - mx) * (v - my) for s, v in points) / sum((s - mx) ** 2 for s, _ in points))
+        b = my - sl * mx
+        (s0, s1) = points[0][0], points[-1][0]
+        fit = ('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="1.5" '
+               'stroke-dasharray="4 4"></line>' % (xo(s0), yo(b + sl * s0), xo(s1),
+                                                   yo(b + sl * s1), MID))
+    line = ' '.join('%.1f,%.1f' % p for p in pts)
+    area = ('<polygon points="%.1f,%d %s %.1f,%d" fill="url(#lcf)"></polygon>'
+            '<polyline points="%s" fill="none" stroke="%s" stroke-width="2" stroke-linecap="round" '
+            'stroke-linejoin="round"></polyline>'
+            % (pts[0][0], h, line, pts[-1][0], h, line, ACCENT)) if n > 1 else ''
+    dots = ''.join('<circle cx="%.1f" cy="%.1f" r="%s" fill="%s"></circle>'
+                   % (x, y, 4.5 if i == peak else 2.5, HI if i == peak else ACCENT)
+                   for i, (x, y) in enumerate(pts))
+    svg = ('<svg viewBox="0 0 %d %d" style="width:%dpx;height:%dpx;display:block">'
+           '<defs><linearGradient id="lcf" x1="0" y1="0" x2="0" y2="1">'
+           '<stop offset="0" stop-color="rgba(228,198,140,0.26)"></stop>'
+           '<stop offset="1" stop-color="rgba(228,198,140,0)"></stop></linearGradient></defs>'
+           '%s<line x1="0" y1="%.1f" x2="%d" y2="%.1f" stroke="rgba(255,255,255,0.15)" '
+           'stroke-width="1"></line>%s%s</svg>'
+           % (w, h, w, h, area, h - 0.5, w, h - 0.5, fit, dots))
+    ylab = ('<div style="display:flex;flex-direction:column;height:%dpx;justify-content:%s">'
+            '<span class="mono lbl">%s</span>%s</div>'
+            % (h, 'center' if flat else 'space-between', fmt(hi),
+               '' if flat else '<span class="mono lbl">%s</span>' % fmt(lo)))
+    xl = ''.join('<span class="mono lbl">%s</span>' % x for x in xlabels)
+    return ('<div class="r" style="gap:9px;align-items:flex-start">' + ylab
+            + '<div style="display:flex;flex-direction:column;gap:4px">' + svg
+            + '<div class="r" style="justify-content:space-between">' + xl + '</div></div></div>')
+
+
+def panel(body, tone='raised', pad=15, radius=14, cls='lit', glass=True):
+    """The main card: frost glass, the app's default (Plate in src/components/plate.tsx).
+
+    A `cls` without `lit` (or `glass=False`) gets the old flat opaque plate below.
+
+    The old reasoning, kept for the solid row plates that still follow it:
+    A flat, opaque, lighter plate. NOT a card and NOT glass.
 
     Apple's insetGrouped stacks TWO signals — a discrete lightness jump
     (#000 -> #1C1C1E, ~11%) AND a real gap. It never relies on spacing alone,
@@ -359,9 +435,11 @@ def panel(body, tone='raised', pad=15, radius=14, cls='lit'):
 
     `cls` carries the lit edge by default (Lab 40, M4).
     """
-    bg = {'panel': PANEL, 'raised': RAISED}[tone]
+    bg = 'background:%s;' % {'panel': PANEL, 'raised': RAISED}[tone]
+    if glass and 'lit' in cls.split():
+        cls, bg = ' '.join('frost' if c == 'lit' else c for c in cls.split()), ''
     c = (' class="' + cls + '"') if cls.strip() else ''   # class="" trips the gate
-    return ('<div' + c + ' style="background:%s;border-radius:%dpx;padding:%dpx;'
+    return ('<div' + c + ' style="%sborder-radius:%dpx;padding:%dpx;'
             'display:flex;flex-direction:column;gap:9px">%s</div>'
             % (bg, radius, pad, body))
 

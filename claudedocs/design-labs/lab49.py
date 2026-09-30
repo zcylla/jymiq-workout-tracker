@@ -26,19 +26,11 @@ import lab43 as L       # next_card(), V1_LIFTS
 import lab44 as F       # INK on the accent fill
 
 # ------------------------------------------------------------------ chrome ----
-TABS = [('today', 'Today'), ('session', 'Session'), ('cal', 'History'), ('load', 'Load')]
-
-
 def nav(active):
-    """W2 with History in Strength's slot. kit.nav reads K.TABS at call time."""
-    old, K.TABS = K.TABS, TABS
-    try:
-        return K.nav(active, 'raised')
-    finally:
-        K.TABS = old
+    return K.nav(active, 'raised')
 
 
-def phone(scr, active='cal', **kw):
+def phone(scr, active='history', **kw):
     return K.phone(scr, chrome=nav(active), **kw)
 
 
@@ -86,7 +78,7 @@ def step(t):
 
 SESSIONS = len(DONE)
 TONNES = sum(v[0] for v in DONE.values())
-WEEKS = [27.4, 28.1, 26.0, 28.9, 29.7, 30.0, 22.7, 24.1]      # W32..W39, complete weeks
+WEEKS = [27400, 28100, 26000, 28900, 29700, 30000, 22700, 24100]      # W32..W39, complete weeks
 
 # ------------------------------------------------------- the day-state set ----
 # One grammar for both surfaces. Fill = it happened. Dashed = it is planned.
@@ -207,8 +199,8 @@ def ev(d):
             + str(d) + '</span>'
             '<span style="font-size:15px;color:var(--hi)">' + PLAN[wd(d)] + '</span>'
             + (K.pill('PR') if pr else '') + '<span class="sp"></span>'
-            '<span class="mono" style="font-size:13px;color:var(--mid)">' + ('%.1f' % t)
-            + ' T</span></div>')
+            '<span class="mono" style="font-size:13px;color:var(--mid)">' + '{:,}'.format(round(t * 1000))
+            + ' KG</span></div>')
 
 
 def rail(days):
@@ -226,7 +218,7 @@ def num_row(label, value, right=''):
 
 
 STATS3 = K.tiles([('SESSIONS', str(SESSIONS), '', K.HI, K.delta('+1')),
-                  ('TONNES', '%.1f' % TONNES, '', K.HI, K.delta('+6%')),
+                  ('VOLUME', '{:,} KG'.format(round(TONNES * 1000)), '', K.HI, K.delta('+6%')),
                   ('PRS', '6', '', K.ACCENT, K.delta('+2'))], cols=3, tone='raised')
 
 HERO = ('<div class="r" style="gap:12px;align-items:flex-end">'
@@ -239,8 +231,8 @@ HERO = ('<div class="r" style="gap:12px;align-items:flex-end">'
         'padding-bottom:3px"><span class="mono lbl">PRS</span>'
         '<span class="num" style="font-size:17px;font-weight:600;color:var(--accent)">6</span>'
         '</div></div>'
-        '<div style="height:14px"></div><span class="mono lbl">TONNES / WEEK</span>'
-        + K.chart(WEEKS, 'W32', 'W39', value='24.1 T', w=270, h=58))
+        '<div style="height:14px"></div><span class="mono lbl">KG / WEEK</span>'
+        + K.chart(WEEKS, 'W32', 'W39', value='24,100 KG', w=270, h=58, fmt=lambda v: '{:,}'.format(v)))
 
 RECORDS_ROW = num_row('Records', '41')
 
@@ -274,7 +266,7 @@ WEEK_PLATE = ('<div class="r" style="justify-content:space-between">'
               '<div class="r" style="justify-content:center;gap:8px;min-height:44px">'
               '<span class="mono lbl">MONTH</span>' + DOWN + '</div>'
               + K.tiles([('SESSIONS', '1', K.meter(1 / 4.0, w=44), K.HI),
-                         ('TONNES', '8.8', K.delta('+4%'), K.HI)], tone='raised'))
+                         ('VOLUME', '8,800 KG', K.delta('+4%'), K.HI)], tone='raised'))
 HC = phone(K.head('This week', 'W40')
            + K.psec('', WEEK_PLATE, first=True, pad=13)
            + K.psec('W40', rail([28]), plated=False)
@@ -363,14 +355,14 @@ DELOAD = ('<div class="r" style="gap:10px">' + K.pill('NOT YET', 'var(--mid)',
 HEAD_L = K.head('Load', 'THIS WEEK')
 # Deload rides on the tiles' plate as one line: the week's numbers and the week's
 # verdict are one component, and a section of its own cost 90pt for two words.
-LOAD_TILES = (K.tiles([('SETS', '67', '', K.HI), ('VOLUME', '18.4 T', K.delta('+9%'), K.HI)],
+LOAD_TILES = (K.tiles([('SETS', '67', '', K.HI), ('VOLUME', '18,400 KG', K.delta('+9%'), K.HI)],
                       tone='raised')
               + '<div class="r" style="gap:10px;padding:4px 2px 0"><span class="mono lbl">DELOAD'
                 '</span><span class="sp"></span>' + DELOAD + '</div>')
 
 PR_ROWS = [(K.ACCENT, lab36.pr_node('Mon 28', 'Barbell Squat', '1RM &middot; WAS 128', '130', '')),
            (K.TICK2, lab36.pr_node('Thu 24', 'Barbell Bench Press', 'HEAVIEST', '87.5 &times; 3', '')),
-           (K.TICK2, lab36.pr_node('Mon 21', 'Romanian Deadlift', 'SESSION VOLUME', '3.1 T', ''))]
+           (K.TICK2, lab36.pr_node('Mon 21', 'Romanian Deadlift', 'SESSION VOLUME', '3,100 KG', ''))]
 # pr_node joins kind and was with a middot; an empty `was` leaves a dangling one.
 PR_RAIL = K.rail([(c, h.replace(' &middot; </span>', '</span>')) for c, h in PR_ROWS], air=22)
 
@@ -452,12 +444,12 @@ TODAY_PHONE = phone(
     + K.psec('', today_card(), first=True, pad=15)
     + K.psec('THIS WEEK', strip(TDAYS, 11 * 51) + '<div style="height:11px"></div>'
              + K.tiles([('SESSIONS', '1', K.meter(1 / 4.0, w=44), K.HI),
-                        ('VOLUME', '8.8 T', K.delta('+4%'), K.HI)], tone='raised'), pad=13)
+                        ('VOLUME', '8,800 KG', K.delta('+4%'), K.HI)], tone='raised'), pad=13)
     + K.psec('RECENT', rail([28]), plated=False),
     active='today')
 
 # --------------------------------------------------------------- E · empty ----
-EMPTY_STATS = K.tiles([('SESSIONS', '0', '', K.DIM), ('TONNES', '0', '', K.DIM),
+EMPTY_STATS = K.tiles([('SESSIONS', '0', '', K.DIM), ('VOLUME', '0 KG', '', K.DIM),
                        ('PRS', '0', '', K.DIM)], cols=3, tone='raised')
 PLUS = K.ico('plus', 'var(--accent)', 1.8, 18)
 EMPTY = phone(

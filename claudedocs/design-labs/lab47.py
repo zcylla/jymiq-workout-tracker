@@ -63,7 +63,7 @@ SURFACES = grid([
          '<div class="row3">'
          + sw('ground', K.GROUND, 'the canvas, and the app&rsquo;s only background')
          + sw('panel', K.PANEL, 'behind a tile that sits on a plate')
-         + sw('raised', K.RAISED, 'every plate, every row plate, the chrome')
+         + sw('raised', K.RAISED, 'every row plate and the chrome; a main card is frost glass')
          + '</div>'
          '<div style="height:14px"></div>'
          '<div class="lit" style="background:' + K.RAISED + ';border-radius:14px;padding:15px">'
@@ -153,8 +153,8 @@ RAMP = [
     ('tab', 'Session', 11, 400, 'mono', '0.05em', 'a tab label'),
     ('numSm', '127', 13, 400, 'mono', '', 'a number in a read-only table'),
     ('num', '105.0', 15, 500, 'mono', '-0.02em', 'a number in a row'),
-    ('numRow', '8.6 T', 17, 600, 'mono', '-0.02em', 'a row&rsquo;s value'),
-    ('numTile', '1.6 T', 22, 600, 'mono', '-0.02em', 'a stat tile'),
+    ('numRow', '8,600 KG', 17, 600, 'mono', '-0.02em', 'a row&rsquo;s value'),
+    ('numTile', '1,600 KG', 22, 600, 'mono', '-0.02em', 'a stat tile'),
     ('numCore', '105', 54, 600, 'mono', '-0.05em', 'the live screen&rsquo;s load'),
 ]
 
@@ -291,7 +291,7 @@ PRIMITIVES = grid([
          onground(K.prows([
              K.lrow(namemeta('Bench Press')),
              K.lrow(namemeta('Back Squat'),
-                    '<span class="num" style="font-size:17px;font-weight:600">8.6 T</span>'),
+                    '<span class="num" style="font-size:17px;font-weight:600">8,600 KG</span>'),
              K.lrow(namemeta('Romanian Deadlift'), grip=True, chev=False),
              K.lrow(namemeta('Arm Circles'), dim=True, chev=False),
          ]))),
@@ -335,14 +335,14 @@ PRIMITIVES = grid([
                        '<em>surface</em>, and the tile takes the other colour.',
          onground(K.panel(K.tiles([('EXERCISES', '4'), ('SETS', '14'),
                                    ('LAST TIME', '64 MIN'),
-                                   ('LAST VOLUME', '8.6 T', K.delta('+4%'))], tone='raised'))),
+                                   ('LAST VOLUME', '8,600 KG', K.delta('+4%'))], tone='raised'))),
          span=2),
 
     spec('THE ABSENT VALUE', 'An em dash is the empty state, and §0 draws an absent value '
                             '<b style="color:#c9c3b6;font-weight:500">dim</b>. The tile decides '
                             'that, not the caller &mdash; two callers had already disagreed about '
                             'the same value.',
-         onground(K.panel(K.tiles([('TIME', '&mdash;'), ('VOLUME', '1.6 T')], tone='raised')))),
+         onground(K.panel(K.tiles([('TIME', '&mdash;'), ('VOLUME', '1,600 KG')], tone='raised')))),
 
     spec('METER &amp; DELTA', 'A meter needs a denominator. A delta needs a previous value. '
                               'Without one, the number ships plain &mdash; a visual that '
@@ -365,19 +365,19 @@ PRIMITIVES = grid([
              (K.ACCENT, '<div class="r" style="gap:9px">'
                         '<span class="num" style="font-size:15px">Thu 4 Sep</span>' + K.pill('PR')
                         + '<span class="sp"></span><span class="mono" style="font-size:13px;'
-                          'color:var(--mid)">8.6 T</span></div>'
+                          'color:var(--mid)">8,600 KG</span></div>'
                         '<span class="mono" style="font-size:11px;letter-spacing:0.07em;'
                         'color:var(--lo)">LOWER A &middot; 64 MIN &middot; 20 SETS</span>'),
              (K.TICK3, '<div class="r" style="gap:9px">'
                        '<span class="num" style="font-size:15px">Tue 2 Sep</span>'
                        '<span class="sp"></span><span class="mono" style="font-size:13px;'
-                       'color:var(--mid)">7.4 T</span></div>'
+                       'color:var(--mid)">7,400 KG</span></div>'
                        '<span class="mono" style="font-size:11px;letter-spacing:0.07em;'
                        'color:var(--lo)">UPPER A &middot; 58 MIN &middot; 18 SETS</span>'),
              (K.TICK1, '<div class="r" style="gap:9px">'
                        '<span class="num" style="font-size:15px">Mon 1 Sep</span>'
                        '<span class="sp"></span><span class="mono" style="font-size:13px;'
-                       'color:var(--mid)">8.1 T</span></div>'
+                       'color:var(--mid)">8,100 KG</span></div>'
                        '<span class="mono" style="font-size:11px;letter-spacing:0.07em;'
                        'color:var(--lo)">LOWER B &middot; 61 MIN &middot; 20 SETS</span>'),
          ], air=22))),
@@ -389,8 +389,8 @@ PRIMITIVES = grid([
                   'colour</b> &mdash; labels and values stay in the text ramp.',
          onground('<span class="mono lbl">VOLUME BY WEEK &middot; UP 9% OVER SIX</span>'
                   '<div style="height:11px"></div>'
-                  + K.chart([6.2, 6.8, 6.4, 7.5, 7.1, 8.6], 'JUL 28', 'SEP 1',
-                            value='8.6 T', w=300, active=5)), span=2),
+                  + K.chart([6200, 6800, 6400, 7500, 7100, 8600], 'JUL 28', 'SEP 1',
+                            value='8,600 KG', w=300, active=5, fmt=lambda v: '{:,}'.format(v))), span=2),
 
     spec('READ-ONLY TABLE', 'No plate, no rail, no row fill. The columns are the structure and '
                            'they are right-anchored as a group, so a column dropped on one '
@@ -468,7 +468,7 @@ RULES = grid([
          + '</div>'
          '<div><span class="mono lvl">ONE GROUPED PLATE</span>'
          '<span class="lvlnote">the screen&rsquo;s main component</span>'
-         + onground(K.panel(K.tiles([('SETS', '14'), ('VOLUME', '8.6 T')], tone='raised')))
+         + onground(K.panel(K.tiles([('SETS', '14'), ('VOLUME', '8,600 KG')], tone='raised')))
          + '</div>'
          '<div><span class="mono lvl">NOTHING AT ALL</span>'
          '<span class="lvlnote">tables, prose, charts, rails, the body map, the ring</span>'
@@ -492,7 +492,7 @@ RULES = grid([
                        ('HAS A PREVIOUS VALUE', 'a delta on the number it describes',
                         K.delta('+4%')),
                        ('HAS NONE OF THOSE', 'the number, plain',
-                        '<span class="num" style="font-size:17px;font-weight:600">8.6 T</span>'),
+                        '<span class="num" style="font-size:17px;font-weight:600">8,600 KG</span>'),
                    ]) + '</div>', span=2),
 
     spec('A GUESS IS NOT A MEASUREMENT', 'A number the app guessed is never drawn like a number '
@@ -501,7 +501,7 @@ RULES = grid([
          '<code>mid</code> with a <code>~</code>, never <code>hi</code>.',
          onground('<div class="stack">'
                   '<div class="r"><span class="mono lbl">YOU LIFTED</span><span class="sp"></span>'
-                  '<span class="num" style="font-size:22px;font-weight:600">8.6 T</span></div>'
+                  '<span class="num" style="font-size:22px;font-weight:600">8,600 KG</span></div>'
                   '<div class="r"><span class="mono lbl">THE APP GUESSED</span>'
                   '<span class="sp"></span>'
                   '<span class="mono" style="font-size:22px;font-weight:600;color:var(--mid)">'

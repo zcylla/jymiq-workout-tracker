@@ -58,7 +58,7 @@ def band_row(name, sets, low, high, cap):
 D1 = K.phone(
     K.head('Load', 'THIS WEEK')
     + K.psec('', K.tiles([('SETS', '67', '', K.HI),
-                          ('VOLUME', '18.4 T', K.delta('+9%'), K.HI)], tone='raised'),
+                          ('VOLUME', '18,400 KG', K.delta('+9%'), K.HI)], tone='raised'),
              first=True, pad=13)
     + K.psec('WEEKLY SETS PER MUSCLE', ''.join(band_row(*b) for b in BANDS), plated=False)
     + K.psec('DELOAD',

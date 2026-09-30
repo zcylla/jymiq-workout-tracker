@@ -75,7 +75,7 @@ P4 = K.phone(
 P5 = K.phone(
     K.back_head('Lower A', 'ROUTINE', K.ico('dots', 'var(--mid)', 1.7))
     + K.psec('', K.tiles([('EXERCISES', '5'), ('SETS', '20'),
-                          ('EST. TIME', '62 M'), ('VOLUME', '8.4 T', K.delta('+4%'))],
+                          ('EST. TIME', '62 M'), ('VOLUME', '8,400 KG', K.delta('+4%'))],
                          tone='raised'), first=True, pad=13)
     + K.psec('EXERCISES', prows([lab34.lift_row(*l) for l in lab34.LIFTS]), plated=False)
     + K.psec('NOTE', '<span style="font-size:15px;line-height:1.55;color:var(--mid)">Squat felt '

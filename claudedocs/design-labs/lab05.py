@@ -242,7 +242,7 @@ def screen(sk):
         <span class="mono" style="font-size:21px;font-weight:500;letter-spacing:-0.01em;color:var(--hi)">00:31:17</span>
       </div>
       <div class="col2 g4" style="align-items:flex-end">
-        <span class="mono lbl">12 SETS</span><span class="mono lbl">3.7 T</span>
+        <span class="mono lbl">12 SETS</span><span class="mono lbl">3,700 KG</span>
       </div>
     </div>
 

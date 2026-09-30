@@ -33,17 +33,17 @@ def lift_row(idx, name, sets, kg, rest, last=False):
 
 
 # Held constant across all four separation variants: two per row, not four.
-STATS = [('EXERCISES', '5'), ('SETS', '20'), ('EST. TIME', '62 MIN'), ('VOLUME', '8.4 T')]
+STATS = [('EXERCISES', '5'), ('SETS', '20'), ('EST. TIME', '62 MIN'), ('VOLUME', '8,400 KG')]
 
 RAIL = K.rail([
     (K.ACCENT, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px">'
                'Tue 2 Sep</span>' + K.pill('PR') + '<span class="sp"></span>'
-               '<span class="mono" style="font-size:13px;color:var(--mid)">8.6 T</span></div>'
+               '<span class="mono" style="font-size:13px;color:var(--mid)">8,600 KG</span></div>'
                '<span class="mono" style="font-size:11px;color:var(--lo)">64 MIN &middot; 20 SETS'
                '</span>'),
     (K.TICK2, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px">'
               'Tue 26 Aug</span><span class="sp"></span>'
-              '<span class="mono" style="font-size:13px;color:var(--mid)">8.2 T</span></div>'
+              '<span class="mono" style="font-size:13px;color:var(--mid)">8,200 KG</span></div>'
               '<span class="mono" style="font-size:11px;color:var(--lo)">61 MIN &middot; 20 SETS'
               '</span>'),
 ], air=26)
@@ -184,25 +184,25 @@ N1_BLOCK = ('<div class="r" style="width:100%">' + ''.join(
     '<span class="mono lbl">' + n + '</span>'
     '<span class="num" style="font-size:17px;font-weight:600;color:' + c + '">' + v
     + '</span></div>'
-    for n, v, c in [('TIME', '1H 04', 'var(--hi)'), ('VOLUME', '8.6 T', 'var(--hi)'),
+    for n, v, c in [('TIME', '1H 04', 'var(--hi)'), ('VOLUME', '8,600 KG', 'var(--hi)'),
                     ('SETS', '20', 'var(--hi)'), ('VS LAST', '+4.9%', 'var(--pos)')]) + '</div>')
 N1 = sum_screen(N1_BLOCK)
 
 # N2 — two across, plain.
-N2 = sum_screen(K.tiles([('TIME', '1H 04'), ('VOLUME', '8.6 T'),
+N2 = sum_screen(K.tiles([('TIME', '1H 04'), ('VOLUME', '8,600 KG'),
                          ('SETS', '20'), ('VS LAST', '+4.9%', '', K.DONE)], tone='raised'))
 
 # N3 — two across, with the comparison folded into the number it belongs to.
 N3 = sum_screen(K.tiles([
     ('TIME', '1H 04'),
-    ('VOLUME', '8.6 T', K.delta('+4.9%')),
+    ('VOLUME', '8,600 KG', K.delta('+4.9%')),
     ('SETS', '20', K.delta('+2')),
     ('RECORDS', '2', '', K.ACCENT)], tone='raised'))
 
 # N4 — a visual only where the data earns one.
 N4 = sum_screen(K.tiles([
     ('TIME', '64 M', '<span class="mono lbl">/ 62</span>', K.HI, K.meter(64 / 62.0, w=None)),
-    ('VOLUME', '8.6 T', K.delta('+4.9%'), K.HI, K.spark(VOL6, w=None, h=20)),
+    ('VOLUME', '8,600 KG', K.delta('+4.9%'), K.HI, K.spark(VOL6, w=None, h=20)),
     ('SETS', '20', '<span class="mono lbl">/ 20</span>', K.HI, K.meter(1.0, w=None, col=K.DONE)),
     # no denominator and no series, so no visual — a meter here would be
     # a proportion of nothing, which is what Apple's ring rule forbids.

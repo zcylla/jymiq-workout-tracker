@@ -91,7 +91,7 @@ THIS_WEEK = DAYS[14:]
 LAST_TWO = DAYS
 
 TILES = K.tiles([('SESSIONS', '3', K.meter(3 / 4.0, w=44), K.HI),
-                 ('VOLUME', '18.4 T', K.delta('+9%'), K.HI)], tone='raised')
+                 ('VOLUME', '18,400 KG', K.delta('+9%'), K.HI)], tone='raised')
 
 HEAD = K.head('Today', 'THU 4 SEP', K.ico('gear', 'var(--lo)', 1.7))
 

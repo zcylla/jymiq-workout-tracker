@@ -67,22 +67,22 @@ LIFTS = [('01', 'Barbell Squat', '5 &times; 8 @ 102.5'),
          ('03', 'Leg Press', '4 &times; 12 @ 160')]
 
 TILES_FULL = K.tiles([('SESSIONS', '3', K.meter(3 / 4.0, w=44), K.HI),
-                      ('VOLUME', '18.4 T', K.delta('+9%'), K.HI)], tone='raised')
+                      ('VOLUME', '18,400 KG', K.delta('+9%'), K.HI)], tone='raised')
 
 RAIL_EVENTS = [
     (K.ACCENT, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px">'
                'Tue 2 Sep</span>' + K.pill('PR') + '<span class="sp"></span>'
-               '<span class="mono" style="font-size:13px;color:var(--mid)">8.6 T</span></div>'
+               '<span class="mono" style="font-size:13px;color:var(--mid)">8,600 KG</span></div>'
                '<span class="mono" style="font-size:11px;color:var(--lo)">LOWER A &middot; '
                '64 MIN &middot; 20 SETS</span>'),
     (K.TICK2, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px">'
               'Mon 1 Sep</span><span class="sp"></span>'
-              '<span class="mono" style="font-size:13px;color:var(--mid)">7.4 T</span></div>'
+              '<span class="mono" style="font-size:13px;color:var(--mid)">7,400 KG</span></div>'
               '<span class="mono" style="font-size:11px;color:var(--lo)">UPPER A &middot; '
               '58 MIN &middot; 18 SETS</span>'),
     (K.TICK1, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px;'
               'color:var(--mid)">Fri 29 Aug</span><span class="sp"></span>'
-              '<span class="mono" style="font-size:13px;color:var(--mid)">8.1 T</span></div>'
+              '<span class="mono" style="font-size:13px;color:var(--mid)">8,100 KG</span></div>'
               '<span class="mono" style="font-size:11px;color:var(--lo)">LOWER B &middot; '
               '61 MIN &middot; 20 SETS</span>'),
 ]
@@ -196,11 +196,11 @@ def bar_sample(label, note, surface):
             '<div class="r" style="gap:9px">'
             '<span class="num" style="font-size:15px">Tue 2 Sep</span>'
             '<span class="sp"></span>'
-            '<span class="mono" style="font-size:13px;color:var(--mid)">8.6 T</span></div>'
+            '<span class="mono" style="font-size:13px;color:var(--mid)">8,600 KG</span></div>'
             '<div class="r" style="gap:9px">'
             '<span class="num" style="font-size:15px;color:var(--mid)">Mon 1 Sep</span>'
             '<span class="sp"></span>'
-            '<span class="mono" style="font-size:13px;color:var(--mid)">7.4 T</span></div></div>'
+            '<span class="mono" style="font-size:13px;color:var(--mid)">7,400 KG</span></div></div>'
             + K.nav('today', surface).replace('margin:0 16px 30px', 'margin:0 16px 14px')
             + '</div>'
             '<span class="mono" style="font-size:11px;line-height:1.6;color:#7d786e">' + note
@@ -220,7 +220,7 @@ CHROME = ('<div style="display:flex;flex-direction:column;gap:26px;width:402px">
 COLS = [
  ('T1', 'Today, as designed', 'What the screen is for',
   'One plated hero answering &ldquo;what am I doing today&rdquo;, the week beneath it, the last two sessions on the rail, and any new records.',
-  'The hero is the whole screen. Everything under it is confirmation, ordered by how often you would actually look: the next session every day, the week most days, the rail sometimes. <b>Two plated things</b> &mdash; the hero and the week block &mdash; and the rail on the canvas, because it has a spine of its own. A fourth section of new records was drawn and cut: the rail already carries a PR pill on the session that set one, so it said the same thing twice, and it was the section that fell off the bottom. The full timeline lives on Strength, which is where you go to <em>read</em> records rather than to be told there is one.',
+  'The hero is the whole screen. Everything under it is confirmation, ordered by how often you would actually look: the next session every day, the week most days, the rail sometimes. <b>Two plated things</b> &mdash; the hero and the week block &mdash; and the rail on the canvas, because it has a spine of its own. A fourth section of new records was drawn and cut: the rail already carries a PR pill on the session that set one, so it said the same thing twice, and it was the section that fell off the bottom. The full timeline lives on History, which is where you go to <em>read</em> records rather than to be told there is one.',
   T1),
  ('T2', 'Today, on v1 data', 'The same screen without programs',
   'Identical layout. The hero becomes the routine you ran least recently rather than a scheduled session, the week strip loses its planned days, and everything else is unchanged.',

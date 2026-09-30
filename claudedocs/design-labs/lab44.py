@@ -80,7 +80,7 @@ def week_columns(vals=VOL, today=TODAY_I, h=46):
             + ''.join(cols) + '</div>')
 
 
-def week_block(target=4, done=3, volume='18.4 T', delta='+9%'):
+def week_block(target=4, done=3, volume='18,400 KG', delta='+9%'):
     """One plate: the ring (a real denominator), the two numbers, the week's shape."""
     return ('<div class="r" style="gap:15px;align-items:center">'
             + K.ring(done / float(target), size=58, sw=5, label='%d/%d' % (done, target))

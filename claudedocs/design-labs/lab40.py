@@ -37,12 +37,12 @@ ROWS = ''.join(lift_row(*l) for l in LIFTS)
 RAIL = K.rail([
     (K.ACCENT, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px">'
                'Tue 2 Sep</span>' + K.pill('PR') + '<span class="sp"></span>'
-               '<span class="mono" style="font-size:13px;color:var(--mid)">8.6 T</span></div>'
+               '<span class="mono" style="font-size:13px;color:var(--mid)">8,600 KG</span></div>'
                '<span class="mono" style="font-size:11px;color:var(--lo)">64 MIN &middot; 20 SETS'
                '</span>'),
     (K.TICK2, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px">'
               'Tue 26 Aug</span><span class="sp"></span>'
-              '<span class="mono" style="font-size:13px;color:var(--mid)">8.2 T</span></div>'
+              '<span class="mono" style="font-size:13px;color:var(--mid)">8,200 KG</span></div>'
               '<span class="mono" style="font-size:11px;color:var(--lo)">61 MIN &middot; 20 SETS'
               '</span>'),
 ], air=22, on_plate=True)
@@ -52,7 +52,7 @@ STATS = K.tiles([
     ('EXERCISES', '5'),
     ('SETS', '20'),
     ('EST. TIME', '62 M'),
-    ('VOLUME', '8.4 T', K.delta('+4%'))], tone='raised')
+    ('VOLUME', '8,400 KG', K.delta('+4%'))], tone='raised')
 
 HEAD = K.back_head('Lower A', 'ROUTINE', K.ico('dots', 'var(--mid)', 1.7))
 BAR = K.actionbar('Start Lower A', 'EDIT')
@@ -96,7 +96,7 @@ M4 = K.phone(
     HEAD
     + section('', K.tiles([
         ('EXERCISES', '5'), ('SETS', '20'), ('EST. TIME', '62 M'),
-        ('VOLUME', '8.4 T', K.delta('+4%'))], tone='raised'), 'lit', first=True, pad=13)
+        ('VOLUME', '8,400 KG', K.delta('+4%'))], tone='raised'), 'lit', first=True, pad=13)
     + section('EXERCISES', ROWS, 'lit ins', rule=True, pad=13)
     + section('LAST THREE', RAIL, 'lit', rule=True),
     chrome=BAR)

@@ -77,7 +77,7 @@ def lift_row(idx, name, sets, kg, rest):
 # Two per row, never four (N3). The comparison rides the number it describes
 # rather than taking a tile of its own.
 STATS = K.tiles([('EXERCISES', '5'), ('SETS', '20'),
-                 ('EST. TIME', '62 M'), ('VOLUME', '8.4 T', K.delta('+4%'))], tone='raised')
+                 ('EST. TIME', '62 M'), ('VOLUME', '8,400 KG', K.delta('+4%'))], tone='raised')
 
 A2 = K.phone(
     K.back_head('Lower A', 'ROUTINE', K.ico('dots', 'var(--mid)', 1.7))
@@ -87,12 +87,12 @@ A2 = K.phone(
     + K.psec('LAST THREE', K.rail([
         (K.ACCENT, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px">'
                    'Tue 2 Sep</span>' + K.pill('PR') + '<span class="sp"></span>'
-                   '<span class="mono" style="font-size:13px;color:var(--mid)">8.6 T</span></div>'
+                   '<span class="mono" style="font-size:13px;color:var(--mid)">8,600 KG</span></div>'
                    '<span class="mono" style="font-size:11px;color:var(--lo)">64 MIN &middot; '
                    '20 SETS &middot; TOP 102.5 &times; 8</span>'),
         (K.TICK2, '<div class="r" style="gap:9px"><span class="num" style="font-size:15px">'
                   'Tue 26 Aug</span><span class="sp"></span>'
-                  '<span class="mono" style="font-size:13px;color:var(--mid)">8.2 T</span></div>'
+                  '<span class="mono" style="font-size:13px;color:var(--mid)">8,200 KG</span></div>'
                   '<span class="mono" style="font-size:11px;color:var(--lo)">61 MIN &middot; '
                   '20 SETS &middot; TOP 100 &times; 8</span>'),
     ], air=24), plated=False),
@@ -209,10 +209,10 @@ INTRO = (
            'readiness, the week so far. &nbsp;&middot;&nbsp; '
            '<b style="color:#c9c3b6;font-weight:500">Session</b> &mdash; everything you plan or '
            'start from: routines, programs, the exercise library. &nbsp;&middot;&nbsp; '
-           '<b style="color:#c9c3b6;font-weight:500">Strength</b> &mdash; per-exercise history, '
-           'PRs, standards, the body map. &nbsp;&middot;&nbsp; '
+           '<b style="color:#c9c3b6;font-weight:500">History</b> &mdash; calendar, sessions done, '
+           'records. &nbsp;&middot;&nbsp; '
            '<b style="color:#c9c3b6;font-weight:500">Load</b> &mdash; volume, deload, bodyweight, '
-           'calendar. &nbsp;&middot;&nbsp; '
+           'the body map. &nbsp;&middot;&nbsp; '
            '<b style="color:#c9c3b6;font-weight:500">Settings</b> is not a tab &mdash; it is a '
            'gear in the Today header, because you open it twice a year.', '#6f6c66')
   + K.para('Detail screens push on top of their tab and lose the tab bar entirely, which frees '

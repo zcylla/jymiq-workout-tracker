@@ -20,7 +20,7 @@ C2 = K.phone(
     # VS LAST was its own tile and is now the delta on the number it describes:
     # one tile fewer and one more thing said.
     + K.psec('', K.tiles([('TIME', '1H 04', '', K.HI),
-                          ('VOLUME', '8.6 T', K.delta('+4.9%'), K.HI),
+                          ('VOLUME', '8,600 KG', K.delta('+4.9%'), K.HI),
                           ('SETS', '20', '', K.HI),
                           ('RECORDS', '2', '', K.ACCENT)], tone='raised'), first=True, pad=13)
     + K.psec('NEW RECORDS',
@@ -43,12 +43,12 @@ C2 = K.phone(
                '<span style="font-size:15px;color:var(--hi)">' + n + '</span>'
                '<span class="mono" style="font-size:11px;letter-spacing:0.07em;color:var(--lo)">'
                + m + '</span></div>', chev=False)
-        for i, n, m in [('01', 'Barbell Squat', '5 SETS &middot; TOP 102.5 &times; 8 &middot; 2.9 T'),
-                        ('02', 'Romanian Deadlift', '4 SETS &middot; TOP 80 &times; 10 &middot; 2.4 T'),
-                        ('03', 'Leg Press', '4 SETS &middot; TOP 160 &times; 12 &middot; 2.1 T'),
-                        ('04', 'Seated Curl', '3 SETS &middot; TOP 35 &times; 12 &middot; 0.7 T'),
+        for i, n, m in [('01', 'Barbell Squat', '5 SETS &middot; TOP 102.5 &times; 8 &middot; 2,900 KG'),
+                        ('02', 'Romanian Deadlift', '4 SETS &middot; TOP 80 &times; 10 &middot; 2,400 KG'),
+                        ('03', 'Leg Press', '4 SETS &middot; TOP 160 &times; 12 &middot; 2,100 KG'),
+                        ('04', 'Seated Curl', '3 SETS &middot; TOP 35 &times; 12 &middot; 700 KG'),
                         ('05', 'Standing Calf',
-                         '4 SETS &middot; TOP 90 &times; 15 &middot; 0.5 T')]), plated=False),
+                         '4 SETS &middot; TOP 90 &times; 15 &middot; 500 KG')]), plated=False),
     chrome=K.actionbar('Done', 'NOTES'))
 
 # ---------------------------------------------------------------- C3 detail --
@@ -93,7 +93,7 @@ PR_EVENTS = [
     (K.ACCENT, 'Tue 2 Sep', 'Barbell Squat', 'BEST SET VOLUME', '820 KG', 'WAS 800 KG'),
     (K.TICK3, 'Mon 1 Sep', 'Barbell Bench Press', 'HEAVIEST', '87.5 &times; 3', 'WAS 85 &times; 3'),
     (K.TICK2, 'Thu 28 Aug', 'Lat Pulldown', 'MOST REPS AT 68', '11', 'WAS 9'),
-    (K.TICK2, 'Tue 26 Aug', 'Romanian Deadlift', 'BEST SESSION VOLUME', '3.1 T', 'WAS 2.9 T'),
+    (K.TICK2, 'Tue 26 Aug', 'Romanian Deadlift', 'BEST SESSION VOLUME', '3,100 KG', 'WAS 2,900 KG'),
     (K.TICK1, 'Fri 22 Aug', 'Barbell Squat', 'HEAVIEST', '105 &times; 3', 'WAS 102.5 &times; 3'),
 ]
 
@@ -110,12 +110,12 @@ def pr_node(date, ex, kind, val, was):
 
 
 C4 = K.phone(
-    K.head('Records', 'STRENGTH')
+    K.head('Records', 'HISTORY')
     + K.psec('', K.tiles([('THIS MONTH', '6', K.delta('+2'), K.ACCENT),
                           ('THIS YEAR', '41', '', K.HI)], tone='raised'), first=True, pad=13)
     + K.psec('TIMELINE', K.rail([(d, pr_node(dt, ex, k, v, w))
                                  for d, dt, ex, k, v, w in PR_EVENTS], air=26), plated=False),
-    active='strength')
+    active='history')
 
 COLS = [
  ('C1', 'Calendar', 'The one review screen that is not a rail',

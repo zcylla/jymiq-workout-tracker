@@ -203,7 +203,7 @@ B4 = K.phone(
                '<span class="num" style="font-size:13px;width:30px;text-align:right">' + str(v)
                + '%</span></div>', chev=False)
         for n, v, m in GROUPS), plated=False),
-    active='strength')
+    active='load')
 
 COLS = [
  ('B1', 'Exercise library', 'The densest list in the app',
@@ -212,7 +212,7 @@ COLS = [
   B1),
  ('B2', 'Exercise detail', 'What this lift has done for you',
   'Demonstration, description, muscles, cues and common mistakes first; numbers, chart and rep maxes under them. This is Lab&nbsp;39&rsquo;s screen imported verbatim &mdash; defining it in two files is how two screens drift apart.',
-  'The order is the finding: Strong, Hevy, Fitbod, JEFIT and Boostcamp all put demonstration and instruction above statistics, and the old version opened with four numbers &mdash; which answers a question you only have once you already know the lift. The chart carries its own y range, first and last x labels, the latest column in the accent with its value printed, and a label that states the takeaway; it sits on the canvas because a baseline and two axes are already a frame. <b>This screen is long and it should be</b> &mdash; roughly half of it is below the fold, which is what a reference screen looks like.',
+  'The order is the finding: Strong, Hevy, Fitbod, JEFIT and Boostcamp all put demonstration and instruction above statistics, and the old version opened with four numbers &mdash; which answers a question you only have once you already know the lift. (The build has since replaced the column chart with PROGRESS, a line chart: <code>kit.linechart</code> and <code>kit.segmented</code>.) The chart carries its own y range, first and last x labels, the latest column in the accent with its value printed, and a label that states the takeaway; it sits on the canvas because a baseline and two axes are already a frame. <b>This screen is long and it should be</b> &mdash; roughly half of it is below the fold, which is what a reference screen looks like.',
   B2),
  ('B2\u2032', 'Exercise detail, scrolled', 'The half that is below the fold',
   'The same screen 1180pt down: your numbers, the labelled 1RM chart on the canvas, the rep-max table, and what to do next.',
