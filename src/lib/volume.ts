@@ -70,24 +70,20 @@ export function topSet(sets: readonly SetLike[]): SetLike | null {
   return best;
 }
 
-/** "8.6 T" above a tonne, "820 KG" below — the boards use both. Pounds: "18.9 K LB" / "820 LB". */
+const grouped = (n: number): string =>
+  Math.round(n)
+    .toString()
+    .replace(/\B(?=(\d{3})+$)/g, ',');
+
+/** Always kg or lb, whole units, grouped from a thousand: "820 KG", "10,500 KG", "23,149 LB". */
 export function formatTonnage(kg: Kg, unit: Unit = 'kg'): string {
-  if (unit === 'lb') {
-    const lb = toDisplay(kg, 'lb');
-    if (lb >= 1000) return `${(Math.round(lb / 100) / 10).toFixed(1)} K LB`;
-    return `${Math.round(lb)} LB`;
-  }
-  if (kg >= 1000) return `${(Math.round(kg / 100) / 10).toFixed(1)} T`;
-  return `${Math.round(kg)} KG`;
+  return `${grouped(toDisplay(kg, unit))} ${unit === 'lb' ? 'LB' : 'KG'}`;
 }
 
-/** An axis label: every label shares the top one's scale ("22.6 T" over a bare "0", never "0 KG"). */
+/** An axis label: above a thousand every label is a bare grouped number ("22,600", "0"); the caption names the unit. */
 export function formatTonnageAxis(kg: Kg, hiKg: Kg, unit: Unit = 'kg'): string {
-  const lb = unit === 'lb';
-  if ((lb ? toDisplay(hiKg, 'lb') : hiKg) < 1000) return formatTonnage(kg, unit);
-  if (kg === 0) return '0';
-  const big = Math.round(((lb ? toDisplay(kg, 'lb') : kg) / 1000) * 10) / 10;
-  return `${big.toFixed(1)} ${lb ? 'K LB' : 'T'}`;
+  if (toDisplay(hiKg, unit) < 1000) return formatTonnage(kg, unit);
+  return grouped(toDisplay(kg, unit));
 }
 
 export type SessionStatus = 'in_progress' | 'completed' | 'abandoned';

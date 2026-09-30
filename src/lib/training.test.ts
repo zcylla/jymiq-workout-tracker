@@ -92,9 +92,20 @@ test('top set is the heaviest, ties broken by reps', () => {
   assert.equal(topSet([s(60, 5, { kind: 'warmup' })]), null);
 });
 
-test('tonnage switches unit at a tonne', () => {
-  assert.equal(formatTonnage(8640), '8.6 T');
+test('volume is always kg or lb, grouped from a thousand', () => {
+  assert.equal(formatTonnage(0), '0 KG');
   assert.equal(formatTonnage(820), '820 KG');
+  assert.equal(formatTonnage(999), '999 KG');
+  assert.equal(formatTonnage(999.6), '1,000 KG');
+  assert.equal(formatTonnage(1000), '1,000 KG');
+  assert.equal(formatTonnage(1001), '1,001 KG');
+  assert.equal(formatTonnage(10_500), '10,500 KG');
+  assert.equal(formatTonnage(1_234_567), '1,234,567 KG');
+  assert.equal(formatTonnage(0, 'lb'), '0 LB');
+  assert.equal(formatTonnage(372, 'lb'), '820 LB');
+  assert.equal(formatTonnage(453, 'lb'), '999 LB');
+  assert.equal(formatTonnage(453.6, 'lb'), '1,000 LB');
+  assert.equal(formatTonnage(10_500, 'lb'), '23,149 LB');
 });
 
 test('a pre-filled set with no completedAt was not performed', () => {
@@ -459,9 +470,14 @@ test('pounds keep one decimal, kilograms keep two', () => {
 
 test('axis labels share the top label scale, and zero is bare', () => {
   assert.equal(formatTonnageAxis(0, 22_600), '0');
-  assert.equal(formatTonnageAxis(450, 22_600), '0.5 T');
-  assert.equal(formatTonnageAxis(22_600, 22_600), '22.6 T');
+  assert.equal(formatTonnageAxis(450, 22_600), '450');
+  assert.equal(formatTonnageAxis(11_300, 22_600), '11,300');
+  assert.equal(formatTonnageAxis(22_600, 22_600), '22,600');
   assert.equal(formatTonnageAxis(0, 800), '0 KG');
+  assert.equal(formatTonnageAxis(400, 999), '400 KG');
+  assert.equal(formatTonnageAxis(1000, 1000), '1,000');
   assert.equal(formatTonnageAxis(0, 22_600, 'lb'), '0');
-  assert.equal(formatTonnageAxis(22_600, 22_600, 'lb'), '49.8 K LB');
+  assert.equal(formatTonnageAxis(22_600, 22_600, 'lb'), '49,824');
+  assert.equal(formatTonnageAxis(0, 400, 'lb'), '0 LB');
+  assert.equal(formatTonnageAxis(453.6, 453.6, 'lb'), '1,000');
 });
