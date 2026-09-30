@@ -12,7 +12,6 @@ import {
   SCOPES,
   type Scope,
   appliesTo,
-  chromeBlurs,
   coerceTrial,
   glassOf,
   screenBlurs,
@@ -77,11 +76,11 @@ test('every preset is a valid trial, and the first is today', () => {
   assert.equal(new Set(PRESETS.map((p) => p.label)).size, PRESETS.length);
 });
 
-test('the default glasses heroes, plates, and chrome with a light blur, never rows', () => {
+test('the default glasses heroes and plates with a light blur, chrome without one, never rows', () => {
   assert.deepEqual(glassOf(DEFAULT_TRIAL, 'hero'), { glass: true, blur: 20 });
   assert.deepEqual(glassOf(DEFAULT_TRIAL, 'plate'), { glass: true, blur: 20 });
   assert.deepEqual(glassOf(DEFAULT_TRIAL, 'row'), { glass: false, blur: 0 });
-  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'chrome'), { glass: true, blur: 20 });
+  assert.deepEqual(glassOf(DEFAULT_TRIAL, 'chrome'), { glass: true, blur: 0 });
 });
 
 test('style off or scope off is opaque everywhere', () => {
@@ -112,12 +111,12 @@ test('a screen carries a blur target only when a surface on it blurs', () => {
   assert.equal(screenBlurs({ style: 'tint', blur: 80, background: 'dots', scope: 'all' }), false);
 });
 
-test('chrome blur follows chrome scopes and blurring styles', () => {
-  assert.equal(chromeBlurs(DEFAULT_TRIAL), true);
-  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, scope: 'chrome' }), true);
-  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, scope: 'chrome+hero' }), true);
-  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, scope: 'cards' }), false);
-  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, style: 'tint' }), false);
-  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, blur: 0 }), false);
-  assert.equal(chromeBlurs({ ...DEFAULT_TRIAL, style: 'off' }), false);
+test('chrome never blurs under a chrome scope', () => {
+  for (const style of ['frost', 'smoke', 'crystal'] as const)
+    for (const scope of ['chrome', 'chrome+hero'] as const)
+      assert.deepEqual(
+        glassOf({ style, blur: 80, background: 'dots', scope }, 'chrome'),
+        { glass: true, blur: 0 },
+        `${style} ${scope}`,
+      );
 });

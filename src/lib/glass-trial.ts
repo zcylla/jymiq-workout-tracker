@@ -30,7 +30,7 @@ export type GlassTrial = {
   scope: Scope;
 };
 
-/** The owner's pick from the lab (2026-09-30): frost with minimal blur on every main card and chrome, today's ground. */
+/** The owner's pick from the lab (2026-09-30): frost with minimal blur on every main card and a dense chrome tint, today's ground. */
 export const DEFAULT_TRIAL: GlassTrial = {
   style: 'frost',
   blur: 20,
@@ -74,7 +74,8 @@ export function coerceTrial(raw: unknown): GlassTrial {
  */
 export function glassOf(t: GlassTrial, element: Element): { glass: boolean; blur: number } {
   const glass = t.style !== 'off' && appliesTo(t.scope, element);
-  const blur = glass && element !== 'inner' && BLURRING.includes(t.style) ? t.blur : 0;
+  const blur =
+    glass && element !== 'inner' && element !== 'chrome' && BLURRING.includes(t.style) ? t.blur : 0;
   return { glass, blur };
 }
 
@@ -85,8 +86,6 @@ export function glassOf(t: GlassTrial, element: Element): { glass: boolean; blur
  */
 export const screenBlurs = (t: GlassTrial): boolean =>
   (['hero', 'plate', 'row'] as const).some((element) => glassOf(t, element).blur > 0);
-
-export const chromeBlurs = (t: GlassTrial): boolean => glassOf(t, 'chrome').blur > 0;
 
 export const PRESETS: readonly { label: string; trial: GlassTrial }[] = [
   { label: 'A · Frost 20 cards', trial: DEFAULT_TRIAL },
