@@ -1,6 +1,5 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text } from 'react-native';
 
 import {
   ActionBar,
@@ -13,7 +12,6 @@ import {
   useActionBarHeight,
 } from '@/components';
 import { createProgram } from '@/data/mutations/programs';
-import { text } from '@/theme';
 
 /**
  * Never drawn — the same case as routine create, which was also built out of
@@ -33,7 +31,7 @@ export default function NewProgramScreen() {
   return (
     <>
       <Screen bottomInset={actionBar}>
-        <ScreenHeader title="New program" kicker="PLAN" onBack={() => router.back()} />
+        <ScreenHeader title="New program" onBack={() => router.back()} />
         <Section first plated={false}>
           <RowPlates>
             <RowPlate>
@@ -46,17 +44,13 @@ export default function NewProgramScreen() {
               />
             </RowPlate>
             <RowPlate>
-              <Field label="NOTE" value={note} onChangeText={setNote} prompt="Optional" />
+              <Field label="NOTE" value={note} onChangeText={setNote} />
             </RowPlate>
           </RowPlates>
-          <Text style={text.prose}>
-            A program puts your routines on weekdays. It starts paused; fill the week, then activate
-            it.
-          </Text>
         </Section>
       </Screen>
       <ActionBar
-        primary="Create program"
+        primary="Create"
         onPrimary={create}
         secondary="CANCEL"
         onSecondary={() => router.back()}

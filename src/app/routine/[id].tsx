@@ -1,7 +1,6 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Text } from 'react-native';
 
 import {
   ActionBar,
@@ -18,7 +17,6 @@ import {
   StatTiles,
   type Tile,
   useActionBarHeight,
-  useDialog,
 } from '@/components';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
 import {
@@ -27,12 +25,12 @@ import {
   sessionsWithRecordsQuery,
 } from '@/data/queries/sessions';
 import { useRows } from '@/data/live';
+import { useSessionRunning } from '@/data/running';
 import { startSession } from '@/data/mutations/sessions';
 import { useSettings } from '@/data/settings';
 import { formatRest, formatSessionDuration, sessionDotTone } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
 import { formatTonnage, topSet } from '@/lib/volume';
-import { text } from '@/theme';
 
 /**
  * Lab 34 A2. A sibling of `(tabs)`, so the push loses the tab bar and the
@@ -43,7 +41,6 @@ import { text } from '@/theme';
  */
 export default function RoutineScreen() {
   const actionBar = useActionBarHeight();
-  const show = useDialog();
   const settings = useSettings();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: found } = useLiveQuery(
@@ -54,10 +51,12 @@ export default function RoutineScreen() {
     useMemo(() => routineExercisesQuery(id), [id]),
     [id],
   );
-  const { data: recentSessions, updatedAt: sessionsUpdatedAt } = useLiveQuery(
+  const { data: recentSessions } = useLiveQuery(
     useMemo(() => routineSessionsQuery(id), [id]),
     [id],
   );
+  const runningNow = useSessionRunning();
+  const running = runningNow === true;
   const routine = found?.[0];
   const rows = lifts ?? [];
   const sessions = recentSessions ?? [];
@@ -90,26 +89,20 @@ export default function RoutineScreen() {
   );
 
   const start = () => {
-    // `lifts` is null until the query answers. Refusing on that told the user
-    // their routine was empty because the app had not looked yet.
-    if (lifts === null) return;
-    if (!routine || lifts.length === 0) {
-      show({
-        title: 'Add an exercise first',
-        message: 'A routine needs at least one lift before it can start.',
-      });
+    if (running || !routine || !lifts?.length) {
+      if (running) router.replace('/live');
       return;
     }
     try {
       startSession({ routineId: routine.id });
-      router.replace('/live');
     } catch {
-      show({
-        title: 'A session is already running',
-        message: 'Finish or discard it before starting another.',
-      });
+      // A session started elsewhere between render and tap: resume it.
     }
+    router.replace('/live');
   };
+  // `lifts` is null until the query answers, and a routine with no lifts has
+  // nothing to start. Both dim the button instead of explaining in a dialog.
+  const cannotStart = runningNow === null || (!running && !lifts?.length);
 
   const sets = rows.reduce((n, l) => n + l.targetSets, 0);
   const lastSession = sessions[0];
@@ -125,11 +118,11 @@ export default function RoutineScreen() {
     { label: 'EXERCISES', value: liftsLoading ? '—' : String(rows.length) },
     { label: 'SETS', value: liftsLoading ? '—' : String(sets) },
     {
-      label: 'LAST TIME',
+      label: 'TIME',
       value: lastSession ? formatSessionDuration(lastSession.durationSec) : '—',
     },
     {
-      label: 'LAST VOLUME',
+      label: 'VOLUME',
       value:
         lastSession && lastSession.totalVolumeKg != null
           ? formatTonnage(lastSession.totalVolumeKg, settings.weightUnit)
@@ -137,7 +130,6 @@ export default function RoutineScreen() {
     },
   ];
 
-  const sessionsLoading = sessionsUpdatedAt === undefined;
   const railItems: RailItem[] = sessions.map((session) => ({
     tone: sessionDotTone(session.startedAt),
     body: (
@@ -159,7 +151,6 @@ export default function RoutineScreen() {
       <Screen bottomInset={actionBar}>
         <ScreenHeader
           title={routine?.name ?? ''}
-          kicker="ROUTINE"
           onBack={() => router.back()}
           right={<Icon name="dots" />}
         />
@@ -169,38 +160,40 @@ export default function RoutineScreen() {
         </Section>
 
         <Section label="EXERCISES" plated={false}>
-          {rows.length ? (
-            <RowPlates>
-              {rows.map((lift, i) => (
-                <RowPlate key={lift.id} onPress={() => router.push(`/exercise/${lift.exerciseId}`)}>
-                  <ListRow
-                    grip
-                    chevron={false}
-                    lead={String(i + 1).padStart(2, '0')}
-                    quiet
-                    title={lift.name}
-                    meta={liftMeta(lift, settings.weightUnit)}
-                  />
-                </RowPlate>
-              ))}
-            </RowPlates>
-          ) : (
-            <Text style={text.prose}>
-              No lifts yet. Add them from the library, or copy them from another routine.
-            </Text>
-          )}
+          <RowPlates>
+            {rows.map((lift, i) => (
+              <RowPlate key={lift.id} onPress={() => router.push(`/exercise/${lift.exerciseId}`)}>
+                <ListRow
+                  grip
+                  chevron={false}
+                  lead={String(i + 1).padStart(2, '0')}
+                  quiet
+                  title={lift.name}
+                  meta={liftMeta(lift, settings.weightUnit)}
+                />
+              </RowPlate>
+            ))}
+            {lifts !== null && rows.length === 0 ? (
+              <RowPlate
+                onPress={() =>
+                  router.push({ pathname: '/session/library', params: { routineId: id } })
+                }
+              >
+                <ListRow title="Add exercise" />
+              </RowPlate>
+            ) : null}
+          </RowPlates>
         </Section>
 
-        <Section label="LAST THREE" plated={false}>
-          {sessions.length ? (
+        {sessions.length ? (
+          <Section label="LAST THREE" plated={false}>
             <Rail items={railItems} air={24} />
-          ) : sessionsLoading ? null : (
-            <Text style={text.prose}>No sessions from this routine yet.</Text>
-          )}
-        </Section>
+          </Section>
+        ) : null}
       </Screen>
       <ActionBar
-        primary={routine ? `Start ${routine.name}` : 'Start'}
+        primary={running ? 'Resume' : 'Start'}
+        disabled={cannotStart}
         secondary="EDIT"
         onPrimary={start}
         onSecondary={() => router.push(`/routine/${id}/edit`)}

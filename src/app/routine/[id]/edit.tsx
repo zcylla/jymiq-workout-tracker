@@ -20,7 +20,7 @@ import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
 import { useSettings } from '@/data/settings';
 import { formatRest } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
-import { text } from '@/theme';
+import { color, text } from '@/theme';
 
 export default function EditRoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -38,7 +38,7 @@ export default function EditRoutineScreen() {
   if (!routine) {
     return (
       <Screen>
-        <ScreenHeader title="Edit routine" kicker="PLAN" onBack={() => router.back()} />
+        <ScreenHeader title="Edit routine" onBack={() => router.back()} />
       </Screen>
     );
   }
@@ -62,7 +62,6 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
   const remove = (liftId: string, liftName: string) =>
     show({
       title: `Remove ${liftName}?`,
-      message: 'It stays in your exercise library.',
       actions: [
         { label: 'Remove', tone: 'destructive', onPress: () => removeRoutineExercise(liftId) },
         { label: 'Cancel', tone: 'cancel' },
@@ -72,14 +71,14 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
   return (
     <>
       <Screen bottomInset={actionBar}>
-        <ScreenHeader title="Edit routine" kicker="PLAN" onBack={() => router.back()} />
+        <ScreenHeader title="Edit routine" onBack={() => router.back()} />
         <Section first plated={false}>
           <RowPlates>
             <RowPlate>
               <Field label="NAME" value={name} onChangeText={setName} prompt="Upper A" />
             </RowPlate>
             <RowPlate>
-              <Field label="NOTE" value={note} onChangeText={setNote} prompt="Optional" />
+              <Field label="NOTE" value={note} onChangeText={setNote} />
             </RowPlate>
           </RowPlates>
         </Section>
@@ -92,7 +91,8 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
                   lead={String(index + 1).padStart(2, '0')}
                   title={lift.name}
                   meta={liftMeta(lift, settings.weightUnit)}
-                  valueLabel="REMOVE"
+                  chevron={false}
+                  right={<Text style={[text.numRow, { color: color.live }]}>−</Text>}
                 />
               </RowPlate>
             ))}
@@ -101,16 +101,13 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
                 router.push({ pathname: '/session/library', params: { routineId: routine.id } })
               }
             >
-              <ListRow title="Add exercise" meta="search the library" />
+              <ListRow title="Add exercise" />
             </RowPlate>
           </RowPlates>
-          {rows.length ? (
-            <Text style={text.prose}>Tap an exercise to remove it from this routine.</Text>
-          ) : null}
         </Section>
       </Screen>
       <ActionBar
-        primary="Save routine"
+        primary="Save"
         onPrimary={save}
         secondary="CANCEL"
         onSecondary={() => router.back()}

@@ -27,20 +27,20 @@ export default function NewRoutineScreen() {
   return (
     <>
       <Screen bottomInset={actionBar}>
-        <ScreenHeader title="New routine" kicker="PLAN" onBack={() => router.back()} />
+        <ScreenHeader title="New routine" onBack={() => router.back()} />
         <Section first plated={false}>
           <RowPlates>
             <RowPlate>
               <Field label="NAME" value={name} onChangeText={setName} prompt="Upper A" autoFocus />
             </RowPlate>
             <RowPlate>
-              <Field label="NOTE" value={note} onChangeText={setNote} prompt="Optional" />
+              <Field label="NOTE" value={note} onChangeText={setNote} />
             </RowPlate>
           </RowPlates>
         </Section>
       </Screen>
       <ActionBar
-        primary="Create routine"
+        primary="Create"
         onPrimary={create}
         secondary="CANCEL"
         onSecondary={() => router.back()}

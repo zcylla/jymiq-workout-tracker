@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import {
   ActionBar,
@@ -27,12 +27,13 @@ import {
   setProgramDay,
 } from '@/data/mutations/programs';
 import { startSession } from '@/data/mutations/sessions';
+import { useSessionRunning } from '@/data/running';
 import { programDaysQuery, programQuery } from '@/data/queries/programs';
 import { routineListQuery } from '@/data/queries/routines';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { dayKey, mondayIndex, trainedDays } from '@/lib/calendar';
 import { type Schedule, programWeek, programWeekNumber, trainedDaysPerWeek } from '@/lib/program';
-import { space, text } from '@/theme';
+import { space } from '@/theme';
 
 /**
  * Lab 34 A4. A sibling of `(tabs)`, so the push loses the tab bar and the
@@ -79,6 +80,7 @@ export default function ProgramScreen() {
     [startedAt, historyTo],
   );
 
+  const running = useSessionRunning() === true;
   const [open, setOpen] = useState<number | null>(null);
 
   const program = found?.[0];
@@ -105,7 +107,7 @@ export default function ProgramScreen() {
   if (!program) {
     return (
       <Screen>
-        <ScreenHeader title="Program" kicker="PROGRAM" onBack={() => router.back()} />
+        <ScreenHeader title="Program" onBack={() => router.back()} />
       </Screen>
     );
   }
@@ -122,26 +124,25 @@ export default function ProgramScreen() {
   // is stored anywhere, and §0 is explicit that a meter needs a real one.
   const tiles: Tile[] = [
     { label: 'WEEK', value: active ? String(programWeekNumber(program.startedAt) ?? 1) : '—' },
-    { label: 'DAYS A WEEK', value: String(scheduled) },
+    { label: 'DAYS', value: String(scheduled) },
   ];
 
   const start = () => {
     if (!today) return;
-    try {
-      startSession({ routineId: today.id });
-      router.replace('/live');
-    } catch {
-      show({
-        title: 'A session is already running',
-        message: 'Finish or discard it before starting another.',
-      });
+    if (!running) {
+      try {
+        startSession({ routineId: today.id });
+      } catch {
+        // A session started elsewhere between render and tap: resume it.
+      }
     }
+    router.replace('/live');
   };
 
   const confirmDelete = () =>
     show({
       title: `Delete ${program.name}?`,
-      message: 'The routines on it stay. Only the weekday plan goes.',
+      message: 'Routines stay.',
       actions: [
         {
           label: 'Delete',
@@ -160,7 +161,6 @@ export default function ProgramScreen() {
       <Screen bottomInset={actionBar}>
         <ScreenHeader
           title={program.name}
-          kicker="PROGRAM"
           onBack={() => router.back()}
           right={active ? <Pill label="RUNNING" /> : undefined}
         />
@@ -170,7 +170,7 @@ export default function ProgramScreen() {
         </Section>
 
         {active && program.startedAt != null && scheduled > 0 && weekNo >= 2 ? (
-          <Section label={`SESSIONS PER WEEK · WEEK ${weekNo} IS UNDER WAY`} plated={false}>
+          <Section label="PER WEEK" plated={false}>
             <ColumnChart
               values={shown}
               xFirst={`WK ${firstWeek}`}
@@ -215,9 +215,9 @@ export default function ProgramScreen() {
                       ))}
                     </View>
                     {routines !== null && routines.length === 0 ? (
-                      <Text style={text.prose}>
-                        No routines yet. Make one on the Session tab and it lands here.
-                      </Text>
+                      <View style={{ flexDirection: 'row' }}>
+                        <Chip label="+ ROUTINE" onPress={() => router.push('/routine/new')} />
+                      </View>
                     ) : null}
                   </View>
                 ) : null}
@@ -226,17 +226,12 @@ export default function ProgramScreen() {
           </RowPlates>
         </Section>
 
-        <Section label="PROGRAM" plated={false}>
+        <Section plated={false}>
           <RowPlates>
             <RowPlate onPress={confirmDelete}>
-              <ListRow title="Delete program" meta="THE ROUTINES ON IT STAY" valueLabel="DELETE" />
+              <ListRow danger title="Delete program" />
             </RowPlate>
           </RowPlates>
-          <Text style={[text.prose, { marginTop: space.within }]}>
-            {scheduled === 0
-              ? 'Put a routine on at least one weekday, then activate it. Until a program is running, every untrained day is rest rather than missed.'
-              : 'Only one program runs at a time. Activating this one pauses whichever was running.'}
-          </Text>
         </Section>
       </Screen>
 
@@ -244,26 +239,18 @@ export default function ProgramScreen() {
           would be the dead button this project has shipped twice. */}
       {active && today ? (
         <ActionBar
-          primary={`Start ${today.name}`}
+          primary={running ? 'Resume' : 'Start'}
           onPrimary={start}
           secondary="PAUSE"
           onSecondary={() => pauseProgram(program.id)}
         />
       ) : active ? (
-        <ActionBar primary="Pause program" onPrimary={() => pauseProgram(program.id)} />
+        <ActionBar primary="Pause" onPrimary={() => pauseProgram(program.id)} />
       ) : (
         <ActionBar
-          primary="Activate program"
-          onPrimary={() => {
-            if (scheduled === 0) {
-              show({
-                title: 'Nothing is scheduled',
-                message: 'Put a routine on at least one weekday first.',
-              });
-              return;
-            }
-            activateProgram(program.id);
-          }}
+          primary="Activate"
+          disabled={scheduled === 0}
+          onPrimary={() => activateProgram(program.id)}
         />
       )}
     </>

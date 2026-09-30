@@ -2,7 +2,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -19,7 +19,7 @@ import { exerciseStill } from '@/data/exercise-art';
 import { addExerciseToRoutine } from '@/data/mutations/routines';
 import { exerciseListQuery } from '@/data/queries/exercises';
 import type { Equipment } from '@/data/schema';
-import { color, space, text } from '@/theme';
+import { color, space } from '@/theme';
 
 const FILTERS: { label: string; value: Equipment | null }[] = [
   { label: 'ALL', value: null },
@@ -45,7 +45,7 @@ export default function LibraryScreen() {
   const [equipment, setEquipment] = useState<Equipment | null>(null);
 
   const query = useMemo(() => exerciseListQuery({ search, equipment }), [search, equipment]);
-  const { data: rows } = useLiveQuery(query, [search, equipment]);
+  const { data: rows, updatedAt } = useLiveQuery(query, [search, equipment]);
 
   return (
     <FlashList
@@ -64,7 +64,6 @@ export default function LibraryScreen() {
         <View style={{ gap: space.within, paddingBottom: space.within }}>
           <ScreenHeader
             title={routineId ? 'Add exercise' : 'Library'}
-            kicker={routineId ? 'ROUTINE' : 'EXERCISES'}
             onBack={() => router.back()}
             right={
               <Pressable onPress={() => router.push('/exercise/new')} hitSlop={12}>
@@ -90,9 +89,11 @@ export default function LibraryScreen() {
         </View>
       }
       ListEmptyComponent={
-        <Text style={text.prose}>
-          Nothing matches. Clear the filter, or add it as a custom exercise.
-        </Text>
+        updatedAt === undefined ? null : (
+          <RowPlate onPress={() => router.push('/exercise/new')}>
+            <ListRow title="Add custom exercise" />
+          </RowPlate>
+        )
       }
       renderItem={({ item }) => (
         <RowPlate
@@ -109,7 +110,7 @@ export default function LibraryScreen() {
             quiet
             art={exerciseStill(item.id)}
             title={item.name}
-            meta={`${item.equipment.toUpperCase()} · ${item.kind.toUpperCase()}`}
+            meta={item.equipment.toUpperCase()}
           />
         </RowPlate>
       )}

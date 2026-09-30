@@ -25,7 +25,7 @@ import { trainedDays } from '@/lib/calendar';
 import { NO_SCHEDULE, programWeek, programWeekNumber, upcomingScheduled } from '@/lib/program';
 import { dueLabel } from '@/lib/next';
 import { weekStrip } from '@/lib/week';
-import { color, space, text } from '@/theme';
+import { color, text } from '@/theme';
 
 /**
  * Lab 34 A3. One program is running; the rest are not.
@@ -65,7 +65,6 @@ export default function ProgramsScreen() {
     <Screen bottomInset={tabBar}>
       <ScreenHeader
         title="Programs"
-        kicker="PLAN"
         onBack={() => router.back()}
         right={
           <Link href="/program/new">
@@ -87,11 +86,10 @@ export default function ProgramsScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Text style={text.lead}>{program.name}</Text>
-              <Pill label={`WEEK ${programWeekNumber(program.startedAt) ?? 1}`} />
+              <Pill label={`W${programWeekNumber(program.startedAt) ?? 1}`} />
               <View style={{ flex: 1 }} />
               <Chevron />
             </View>
-            <Text style={text.meta}>BY WEEKDAY · {schedule.days.size} OF 7 DAYS SCHEDULED</Text>
             <ProgramWeek days={week} />
           </Pressable>
         </Section>
@@ -126,27 +124,19 @@ export default function ProgramsScreen() {
       <Section label={program ? 'NOT RUNNING' : 'YOUR PROGRAMS'} first={!program} plated={false}>
         {programs === null ? null : (
           <>
-            {idle.length === 0 ? (
-              // §0: a short sentence plus a set of actions, never an apology.
-              <Text style={[text.prose, { marginBottom: space.within }]}>
-                {program
-                  ? 'Every program you have is the one that is running.'
-                  : 'No programs yet. A program puts your routines on weekdays, which is what tells a rest day apart from a day you missed.'}
-              </Text>
-            ) : null}
             <RowPlates>
               {idle.map((p) => (
                 <RowPlate key={p.id} onPress={() => router.push(`/program/${p.id}`)}>
                   <ListRow
                     title={p.name}
-                    meta={p.startedAt === null ? 'BY WEEKDAY · NEVER RUN' : 'BY WEEKDAY · PAUSED'}
+                    valueLabel={p.startedAt === null ? 'NEW' : 'PAUSED'}
                     dim={p.startedAt === null}
                   />
                 </RowPlate>
               ))}
               <Link href="/program/new" asChild>
                 <RowPlate onPress={() => {}}>
-                  <ListRow title="New program" meta="name it, then fill the week" />
+                  <ListRow title="New program" />
                 </RowPlate>
               </Link>
             </RowPlates>

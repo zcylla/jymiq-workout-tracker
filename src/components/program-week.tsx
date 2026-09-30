@@ -22,6 +22,19 @@ export function ProgramWeek({ days }: { days: readonly ProgramWeekDay<{ name: st
   );
 }
 
+/** One word gives its first three letters, more give their initials. */
+function code(name: string): string {
+  const words = name.trim().split(/\s+/);
+  return (
+    words.length === 1
+      ? words[0].slice(0, 3)
+      : words
+          .map((w) => w[0])
+          .join('')
+          .slice(0, 3)
+  ).toUpperCase();
+}
+
 function DayCell({ day }: { day: ProgramWeekDay<{ name: string }> }) {
   const labelColor =
     day.state === 'done'
@@ -52,8 +65,8 @@ function DayCell({ day }: { day: ProgramWeekDay<{ name: string }> }) {
       }}
     >
       <Text style={[text.meta, { color: labelColor }]}>{day.label}</Text>
-      <Text style={[text.prose, { color: nameColor, textAlign: 'center' }]} numberOfLines={2}>
-        {day.routine?.name ?? 'Rest'}
+      <Text style={[text.label, { color: nameColor, textAlign: 'center' }]} numberOfLines={1}>
+        {day.routine ? code(day.routine.name) : '·'}
       </Text>
     </View>
   );

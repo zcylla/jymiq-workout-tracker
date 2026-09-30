@@ -1,8 +1,6 @@
 import { Link, router } from 'expo-router';
 import { useMemo } from 'react';
-import { Text, View } from 'react-native';
-
-import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+import { View } from 'react-native';
 
 import {
   Icon,
@@ -14,20 +12,21 @@ import {
   Section,
   useTabBarHeight,
 } from '@/components';
+import { useRows } from '@/data/live';
 import { routineListQuery } from '@/data/queries/routines';
-import { text } from '@/theme';
 
 /** Lab 34 A1. The Session tab's landing view. */
 export default function RoutinesScreen() {
-  const query = useMemo(() => routineListQuery(), []);
-  const { data: routines } = useLiveQuery(query);
+  const routines = useRows(
+    useMemo(() => routineListQuery(), []),
+    [],
+  );
   const tabBar = useTabBarHeight();
 
   return (
     <Screen bottomInset={tabBar}>
       <ScreenHeader
         title="Routines"
-        kicker="PLAN"
         right={
           <View style={{ flexDirection: 'row', gap: 18 }}>
             <Link href="/routine/new">
@@ -40,39 +39,31 @@ export default function RoutinesScreen() {
         }
       />
 
-      <Section label="YOUR ROUTINES" plated={false}>
-        {routines?.length ? (
-          <RowPlates>
-            {routines.map((r) => (
-              <RowPlate key={r.id} onPress={() => router.push(`/routine/${r.id}`)}>
-                <ListRow title={r.name} meta={r.note ?? undefined} />
-              </RowPlate>
-            ))}
-          </RowPlates>
-        ) : (
-          // §0: the empty state is a short sentence plus a set of actions —
-          // never an apology, never an illustration.
-          <Text style={text.prose}>
-            No routines yet. Build one from the library, or start from a template.
-          </Text>
-        )}
-      </Section>
-
-      <Section label="PROGRAMS" plated={false}>
+      <Section first plated={false}>
         <RowPlates>
-          <Link href="/session/programs" asChild>
-            <RowPlate onPress={() => {}}>
-              <ListRow title="Programs" meta="routines on weekdays" />
+          {routines?.map((r) => (
+            <RowPlate key={r.id} onPress={() => router.push(`/routine/${r.id}`)}>
+              <ListRow title={r.name} />
             </RowPlate>
-          </Link>
+          ))}
+          {routines?.length === 0 ? (
+            <RowPlate onPress={() => router.push('/routine/new')}>
+              <ListRow title="Build a routine" />
+            </RowPlate>
+          ) : null}
         </RowPlates>
       </Section>
 
-      <Section label="EXERCISES" plated={false}>
+      <Section plated={false}>
         <RowPlates>
+          <Link href="/session/programs" asChild>
+            <RowPlate onPress={() => {}}>
+              <ListRow title="Programs" />
+            </RowPlate>
+          </Link>
           <Link href="/session/library" asChild>
             <RowPlate onPress={() => {}}>
-              <ListRow title="Library" meta="every exercise, searchable" />
+              <ListRow title="Library" />
             </RowPlate>
           </Link>
         </RowPlates>
