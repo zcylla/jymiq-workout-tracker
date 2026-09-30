@@ -167,7 +167,6 @@ export default function RoutineScreen() {
                 <ListRow
                   grip
                   chevron={false}
-                  lead={String(i + 1).padStart(2, '0')}
                   thumb={<ExerciseStill exerciseId={lift.exerciseId} />}
                   quiet
                   title={lift.name}
