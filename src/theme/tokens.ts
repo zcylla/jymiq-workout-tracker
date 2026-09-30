@@ -60,7 +60,7 @@ export const space = {
  * comes from the bloom (design-exploration §6), so a flat ground loses it.
  */
 export const field = {
-  dot: 'rgba(255,255,255,0.04)',
+  dot: 'rgba(255,255,255,0.08)',
   /** kit `.field` background-size. */
   pitch: 18,
   bloom: 'rgba(228,198,140,0.13)',
