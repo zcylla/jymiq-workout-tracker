@@ -141,9 +141,11 @@ export default function CheckInScreen() {
           </RowPlates>
         </Section>
 
-        <Section plated={false}>
-          <ReadinessPill step={step} />
-        </Section>
+        {step ? (
+          <Section plated={false}>
+            <ReadinessPill step={step} />
+          </Section>
+        ) : null}
       </Screen>
 
       {canStart ? (
