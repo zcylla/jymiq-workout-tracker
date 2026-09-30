@@ -11,6 +11,7 @@ export {
   type DialogRequest,
 } from './dialog';
 export { DurationSheet } from './duration-sheet';
+export { ExerciseLog } from './exercise-log';
 export { ExercisesSheet } from './exercises-sheet';
 export { ExerciseStill } from './exercise-still';
 export { KeypadSheet, NumberSheet } from './keypad-sheet';
