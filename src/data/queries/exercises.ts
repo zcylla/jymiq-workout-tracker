@@ -5,6 +5,7 @@ import {
   type Equipment,
   exerciseMuscles,
   exercises,
+  personalRecords,
   sessionExercises,
   sessions,
   sets,
@@ -128,4 +129,34 @@ export function exerciseSetsQuery(exerciseId: string) {
         isNotNull(sets.completedAt),
       ),
     );
+}
+
+/** Every set of one lift in a session that is over, for the LOG. Logged and removed rows are the grouping's to drop. */
+export function exerciseLogQuery(exerciseId: string) {
+  return db
+    .select({
+      id: sets.id,
+      sessionId: sessions.id,
+      startedAt: sessions.startedAt,
+      exercisePosition: sessionExercises.position,
+      position: sets.position,
+      kind: sets.kind,
+      weightKg: sets.weightKg,
+      reps: sets.reps,
+      rpe: sets.rpe,
+      completedAt: sets.completedAt,
+      removedAt: sessionExercises.removedAt,
+    })
+    .from(sessions)
+    .innerJoin(sessionExercises, eq(sessionExercises.sessionId, sessions.id))
+    .innerJoin(sets, eq(sets.sessionExerciseId, sessionExercises.id))
+    .where(and(ne(sessions.status, 'in_progress'), eq(sessionExercises.exerciseId, exerciseId)));
+}
+
+/** The sessions that set a record on this lift, for the LOG's PR pill. */
+export function exerciseRecordSessionsQuery(exerciseId: string) {
+  return db
+    .selectDistinct({ sessionId: personalRecords.sessionId })
+    .from(personalRecords)
+    .where(eq(personalRecords.exerciseId, exerciseId));
 }
