@@ -1,3 +1,4 @@
+import { REST_SCALE, snapTo } from './scale.ts';
 import type { Unit } from './units.ts';
 
 /**
@@ -35,9 +36,6 @@ export const DEFAULT_SETTINGS: Settings = {
   tapOpensKeypad: false,
 };
 
-/** What the rest picker offers. Seconds, because that is what the column stores. */
-export const REST_CHOICES = [60, 90, 120, 150, 180, 240, 300] as const;
-
 const isRest = (n: unknown): n is number => typeof n === 'number' && n >= 0 && n <= 3600;
 
 /**
@@ -52,10 +50,10 @@ export function coerceSettings(raw: unknown): Settings {
   return {
     weightUnit: o.weightUnit === 'lb' ? 'lb' : 'kg',
     restCompoundSec: isRest(o.restCompoundSec)
-      ? o.restCompoundSec
+      ? snapTo(REST_SCALE, o.restCompoundSec)
       : DEFAULT_SETTINGS.restCompoundSec,
     restIsolationSec: isRest(o.restIsolationSec)
-      ? o.restIsolationSec
+      ? snapTo(REST_SCALE, o.restIsolationSec)
       : DEFAULT_SETTINGS.restIsolationSec,
     trackRpe: o.trackRpe === true,
     tapOpensKeypad: o.tapOpensKeypad === true,

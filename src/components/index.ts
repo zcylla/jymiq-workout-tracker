@@ -10,6 +10,7 @@ export {
   type DialogAction,
   type DialogRequest,
 } from './dialog';
+export { DurationSheet } from './duration-sheet';
 export { ExercisesSheet } from './exercises-sheet';
 export { KeypadSheet } from './keypad-sheet';
 export { Field } from './field';

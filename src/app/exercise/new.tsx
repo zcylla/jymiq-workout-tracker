@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import {
   ActionBar,
   Chip,
+  DurationSheet,
   Field,
   RowPlate,
   RowPlates,
@@ -28,10 +29,9 @@ const KINDS: ExerciseKind[] = ['compound', 'isolation'];
  * words, so the first letter is the whole job. Chips stay caps.
  */
 const titled = (word: string) => word[0].toUpperCase() + word.slice(1);
-const RESTS: (number | null)[] = [null, 60, 90, 120, 180, 300];
 
 /** Which field's picker is open. Only one at a time — the plate grows in place. */
-type Picker = 'equipment' | 'kind' | 'rest' | null;
+type Picker = 'equipment' | 'kind' | null;
 
 /**
  * Lab 35 B3. The first write path: a form that does not look like one — label
@@ -52,6 +52,7 @@ export default function NewExerciseScreen() {
   const [muscles, setMuscles] = useState<Muscle[]>([]);
   const [trackRpe, setTrackRpe] = useState(false);
   const [picker, setPicker] = useState<Picker>(null);
+  const [restOpen, setRestOpen] = useState(false);
 
   const toggleFor = (p: Exclude<Picker, null>) => () => setPicker(picker === p ? null : p);
 
@@ -104,15 +105,11 @@ export default function NewExerciseScreen() {
             </RowPlate>
 
             <RowPlate>
-              <Field label="DEFAULT REST" value={restLabel(restSec)} onPress={toggleFor('rest')} />
-              {picker === 'rest' ? (
-                <Options
-                  values={RESTS}
-                  labelOf={(r) => restLabel(r).toUpperCase()}
-                  isOn={(r) => r === restSec}
-                  onPick={setRestSec}
-                />
-              ) : null}
+              <Field
+                label="DEFAULT REST"
+                value={restLabel(restSec)}
+                onPress={() => setRestOpen(true)}
+              />
             </RowPlate>
           </RowPlates>
         </Section>
@@ -142,6 +139,14 @@ export default function NewExerciseScreen() {
           </RowPlates>
         </Section>
       </Screen>
+      <DurationSheet
+        open={restOpen}
+        title="Default rest"
+        value={restSec}
+        onConfirm={setRestSec}
+        onClear={() => setRestSec(null)}
+        onClose={() => setRestOpen(false)}
+      />
       <ActionBar
         primary="Create"
         onPrimary={create}

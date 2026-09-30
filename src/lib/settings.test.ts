@@ -35,8 +35,12 @@ test('one bad key falls back alone and the rest survive', () => {
   assert.equal(s.tapOpensKeypad, false); // only a real boolean counts
 });
 
-test('a rest of zero is a choice, not a missing value', () => {
-  assert.equal(coerceSettings({ restCompoundSec: 0 }).restCompoundSec, 0);
+test('a stored rest is pulled onto the rest scale', () => {
+  assert.equal(coerceSettings({ restCompoundSec: 0 }).restCompoundSec, 15);
+  assert.equal(coerceSettings({ restCompoundSec: 3600 }).restCompoundSec, 600);
+  assert.equal(coerceSettings({ restCompoundSec: 137 }).restCompoundSec, 135);
+  for (const sec of [60, 90, 120, 150, 180, 240, 300])
+    assert.equal(coerceSettings({ restIsolationSec: sec }).restIsolationSec, sec);
 });
 
 test('pounds round-trip', () => {

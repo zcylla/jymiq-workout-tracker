@@ -12,6 +12,8 @@ export interface Scale {
   label: number;
   /** Number of detents. */
   n: number;
+  /** Ascending detent values for a scale whose step changes; `lo`, `hi` and `step` describe the ends. */
+  stops?: readonly number[];
 }
 
 export function makeScale(
@@ -24,13 +26,33 @@ export function makeScale(
   return { lo, hi, step, major, label, n: Math.round((hi - lo) / step) + 1 };
 }
 
+export function makeStopsScale(stops: readonly number[]): Scale {
+  return {
+    lo: stops[0],
+    hi: stops[stops.length - 1],
+    step: stops[1] - stops[0],
+    major: 1,
+    label: 1,
+    n: stops.length,
+    stops,
+  };
+}
+
 export function valueAt(s: Scale, index: number): number {
   'worklet';
+  if (s.stops) return s.stops[index < 0 ? 0 : index > s.n - 1 ? s.n - 1 : index];
   return Math.round((s.lo + index * s.step) * 1000) / 1000;
 }
 
 export function indexOf(s: Scale, value: number): number {
   'worklet';
+  if (s.stops) {
+    let best = 0;
+    for (let i = 1; i < s.n; i++) {
+      if (Math.abs(s.stops[i] - value) < Math.abs(s.stops[best] - value)) best = i;
+    }
+    return best;
+  }
   const i = Math.round((value - s.lo) / s.step);
   return i < 0 ? 0 : i > s.n - 1 ? s.n - 1 : i;
 }
@@ -46,3 +68,27 @@ export const REPS_SCALE = makeScale(1, 15, 1, 5, 5);
 /** Whole points only — RIR = 10 − RPE maps cleanly and half points on a
  *  subjective scale are mostly false precision. */
 export const RPE_SCALE = makeScale(1, 10, 1, 1, 1);
+
+/**
+ * Rest, in seconds: 5 s detents to 2:00, 15 s to 5:00, 30 s to 10:00. Fine where
+ * a rest is decided by feel, coarse where a few seconds no longer matter.
+ */
+const restStops: number[] = [];
+for (let sec = 15; sec <= 120; sec += 5) restStops.push(sec);
+for (let sec = 135; sec <= 300; sec += 15) restStops.push(sec);
+for (let sec = 330; sec <= 600; sec += 30) restStops.push(sec);
+export const REST_SCALE = makeStopsScale(restStops);
+
+export const snapTo = (s: Scale, value: number): number => valueAt(s, indexOf(s, value));
+
+/** `value + delta` snapped to a detent; a tie resolves in the direction of travel, and a step always moves. */
+export function stepBy(s: Scale, value: number, delta: number): number {
+  const target = value + delta;
+  const from = indexOf(s, value);
+  let to = indexOf(s, target);
+  if (delta > 0 && to < s.n - 1 && valueAt(s, to) < target) {
+    if (valueAt(s, to + 1) - target === target - valueAt(s, to)) to += 1;
+  }
+  if (to === from) to = clampIndex(s, from + (delta > 0 ? 1 : -1));
+  return valueAt(s, to);
+}

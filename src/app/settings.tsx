@@ -2,13 +2,13 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 
 import {
+  DurationSheet,
   ListRow,
   RowPlate,
   RowPlates,
   Screen,
   ScreenHeader,
   Section,
-  Sheet,
   Toggle,
 } from '@/components';
 import { ReadinessPill } from '@/components/pill';
@@ -16,7 +16,6 @@ import { useRows } from '@/data/live';
 import { latestCheckInQuery } from '@/data/queries/readiness';
 import { setSettings, useSettings } from '@/data/settings';
 import { dayStart, readinessStep } from '@/lib/readiness';
-import { REST_CHOICES } from '@/lib/settings';
 import { formatRest } from '@/lib/time';
 
 /**
@@ -117,23 +116,15 @@ export default function SettingsScreen() {
         </Section>
       </Screen>
 
-      <Sheet open={picking !== null} onClose={() => setPicking(null)}>
-        <RowPlates>
-          {REST_CHOICES.map((sec) => (
-            <RowPlate
-              key={sec}
-              onPress={() => {
-                setSettings(
-                  picking === 'compound' ? { restCompoundSec: sec } : { restIsolationSec: sec },
-                );
-                setPicking(null);
-              }}
-            >
-              <ListRow title={formatRest(sec)} chevron={false} />
-            </RowPlate>
-          ))}
-        </RowPlates>
-      </Sheet>
+      <DurationSheet
+        open={picking !== null}
+        title={picking === 'compound' ? 'Rest · compound' : 'Rest · isolation'}
+        value={picking === 'compound' ? settings.restCompoundSec : settings.restIsolationSec}
+        onConfirm={(sec) =>
+          setSettings(picking === 'compound' ? { restCompoundSec: sec } : { restIsolationSec: sec })
+        }
+        onClose={() => setPicking(null)}
+      />
     </>
   );
 }
