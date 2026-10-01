@@ -49,11 +49,11 @@ export function ExerciseLog({ exerciseId }: { exerciseId: string }) {
                 <Text style={text.num}>{sessionDateLabel(e.startedAt)}</Text>
                 {withRecord.has(e.sessionId) ? <Pill label="PR" /> : null}
               </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 4 }}>
+              <View style={{ gap: 4, paddingLeft: 6 }}>
                 {e.sets.map((s) => (
                   <Text
                     key={s.id}
-                    style={[text.numSm, { color: s.kind === 'warmup' ? color.dim : color.hi }]}
+                    style={[text.label, s.kind === 'warmup' && { color: color.dim }]}
                   >
                     {formatLogSet(s, unit)}
                   </Text>
