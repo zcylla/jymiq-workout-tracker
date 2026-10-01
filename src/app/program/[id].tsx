@@ -32,7 +32,13 @@ import { programDaysQuery, programQuery } from '@/data/queries/programs';
 import { routineListQuery } from '@/data/queries/routines';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { dayKey, mondayIndex, trainedDays } from '@/lib/calendar';
-import { type Schedule, programWeek, programWeekNumber, trainedDaysPerWeek } from '@/lib/program';
+import {
+  type Schedule,
+  programWeek,
+  programWeekNumber,
+  trainedDaysPerWeek,
+  WEEKDAY_NAMES,
+} from '@/lib/program';
 import { space } from '@/theme';
 
 /**
@@ -186,7 +192,7 @@ export default function ProgramScreen() {
             {week.map((day) => (
               <RowPlate key={day.weekday}>
                 <Field
-                  label={day.label}
+                  label={WEEKDAY_NAMES[day.weekday]}
                   value={day.routine?.name ?? 'Rest'}
                   placeholder={day.routine === null}
                   onPress={() => setOpen(open === day.weekday ? null : day.weekday)}
