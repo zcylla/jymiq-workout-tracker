@@ -221,7 +221,7 @@ export default function RoutineScreen() {
         </Section>
 
         <Section label="EXERCISES" plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             {rows.length > 0 ? (
               <ReorderList
                 items={rows}
