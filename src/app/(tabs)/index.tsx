@@ -1,8 +1,15 @@
 import { Link, router } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import {
+  Chevron,
   Delta,
   Icon,
   ListRow,
@@ -37,7 +44,7 @@ import { type ScheduledDay, nextScheduled } from '@/lib/program';
 import { dateLabel, sessionDotTone } from '@/lib/time';
 import { formatTonnage } from '@/lib/volume';
 import { type StripDay, sessionsMeter, weekStrip } from '@/lib/week';
-import { color, fabShadow, radius, size, text } from '@/theme';
+import { color, fabShadow, hairline, motion, radius, size, space, text } from '@/theme';
 
 /**
  * Today — Lab 45 W3. The next routine on a quiet raised card with a full-width
@@ -158,6 +165,22 @@ function NextCard({
     useMemo(() => routineExercisesQuery(next?.routine.id ?? ''), [next?.routine.id]),
     [next?.routine.id],
   );
+  const [open, setOpen] = useState(false);
+  const openSV = useSharedValue(0);
+  const listHeightSV = useSharedValue(0);
+  useEffect(() => {
+    openSV.set(
+      withTiming(open ? 1 : 0, { duration: motion.base, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [open, openSV]);
+  const listStyle = useAnimatedStyle(() => ({
+    height: listHeightSV.get() * openSV.get(),
+    opacity: openSV.get(),
+    marginTop: (openSV.get() - 1) * space.within,
+  }));
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${openSV.get() * 90}deg` }],
+  }));
 
   // "Nothing is scheduled" is a claim, not a placeholder, so it waits until the
   // question has actually been answered. Nothing is drawn in the meantime: the
@@ -195,17 +218,54 @@ function NextCard({
 
   return (
     <Section first hero pad={15}>
-      <Text style={text.label}>{nextKicker(next.daysAway, next.at, lastRunAt)}</Text>
-      <Text style={text.lead}>{next.routine.name}</Text>
-      <Text style={text.meta}>{meta.join(' · ')}</Text>
+      <Pressable
+        onPress={() => rows.length > 0 && setOpen((v) => !v)}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${next.routine.name}, ${open ? 'hide' : 'show'} exercises`}
+        style={{ gap: space.within }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={[text.label, { flex: 1 }]}>
+            {nextKicker(next.daysAway, next.at, lastRunAt)}
+          </Text>
+          {rows.length > 0 ? (
+            <Animated.View style={chevronStyle}>
+              <Chevron />
+            </Animated.View>
+          ) : null}
+        </View>
+        <Text style={text.lead}>{next.routine.name}</Text>
+        <Text style={text.meta}>{meta.join(' · ')}</Text>
 
-      {/* The first three, and only the first three: the card is a reminder of
-          what is coming, not the routine screen. */}
-      {rows.slice(0, 3).map((lift) => (
-        <Text key={lift.id} style={text.body} numberOfLines={1}>
-          {lift.name}
-        </Text>
-      ))}
+        <Animated.View style={[{ overflow: 'hidden' }, listStyle]} pointerEvents="none">
+          <View
+            onLayout={(e) => listHeightSV.set(e.nativeEvent.layout.height)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              borderWidth: 1,
+              borderColor: hairline.onPlate,
+              borderRadius: radius.row,
+              borderCurve: 'continuous',
+              paddingVertical: 11,
+              paddingHorizontal: 13,
+              gap: 7,
+            }}
+          >
+            {rows.map((lift) => (
+              <View key={lift.id} style={{ flexDirection: 'row', gap: 9 }}>
+                <Text style={[text.body, { color: color.lo }]}>{'\u2022'}</Text>
+                <Text style={[text.body, { flex: 1 }]} numberOfLines={1}>
+                  {lift.name}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Animated.View>
+      </Pressable>
 
       <Pressable
         onPress={press}
