@@ -24,12 +24,7 @@ import {
   type Tile,
   useActionBarHeight,
 } from '@/components';
-import {
-  deleteRoutine,
-  duplicateRoutine,
-  renameRoutine,
-  reorderRoutineExercises,
-} from '@/data/mutations/routines';
+import { deleteRoutine, duplicateRoutine, renameRoutine } from '@/data/mutations/routines';
 import { routineExercisesQuery, routineQuery } from '@/data/queries/routines';
 import {
   routineSessionsQuery,
@@ -40,7 +35,6 @@ import { useRows } from '@/data/live';
 import { useSessionRunning } from '@/data/running';
 import { startSession } from '@/data/mutations/sessions';
 import { useSettings } from '@/data/settings';
-import { moved } from '@/lib/reorder';
 import { formatRest, formatSessionDuration, sessionDotTone } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
 import { formatTonnage, topSet } from '@/lib/volume';
@@ -220,9 +214,6 @@ export default function RoutineScreen() {
                 items={rows}
                 rowHeight={PLATE_HEIGHT}
                 gap={space.row}
-                onReorder={(from, to) =>
-                  reorderRoutineExercises(moved(rows, from, to).map((l) => l.id))
-                }
                 renderRow={(lift, _i, handle) => (
                   <RowPlate onPress={() => router.push(`/exercise/${lift.exerciseId}`)}>
                     <View
