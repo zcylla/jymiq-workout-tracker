@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { color, radius, space, text } from '@/theme';
 
-import { GlassHeroContext, useGlass } from './glass';
+import { GlassHeroContext, GlassUnder, glassStyle, useControlGlass, useGlass } from './glass';
 import { RollingNumber } from './rolling-number';
 import { Waiting } from './waiting';
 
@@ -41,6 +41,7 @@ export function StatTiles({
   items,
   columns = 2,
   surface = 'panel',
+  glass = false,
 }: {
   items: Tile[];
   columns?: number;
@@ -51,11 +52,16 @@ export function StatTiles({
    * call site.
    */
   surface?: 'panel' | 'raised';
+  /** Each tile wears the edge control look with blur, like a row. */
+  glass?: boolean;
 }) {
   const fill = surface === 'raised' ? color.panel : color.raised;
   const inHero = useContext(GlassHeroContext);
-  const { recipe } = useGlass('inner');
-  const glass = inHero && recipe ? recipe.tile : null;
+  const control = useControlGlass();
+  const inner = useGlass('inner');
+  const { recipe, blur, target } = glass ? control : inner;
+  const tileSurface =
+    glass && recipe ? glassStyle(recipe, blur) : inHero && recipe ? recipe.tile : null;
 
   // Chunked rather than wrapped: flexWrap would stretch a short last row.
   const rows: Tile[][] = [];
@@ -78,9 +84,12 @@ export function StatTiles({
                   borderRadius: radius.tile,
                   borderCurve: 'continuous',
                 },
-                glass,
+                tileSurface,
               ]}
             >
+              {glass && recipe ? (
+                <GlassUnder recipe={recipe} blur={blur} target={target} radius={radius.tile} />
+              ) : null}
               <Text style={text.label}>{tile.label}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <TileValue tile={tile} />
