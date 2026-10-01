@@ -1,5 +1,13 @@
 import { type TabTriggerSlotProps, useTabTrigger } from 'expo-router/ui';
-import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   type SharedValue,
@@ -13,9 +21,11 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { useGlassTrial } from '@/data/glass-trial';
 import { stepBar } from '@/lib/tab-bar';
 import {
   color,
+  controlBarBlur,
   controlEdgeDense,
   fabShadow,
   hairline,
@@ -25,6 +35,7 @@ import {
   text,
 } from '@/theme';
 
+import { GlassUnder, glassStyle } from './glass';
 import { tick } from './haptics';
 import { Icon, type IconName } from './icon';
 import { AnimatedPressable, usePressFeel } from './press';
@@ -33,7 +44,7 @@ import { AnimatedPressable, usePressFeel } from './press';
  * W2 (Lab 23) — four labelled tabs on one plane with an inset circular start
  * button. These are the drawn parts only; the router wires them up.
  *
- * Chrome is a dense tint, never a blur, because a live blur of scrolling content measured ~10x the jank.
+ * The bar blurs the live screen at the owner's request: measured ~51% janky frames versus ~5% without it.
  */
 /** Plate (4 + 52 + 4) plus the air beneath it. Content scrolls under the bar,
  *  so any scroller inside a tab must pad by this much to clear its last row. */
@@ -57,10 +68,30 @@ const TAB_NAMES = Object.keys(TABS) as TabName[];
  * scroll has to reach it through a shared value that lives above both.
  */
 const MinimisedContext = createContext<SharedValue<number> | null>(null);
+type RegisterBlurTarget = (target: RefObject<View | null>) => () => void;
+const TabBarBlurRegistrationContext = createContext<RegisterBlurTarget | null>(null);
+const TabBarBlurTargetContext = createContext<RefObject<View | null> | null>(null);
 
 export function TabBarProvider({ children }: { children: ReactNode }) {
   const minimisedSV = useSharedValue(0);
-  return <MinimisedContext.Provider value={minimisedSV}>{children}</MinimisedContext.Provider>;
+  const [blurTarget, setBlurTarget] = useState<RefObject<View | null> | null>(null);
+  const registerBlurTarget = useCallback((target: RefObject<View | null>) => {
+    setBlurTarget(target);
+    return () => setBlurTarget((current) => (current === target ? null : current));
+  }, []);
+  return (
+    <MinimisedContext.Provider value={minimisedSV}>
+      <TabBarBlurRegistrationContext.Provider value={registerBlurTarget}>
+        <TabBarBlurTargetContext.Provider value={blurTarget}>
+          {children}
+        </TabBarBlurTargetContext.Provider>
+      </TabBarBlurRegistrationContext.Provider>
+    </MinimisedContext.Provider>
+  );
+}
+
+export function useTabBarBlurTarget() {
+  return useContext(TabBarBlurRegistrationContext);
 }
 
 /**
@@ -84,21 +115,43 @@ export function useTabBarScroll() {
  * W5 (Lab 23): scrolled down, the bar collapses to the current tab and a count of the
  * others, and the start button survives at 46. The plane keeps its full height, so nothing
  * relayouts: two layers cross-fade on the UI thread, and only which one takes touches
- * is React state.
+ * and which blur remains mounted after the fade are React state.
  */
 export function TabBar({ children, onStart }: { children: ReactNode; onStart?: () => void }) {
   const insets = useSafeAreaInsets();
   const minimisedSV = useContext(MinimisedContext);
+  const blurTarget = useContext(TabBarBlurTargetContext);
+  const trial = useGlassTrial();
   if (!minimisedSV) throw new Error('TabBar must be inside <TabBarProvider>');
+  const target = trial.style !== 'off' && trial.scope !== 'off' ? blurTarget : null;
+  const surface = target
+    ? {
+        ...glassStyle(controlBarBlur, controlBarBlur.blur),
+        borderWidth: controlEdgeDense.borderWidth,
+        borderColor: 'transparent',
+      }
+    : controlEdgeDense;
 
   const progressSV = useDerivedValue(() =>
     withTiming(minimisedSV.get(), { duration: motion.base }),
   );
   const [minimised, setMinimised] = useState(false);
+  const [blurEndpoint, setBlurEndpoint] = useState<number | null>(0);
   useAnimatedReaction(
     () => minimisedSV.get() === 1,
     (now) => scheduleOnRN(setMinimised, now),
   );
+  useAnimatedReaction(
+    () => {
+      const progress = progressSV.get();
+      return progress === 0 || progress === 1 ? progress : null;
+    },
+    (now, previous) => {
+      if (now !== previous) scheduleOnRN(setBlurEndpoint, now);
+    },
+  );
+  const fullBlurs = target && (!minimised || blurEndpoint !== 1);
+  const smallBlurs = target && (minimised || blurEndpoint !== 0);
   const full = useAnimatedStyle(() => ({
     opacity: 1 - progressSV.get(),
     transform: [{ scale: 1 - 0.06 * progressSV.get() }],
@@ -132,10 +185,18 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
               padding: 4,
               borderRadius: radius.sheet,
               borderCurve: 'continuous',
-              ...controlEdgeDense,
+              ...(fullBlurs ? surface : controlEdgeDense),
             },
           ]}
         >
+          {fullBlurs ? (
+            <GlassUnder
+              recipe={controlBarBlur}
+              blur={controlBarBlur.blur}
+              target={target}
+              radius={radius.sheet}
+            />
+          ) : null}
           {children}
         </View>
       </Animated.View>
@@ -162,10 +223,18 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
               paddingVertical: 9,
               paddingHorizontal: 18,
               borderRadius: radius.full,
-              ...controlEdgeDense,
+              ...(smallBlurs ? surface : controlEdgeDense),
             },
           ]}
         >
+          {smallBlurs ? (
+            <GlassUnder
+              recipe={controlBarBlur}
+              blur={controlBarBlur.blur}
+              target={target}
+              radius={radius.full}
+            />
+          ) : null}
           {TAB_NAMES.map((name) => (
             <CurrentTab key={name} name={name} minimisedSV={minimisedSV} />
           ))}

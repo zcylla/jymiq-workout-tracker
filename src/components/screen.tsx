@@ -1,5 +1,6 @@
 import { BlurTargetView } from 'expo-blur';
-import { type ReactNode, type Ref, useRef } from 'react';
+import { useIsFocused } from 'expo-router';
+import { type ReactNode, type Ref, useEffect, useRef } from 'react';
 import type { ScrollView } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -11,7 +12,7 @@ import { color, space } from '@/theme';
 
 import { Backdrop } from './backdrop';
 import { BlurTargetContext } from './glass';
-import { useTabBarScroll } from './tab-bar';
+import { useTabBarBlurTarget, useTabBarScroll } from './tab-bar';
 
 /**
  * The screen shell — kit's `.scr`. Ground, the 22pt side margin, and the real
@@ -40,14 +41,24 @@ export function Screen({
   const insets = useSafeAreaInsets();
   const onScroll = useTabBarScroll();
   const targetRef = useRef<View>(null);
-  const blurs = screenBlurs(useGlassTrial());
+  const rootTargetRef = useRef<View>(null);
+  const registerTabBarBlurTarget = useTabBarBlurTarget();
+  const focused = useIsFocused();
+  const trial = useGlassTrial();
+  const blurs = screenBlurs(trial);
+  const tabBarBlurs =
+    registerTabBarBlurTarget !== null && trial.style !== 'off' && trial.scope !== 'off';
+  useEffect(() => {
+    if (!focused || !tabBarBlurs || !registerTabBarBlurTarget) return;
+    return registerTabBarBlurTarget(rootTargetRef);
+  }, [focused, registerTabBarBlurTarget, tabBarBlurs]);
   const padding = {
     paddingHorizontal: space.pad,
     paddingTop: insets.top,
     paddingBottom: scroll ? insets.bottom + space.between + bottomInset : bottomInset,
   };
-  return (
-    <View style={{ flex: 1, backgroundColor: color.ground }}>
+  const content = (
+    <>
       {/* expo-blur on Android blurs only what sits inside a BlurTargetView, and a
           BlurView must not be inside its own target — so the target is the backdrop alone. */}
       {blurs ? (
@@ -73,6 +84,13 @@ export function Screen({
           <View style={[{ flex: 1 }, padding]}>{children}</View>
         )}
       </BlurTargetContext.Provider>
-    </View>
+    </>
+  );
+  return tabBarBlurs ? (
+    <BlurTargetView ref={rootTargetRef} style={{ flex: 1, backgroundColor: color.ground }}>
+      {content}
+    </BlurTargetView>
+  ) : (
+    <View style={{ flex: 1, backgroundColor: color.ground }}>{content}</View>
   );
 }

@@ -10,6 +10,7 @@ export {
   color,
   controlRecipes,
   controlEdgeDense,
+  controlBarBlur,
   controlGlass,
   type ControlRecipe,
   controlBlurRecipes,

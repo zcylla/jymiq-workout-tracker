@@ -68,15 +68,15 @@ export function GlassUnder({
   if (blur === 0 || !target) return null;
   const clip = { borderRadius: radius, borderCurve: 'continuous', overflow: 'hidden' } as const;
   return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, clip]}>
-      <BlurView
-        blurTarget={target}
-        blurMethod="dimezisBlurView"
-        intensity={blur}
-        tint={recipe.blurTint}
-        style={StyleSheet.absoluteFill}
-      />
+    <BlurView
+      pointerEvents="none"
+      blurTarget={target}
+      blurMethod="dimezisBlurView"
+      intensity={blur}
+      tint={recipe.blurTint}
+      style={[StyleSheet.absoluteFill, clip]}
+    >
       <View style={[StyleSheet.absoluteFill, clip, recipe.fill]} />
-    </View>
+    </BlurView>
   );
 }

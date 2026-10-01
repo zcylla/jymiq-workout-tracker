@@ -340,13 +340,21 @@ export const controlGlass = {
   blur: controlBlurRecipes.edgeBlur20.blur,
 } as const satisfies GlassRecipe & { blur: number };
 
-/** The tab bar: the edge look over a near-opaque dark fill, since it floats over scrolling content and cannot blur it cheaply. */
+const controlBarDrop = '0 10px 24px rgba(0,0,0,0.38)';
+
+/** The tab bar's dense fallback while no live screen blur target is registered. */
 export const controlEdgeDense = {
   backgroundColor: 'rgba(34,31,25,0.94)',
   borderWidth: 0.5,
   borderColor: controlBlurRecipes.edgeBlur20.fill.borderColor,
-  boxShadow: `${controlBlurRecipes.edgeBlur20.fill.boxShadow}, 0 10px 24px rgba(0,0,0,0.38)`,
+  boxShadow: `${controlBlurRecipes.edgeBlur20.fill.boxShadow}, ${controlBarDrop}`,
 } as const;
+
+export const controlBarBlur = {
+  ...controlGlass,
+  fill: { ...controlGlass.fill, backgroundColor: 'rgba(18,16,13,0.45)' },
+  drop: controlBarDrop,
+} as const satisfies GlassRecipe & { blur: number };
 
 /** The glass lab's grounds, drawn by `Backdrop` in place of the dot field. */
 export const backgrounds = {
