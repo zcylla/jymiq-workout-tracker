@@ -21,6 +21,7 @@ import {
   clearQueue,
   enqueueEverything,
   readQueue,
+  queueSize,
   rowsForKeys,
 } from './sync-tables';
 import { supabase } from './supabase';
@@ -112,14 +113,19 @@ export async function pushNow(): Promise<PushResult> {
       const { cols, keyCols } = SYNC_REGISTRY[g.table];
       const rows = rowsForKeys(g.table, g.keys);
       const onConflict = conflictTarget(keyCols.map((k) => sqlName(g.table, k)));
-      for (const part of chunk(rows, UPSERT_CHUNK)) {
-        const { error } = await client.from(g.table).upsert(
-          part.map((r) => toRemote(r, cols, userId)),
-          { onConflict },
-        );
-        if (error) throw new PushError(error.message);
-        sent += part.length;
-      }
+      const ordered =
+        g.table === 'programs'
+          ? [rows.filter((r) => r.status !== 'active'), rows.filter((r) => r.status === 'active')]
+          : [rows];
+      for (const group of ordered)
+        for (const part of chunk(group, UPSERT_CHUNK)) {
+          const { error } = await client.from(g.table).upsert(
+            part.map((r) => toRemote(r, cols, userId)),
+            { onConflict },
+          );
+          if (error) throw new PushError(error.message);
+          sent += part.length;
+        }
       clearQueue(g.entryIds);
     };
 
@@ -150,14 +156,22 @@ export async function pushNow(): Promise<PushResult> {
       clearQueue(g.entryIds);
     };
 
-    for (let round = 0; round < MAX_ROUNDS; round++) {
+    const maxRounds = MAX_ROUNDS + Math.ceil(queueSize() / 500);
+    for (let round = 0; round < maxRounds; round++) {
       const entries = readQueue(500);
       if (entries.length === 0) break;
-      const plan = planPush(entries);
+      const seen = new Set(entries.map((e) => e.id));
+      const plan = planPush([
+        ...entries,
+        ...readQueue(undefined, 'programs').filter((e) => !seen.has(e.id)),
+      ]);
+      for (const g of plan.beforeUpserts) await deleteGroup(g);
       for (const g of plan.upserts) await upsertGroup(g);
       for (const g of plan.deletes) await deleteGroup(g);
     }
 
+    if (queueSize() > 0)
+      throw new PushError('Changes are still pending. Tap Back up now again to finish.');
     setState({ lastPushAt: Date.now(), lastError: null });
     return { status: 'ok', sent };
   } catch (e) {

@@ -63,8 +63,12 @@ const ENQUEUE_FILTER: Partial<Record<SyncTable, string>> = {
     'WHERE EXISTS (SELECT 1 FROM exercises e WHERE e.id = exercise_muscles.exercise_id AND e.is_custom = 1)',
 };
 
-export function readQueue(limit?: number): QueueEntry[] {
-  const q = db.select().from(syncQueue).orderBy(asc(syncQueue.id));
+export function readQueue(limit?: number, table?: SyncTable): QueueEntry[] {
+  const q = db
+    .select()
+    .from(syncQueue)
+    .where(table ? eq(syncQueue.tableName, table) : undefined)
+    .orderBy(asc(syncQueue.id));
   const rows = limit === undefined ? q.all() : q.limit(limit).all();
   const known: readonly string[] = SYNC_TABLES;
   const out: QueueEntry[] = [];

@@ -30,6 +30,7 @@ export interface PushGroup {
 }
 
 export interface PushPlan {
+  beforeUpserts: PushGroup[];
   upserts: PushGroup[];
   deletes: PushGroup[];
 }
@@ -48,12 +49,16 @@ function group(entries: readonly QueueEntry[], tables: readonly SyncTable[]): Pu
 /** Upserts run parents-first, deletes children-first, so no foreign key is ever dangling remotely. */
 export function planPush(entries: readonly QueueEntry[]): PushPlan {
   return {
+    beforeUpserts: group(
+      entries.filter((e) => e.op === 'delete' && e.table === 'programs'),
+      ['programs'],
+    ),
     upserts: group(
       entries.filter((e) => e.op === 'upsert'),
       SYNC_TABLES,
     ),
     deletes: group(
-      entries.filter((e) => e.op === 'delete'),
+      entries.filter((e) => e.op === 'delete' && e.table !== 'programs'),
       [...SYNC_TABLES].reverse(),
     ),
   };

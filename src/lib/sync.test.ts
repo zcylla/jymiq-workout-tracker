@@ -44,7 +44,23 @@ test('upserts run parents first, deletes children first, empty tables are omitte
   );
   assert.deepEqual(plan.upserts[1], { table: 'sets', keys: [['s1'], ['s2']], entryIds: [1, 3] });
   assert.deepEqual(plan.deletes[1], { table: 'program_days', keys: [['p', 2]], entryIds: [5] });
-  assert.deepEqual(planPush([]), { upserts: [], deletes: [] });
+  assert.deepEqual(planPush([]), { beforeUpserts: [], upserts: [], deletes: [] });
+});
+
+test('deleting the old active program precedes uploading its replacement', () => {
+  const plan = planPush([
+    e(1, 'programs', ['new-ppl'], 'upsert'),
+    e(9000, 'programs', ['old-test-program'], 'delete'),
+    e(9001, 'program_days', ['old-test-program', 2], 'delete'),
+  ]);
+  assert.deepEqual(plan.beforeUpserts, [
+    { table: 'programs', keys: [['old-test-program']], entryIds: [9000] },
+  ]);
+  assert.deepEqual(plan.upserts[0].keys, [['new-ppl']]);
+  assert.deepEqual(
+    plan.deletes.map((g) => g.table),
+    ['program_days'],
+  );
 });
 
 const COLS: Col[] = [
