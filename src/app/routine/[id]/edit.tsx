@@ -144,7 +144,7 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
               ))}
             <RowPlate
               onPress={() =>
-                router.push({ pathname: '/session/library', params: { routineId: routine.id } })
+                router.push({ pathname: '/pick-exercise', params: { routineId: routine.id } })
               }
             >
               <ListRow title="Add exercise" />

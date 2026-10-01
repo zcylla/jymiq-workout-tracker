@@ -250,7 +250,7 @@ export default function RoutineScreen() {
             {lifts !== null && rows.length === 0 ? (
               <RowPlate
                 onPress={() =>
-                  router.push({ pathname: '/session/library', params: { routineId: id } })
+                  router.push({ pathname: '/pick-exercise', params: { routineId: id } })
                 }
               >
                 <ListRow title="Add exercise" />
