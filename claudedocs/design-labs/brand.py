@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BRAND = ROOT / 'assets/brand'
 IMAGES = ROOT / 'assets/images'
 REVIEW = Path('/tmp/claude-1000/-home-inowu-Desktop-Projects-personal-jymiq-workout-tracker/f3aac079-a4dd-41ec-b0c0-439b8167f523/scratchpad/brand-check.png')
+NOTIFICATION_REVIEW = REVIEW.with_name('notif-check.png')
 GROUND = '#0a0908'
 GOLD = '#e4c68c'
 WHITE = '#f6f3ec'
@@ -105,10 +106,10 @@ def transformed(mark, scale):
     return f'<g transform="translate(50 50) scale({scale:.12f}) translate(-50 -50)">{mark}</g>'
 
 
-def monochrome(mark):
-    for role, colour in COLOURS.items():
-        opacity = '.55' if role == 'd' else '1'
-        mark = mark.replace(f'stroke="{colour}"', f'stroke="{WHITE}" stroke-opacity="{opacity}"')
+def monochrome(mark, colour=WHITE, ahead_opacity='.55'):
+    for role, source_colour in COLOURS.items():
+        opacity = ahead_opacity if role == 'd' else '1'
+        mark = mark.replace(f'stroke="{source_colour}"', f'stroke="{colour}" stroke-opacity="{opacity}"')
     return mark
 
 
@@ -192,14 +193,55 @@ def review_sheet():
     sheet.save(REVIEW)
 
 
+def notification_review_sheet():
+    icon = Image.open(IMAGES / 'notification-icon.png').convert('RGBA')
+    sheet = Image.new('RGB', (1280, 1170), GROUND)
+    draw = ImageDraw.Draw(sheet)
+    draw.text((24, 16), 'Jymiq / notification alpha / 28 ticks / ahead opacity 80%', fill=WHITE)
+    for column, (bg, colour, label) in enumerate([
+            (GROUND, GOLD, 'gold on dark'), (GROUND, '#ffffff', 'white on dark'),
+            (WHITE, GOLD, 'gold on light'), (WHITE, '#ffffff', 'white on light')]):
+        x = 24 + column * 312
+        draw.text((x, 48), label, fill=WHITE)
+        for row, size in enumerate([96, 72, 48]):
+            y = 76 + row * 112
+            tint = Image.new('RGBA', (size, size), colour)
+            tint.putalpha(icon.getchannel('A').resize((size, size), Image.Resampling.LANCZOS))
+            panel = Image.new('RGBA', (112, 104), bg)
+            panel.alpha_composite(tint, ((112-size)//2, (104-size)//2))
+            sheet.paste(panel.convert('RGB'), (x, y))
+            draw.text((x + 124, y + 42), f'{size}px', fill=WHITE)
+    draw.text((24, 422), '72px / 8x nearest-neighbour / gold and white on dark', fill=WHITE)
+    for column, colour in enumerate([GOLD, '#ffffff']):
+        tint = Image.new('RGBA', (72, 72), colour)
+        tint.putalpha(icon.getchannel('A').resize((72, 72), Image.Resampling.LANCZOS))
+        zoom = tint.resize((576, 576), Image.Resampling.NEAREST)
+        sheet.paste(zoom, (24 + column * 624, 450), zoom)
+    draw.text((24, 1050), 'Mock status bar / 24dp at xxhdpi (3x) / white', fill=WHITE)
+    clock = Image.new('RGBA', (30, 12), (255, 255, 255, 0))
+    ImageDraw.Draw(clock).text((0, 0), '9:41', fill=WHITE)
+    clock = clock.resize((90, 36), Image.Resampling.NEAREST)
+    sheet.paste(clock, (24, 1104), clock)
+    tint = Image.new('RGBA', (72, 72), '#ffffff')
+    tint.putalpha(icon.getchannel('A').resize((72, 72), Image.Resampling.LANCZOS))
+    sheet.paste(tint, (138, 1086), tint)
+    NOTIFICATION_REVIEW.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(NOTIFICATION_REVIEW)
+
+
 def main():
     BRAND.mkdir(parents=True, exist_ok=True)
     mark, ticks = profile(**CONFIG)
-    small, _ = profile(**SMALL)
+    small, small_ticks = profile(**SMALL)
     mono = monochrome(mark)
+    small_extent = max(abs(p[axis] - 50) + t['width']/2
+                       for t in small_ticks for p in (t['start'], t['end']) for axis in (0, 1))
+    notification_scale = (96/2 - 2) / (small_extent * 96/100)
+    notification = svg(transformed(monochrome(small, '#ffffff', '.8'), notification_scale))
     bg = background()
     sources = {'jymiq-mark.svg': svg(mark), 'jymiq-mark-mono.svg': svg(mono),
                'jymiq-mark-small.svg': svg(small),
+               'jymiq-notification.svg': notification,
                'jymiq-icon.svg': svg(bg + transformed(mark, .78)),
                'jymiq-wordmark.svg': svg(WORD, '0 0 215 102')}
     for name, source in sources.items():
@@ -216,17 +258,21 @@ def main():
                'android-icon-monochrome.png': render(svg(transformed(mono, safe_scale)), 1024),
                'splash-icon.png': render(svg(mark, f'{50-extent/.88:.12f} {50-extent/.88:.12f} '
                                             f'{2*extent/.88:.12f} {2*extent/.88:.12f}'), 512),
-               'favicon.png': render(svg(bg + transformed(small, .78)), 48).convert('RGB')}
-    themed = outputs['android-icon-monochrome.png']
-    white = Image.new('RGBA', themed.size, '#ffffff')
-    white.putalpha(themed.getchannel('A'))
-    outputs['android-icon-monochrome.png'] = white
+               'favicon.png': render(svg(bg + transformed(small, .78)), 48).convert('RGB'),
+               'notification-icon.png': render(notification, 96)}
+    for name in ['android-icon-monochrome.png', 'notification-icon.png']:
+        themed = outputs[name]
+        white = Image.new('RGBA', themed.size, '#ffffff')
+        white.putalpha(themed.getchannel('A'))
+        outputs[name] = white
     for name, im in outputs.items():
         im.save(IMAGES / name)
     radial_check('android-icon-foreground.png')
     radial_check('android-icon-monochrome.png')
     review_sheet()
+    notification_review_sheet()
     print(f'Review: {REVIEW}')
+    print(f'Notification review: {NOTIFICATION_REVIEW}')
 
 
 if __name__ == '__main__':
