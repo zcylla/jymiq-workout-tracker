@@ -164,7 +164,7 @@ function ExerciseSection({
   return (
     <Section
       label={exercise.name.toUpperCase()}
-      lead={<ExerciseStill exerciseId={exercise.exerciseId} size={28} />}
+      lead={<ExerciseStill exerciseId={exercise.exerciseId} name={exercise.name} size={28} />}
       plated={false}
       first={first}
       right={right}

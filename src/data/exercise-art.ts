@@ -1527,6 +1527,8 @@ const ART: Record<string, ExerciseFrames> = {
   ],
 };
 
+export const ART_KEYS: readonly string[] = Object.keys(ART);
+
 /** Built-ins are illustrated; anything the user adds is not. */
 export function exerciseArt(id: string): ExerciseFrames | undefined {
   return ART[id];
@@ -1535,4 +1537,8 @@ export function exerciseArt(id: string): ExerciseFrames | undefined {
 /** The still a list row shows. Frame 1 is the start of the movement. */
 export function exerciseStill(id: string): number | undefined {
   return ART[id]?.[0];
+}
+
+export function exerciseStillByKey(key: string): number | undefined {
+  return ART[key]?.[0];
 }

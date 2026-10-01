@@ -28,10 +28,10 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { sameProse } from '../src/lib/prose.ts';
-
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const offline = process.argv.includes('--offline');
+const artOnly = process.argv.includes('--art-only');
+const { sameProse } = artOnly ? {} : await import(new URL('../src/lib/prose.ts', import.meta.url));
 
 /**
  * The illustrations come from the published package rather than being vendored:
@@ -228,7 +228,7 @@ function findMatch(art, index) {
 const manifest = JSON.parse(
   readFileSync(join(root, 'node_modules', ART_PKG, 'manifest.json'), 'utf8'),
 );
-const [dataset, fedb] = await Promise.all([load('dataset'), load('fedb')]);
+const [dataset, fedb] = artOnly ? [[], []] : await Promise.all([load('dataset'), load('fedb')]);
 
 const DATASET_EQUIP = {
   barbell: 'barbell',
@@ -394,6 +394,8 @@ ${rows
   .join('\n')}
 };
 
+export const ART_KEYS: readonly string[] = Object.keys(ART);
+
 /** Built-ins are illustrated; anything the user adds is not. */
 export function exerciseArt(id: string): ExerciseFrames | undefined {
   return ART[id];
@@ -403,17 +405,26 @@ export function exerciseArt(id: string): ExerciseFrames | undefined {
 export function exerciseStill(id: string): number | undefined {
   return ART[id]?.[0];
 }
+
+export function exerciseStillByKey(key: string): number | undefined {
+  return ART[key]?.[0];
+}
 `,
 );
 
 // Generated TypeScript still has to satisfy `pnpm check`, and replicating
 // Biome's quoting rules here would be a second copy of them to keep in step.
-execFileSync('npx', ['biome', 'format', '--write', 'src/data/exercise-art.ts'], {
+execFileSync('pnpm', ['exec', 'biome', 'format', '--write', 'src/data/exercise-art.ts'], {
   cwd: root,
   stdio: 'ignore',
 });
 
 // ------------------------------------------------------------------- the SQL --
+if (artOnly) {
+  console.log(`illustrated  ${rows.length} (art only; no migration written)`);
+  process.exit(0);
+}
+
 const chunk = (a, n) =>
   Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n));
 

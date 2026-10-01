@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { setSessionCursor } from '@/data/mutations/sessions';
-import { exerciseStill } from '@/data/exercise-art';
+import { exerciseStillFor } from '@/data/exercise-image';
 import { color, hairline, type Ink, ls, radius, sans, size, space, text, wash } from '@/theme';
 
 import { useGlass } from './glass';
@@ -59,7 +59,7 @@ function ExerciseRow({
     state === 'done' ? color.done : state === 'current' ? color.accent : color.mid;
   const remaining = exercise.setsTotal - exercise.setsDone;
   const meta = completed ? '' : String(remaining);
-  const still = exercise.exerciseId ? exerciseStill(exercise.exerciseId) : undefined;
+  const still = exerciseStillFor(exercise.exerciseId, exercise.name);
 
   return (
     <Pressable

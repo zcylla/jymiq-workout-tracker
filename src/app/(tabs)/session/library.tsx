@@ -16,7 +16,7 @@ import {
   Section,
   useTabBarHeight,
 } from '@/components';
-import { exerciseStill } from '@/data/exercise-art';
+import { exerciseStillFor } from '@/data/exercise-image';
 import { addExerciseToRoutine } from '@/data/mutations/routines';
 import { addExerciseToSession, replaceSessionExercise } from '@/data/mutations/sessions';
 import { exerciseListQuery, recentExercisesQuery } from '@/data/queries/exercises';
@@ -158,7 +158,7 @@ export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
           >
             <ListRow
               quiet
-              art={exerciseStill(item.row.id)}
+              art={exerciseStillFor(item.row.id, item.row.name)}
               title={item.row.name}
               meta={item.row.equipment.toUpperCase()}
             />

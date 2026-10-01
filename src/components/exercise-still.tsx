@@ -1,16 +1,17 @@
 import { Image } from 'expo-image';
 
-import { exerciseStill } from '@/data/exercise-art';
+import { exerciseStillFor } from '@/data/exercise-image';
 import { color } from '@/theme';
 
 type Props = {
   exerciseId?: string | null;
+  name?: string;
   size?: number;
 };
 
 /** The library still, tinted at render (the CC BY-SA source is never edited). No art draws nothing. */
-export function ExerciseStill({ exerciseId, size = 32 }: Props) {
-  const source = exerciseId ? exerciseStill(exerciseId) : undefined;
+export function ExerciseStill({ exerciseId, name, size = 32 }: Props) {
+  const source = exerciseStillFor(exerciseId, name);
   if (source == null) return null;
   return (
     <Image

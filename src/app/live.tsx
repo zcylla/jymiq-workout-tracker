@@ -44,7 +44,7 @@ import {
   sessionExercisesQuery,
   sessionSetsQuery,
 } from '@/data/queries/sessions';
-import { exerciseStill } from '@/data/exercise-art';
+import { exerciseStillFor } from '@/data/exercise-image';
 import { estimate1RM } from '@/lib/e1rm';
 import { liveE1rm, loadDelta } from '@/lib/live-readout';
 import { nextExercise, nextSet, prevExercise, prevSet } from '@/lib/live-nav';
@@ -364,7 +364,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
       params: focus ? { id: exercise.exerciseId, focus } : { id: exercise.exerciseId },
     });
 
-  const still = exerciseStill(exercise.exerciseId);
+  const still = exerciseStillFor(exercise.exerciseId, exercise.name);
   const compact = windowHeight < SHORT_DP;
   const stillSize = compact ? STILL_SHORT : STILL;
 
@@ -446,7 +446,11 @@ function LiveSession({ sessionId }: { sessionId: string }) {
                 accessibilityRole="button"
                 accessibilityLabel="Exercise history"
               >
-                <ExerciseStill exerciseId={exercise.exerciseId} size={stillSize} />
+                <ExerciseStill
+                  exerciseId={exercise.exerciseId}
+                  name={exercise.name}
+                  size={stillSize}
+                />
               </Pressable>
             ) : null}
           </Pressable>
