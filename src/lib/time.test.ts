@@ -26,6 +26,8 @@ test('a dated label can carry the year, and today never does', () => {
   assert.match(sessionDateLabel(day, { now, year: true }), /^\w{3} \d{1,2} \w{3} 2025$/);
   assert.match(sessionDateLabel(day, { now, year: true, upper: true }), / 2025$/);
   assert.equal(sessionDateLabel(now, { now, year: true }), 'Today');
+  assert.match(sessionDateLabel(day, { now, year: true, weekday: false }), /^\d{1,2} \w{3} 2025$/);
+  assert.match(sessionDateLabel(day, { now, weekday: false, upper: true }), /^\d{1,2} [A-Z]{3}$/);
 });
 
 test('a duration that cannot be true is rejected at both ends', () => {

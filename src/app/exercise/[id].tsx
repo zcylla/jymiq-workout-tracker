@@ -293,24 +293,32 @@ export default function ExerciseScreen() {
           {maxes.map((m) => (
             <View
               key={m.reps}
-              style={{ flexDirection: 'row', alignItems: 'center', height: size.readRow, gap: 10 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                minHeight: size.readRow,
+                paddingVertical: 6,
+                gap: 10,
+              }}
             >
               <Text style={text.body}>{`${m.reps}RM`}</Text>
               <View style={{ flex: 1 }} />
-              <Text style={[text.num, m.source === null && { color: color.lo }]}>
-                {m.weightKg === null
-                  ? DASH
-                  : m.source === 'est'
-                    ? formatPrValue('best_e1rm', m.weightKg, unit)
-                    : formatWeight(m.weightKg, unit)}
-              </Text>
-              <Text style={[text.label, { width: 128, textAlign: 'right' }]}>
-                {m.source === 'est'
-                  ? 'EST'
-                  : m.at === null
-                    ? ''
-                    : sessionDateLabel(m.at, { upper: true, now, year: true })}
-              </Text>
+              <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                <Text style={[text.num, m.source === null && { color: color.lo }]}>
+                  {m.weightKg === null
+                    ? DASH
+                    : m.source === 'est'
+                      ? formatPrValue('best_e1rm', m.weightKg, unit)
+                      : formatWeight(m.weightKg, unit)}
+                </Text>
+                <Text style={text.label}>
+                  {m.source === 'est'
+                    ? 'EST'
+                    : m.at === null
+                      ? ' '
+                      : sessionDateLabel(m.at, { upper: true, now, year: true, weekday: false })}
+                </Text>
+              </View>
             </View>
           ))}
         </View>

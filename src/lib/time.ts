@@ -148,10 +148,10 @@ export function timeLabel(atMs: number): string {
   return new Date(atMs).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
-/** "Today"/"TODAY", or "Tue 2 Sep"/"TUE 2 SEP" for anything else; `year` adds "2026" to those. */
+/** "Today"/"TODAY", or "Tue 2 Sep"/"TUE 2 SEP" for anything else; `year` adds "2026" and `weekday: false` drops "Tue". */
 export function sessionDateLabel(
   atMs: number,
-  opts: { upper?: boolean; now?: number; year?: boolean } = {},
+  opts: { upper?: boolean; now?: number; year?: boolean; weekday?: boolean } = {},
 ): string {
   const end = new Date(atMs);
   const now = new Date(opts.now ?? Date.now());
@@ -160,6 +160,7 @@ export function sessionDateLabel(
     end.getMonth() === now.getMonth() &&
     end.getDate() === now.getDate();
   if (sameDay) return opts.upper ? 'TODAY' : 'Today';
-  const label = opts.year ? `${dateLabel(atMs)} ${end.getFullYear()}` : dateLabel(atMs);
+  const base = opts.weekday === false ? dateLabel(atMs).replace(/^\w+ /, '') : dateLabel(atMs);
+  const label = opts.year ? `${base} ${end.getFullYear()}` : base;
   return opts.upper ? label.toUpperCase() : label;
 }
