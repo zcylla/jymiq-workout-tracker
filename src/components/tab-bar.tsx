@@ -36,7 +36,7 @@ import { useScreenBlurTarget } from './screen-blur';
  * W2 (Lab 23) — four labelled tabs on one plane with an inset circular start
  * button. These are the drawn parts only; the router wires them up.
  *
- * The bar blurs the live screen at the owner's request: measured ~51% janky frames versus ~5% without it.
+ * The bar blurs the live screen at the owner's request: measured ~51% janky frames versus ~5% without it at blur 20; the bar now blurs at 50.
  */
 /** Plate (4 + 52 + 4) plus the air beneath it. Content scrolls under the bar,
  *  so any scroller inside a tab must pad by this much to clear its last row. */

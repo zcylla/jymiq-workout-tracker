@@ -354,6 +354,7 @@ export const controlBarBlur = {
   ...controlGlass,
   fill: { ...controlGlass.fill, backgroundColor: 'rgba(18,16,13,0.45)' },
   drop: controlBarDrop,
+  blur: 50,
 } as const satisfies GlassRecipe & { blur: number };
 
 export const controlSheetBlur = {
