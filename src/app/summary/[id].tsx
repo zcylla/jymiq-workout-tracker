@@ -7,7 +7,6 @@ import {
   ActionBar,
   Delta,
   ExerciseStill,
-  ListRow,
   Pill,
   Screen,
   ScreenHeader,
@@ -25,12 +24,13 @@ import {
 } from '@/data/queries/sessions';
 import { useSettings } from '@/data/settings';
 import { formatPrValue, PR_LABELS } from '@/lib/pr';
+import { sessionSummaryStats } from '@/lib/session-summary';
 import { formatSessionDuration, sessionDateLabel } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
 import { countWorkingSets, formatTonnage, topSet, totalVolume } from '@/lib/volume';
-import { color, text } from '@/theme';
+import { color, space, text } from '@/theme';
 
-const SUMMARY_STILL = 80;
+const SUMMARY_STILL = 120;
 
 /** Lab 36 C2. VS LAST was its own tile and is now the delta on VOLUME. */
 export default function SummaryScreen() {
@@ -91,6 +91,35 @@ export default function SummaryScreen() {
     { label: 'RECORDS', value: String(records.length), tone: 'accent' },
   ];
 
+  const stats = sessionSummaryStats(allSets, session?.durationSec ?? null);
+  const weightTiles: Tile[] = [];
+  const activityTiles: Tile[] = [];
+  const unitLabel = settings.weightUnit.toUpperCase();
+  if (stats.heaviestSet != null) {
+    weightTiles.push({
+      label: 'HEAVIEST SET',
+      value: `${formatWeight(stats.heaviestSet.weightKg!, settings.weightUnit)} ${unitLabel} × ${stats.heaviestSet.reps}`,
+    });
+  }
+  if (stats.bestE1rmKg != null) {
+    weightTiles.push({
+      label: 'BEST EST 1RM',
+      value: `${formatWeight(stats.bestE1rmKg, settings.weightUnit)} ${unitLabel}`,
+    });
+  }
+  if (stats.totalReps != null) {
+    activityTiles.push({ label: 'TOTAL REPS', value: String(stats.totalReps) });
+  }
+  if (stats.averageRpe != null) {
+    activityTiles.push({ label: 'AVG RPE', value: stats.averageRpe.toFixed(1) });
+  }
+  if (stats.densityKgPerMinute != null) {
+    activityTiles.push({
+      label: 'DENSITY',
+      value: `${formatTonnage(stats.densityKgPerMinute, settings.weightUnit)}/MIN`,
+    });
+  }
+
   const setsByExercise = new Map<string, typeof allSets>();
   for (const s of allSets) {
     const list = setsByExercise.get(s.sessionExerciseId) ?? [];
@@ -129,7 +158,15 @@ export default function SummaryScreen() {
         />
 
         <Section first pad={13}>
-          <StatTiles items={tiles} surface="raised" />
+          <View style={{ gap: space.row }}>
+            <StatTiles items={tiles} surface="raised" />
+            {weightTiles.length > 0 ? (
+              <StatTiles items={weightTiles} columns={weightTiles.length} surface="raised" />
+            ) : null}
+            {activityTiles.length > 0 ? (
+              <StatTiles items={activityTiles} columns={activityTiles.length} surface="raised" />
+            ) : null}
+          </View>
         </Section>
 
         {records.length > 0 ? (
@@ -156,15 +193,23 @@ export default function SummaryScreen() {
 
         <Section label="LIFTS" plated={false}>
           {lifted.map((ex) => (
-            <ListRow
+            <View
               key={ex.id}
-              chevron={false}
-              thumb={
-                <ExerciseStill exerciseId={ex.exerciseId} name={ex.name} size={SUMMARY_STILL} />
-              }
-              title={ex.name}
-              meta={`${ex.count} SETS${ex.top ? ` · TOP ${formatWeight(ex.top.weightKg ?? 0, settings.weightUnit)} × ${ex.top.reps}` : ''} · ${formatTonnage(ex.volumeKg, settings.weightUnit)}`}
-            />
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 7 }}
+            >
+              <ExerciseStill exerciseId={ex.exerciseId} name={ex.name} size={SUMMARY_STILL} />
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={text.rowName}>{ex.name}</Text>
+                <Text style={text.meta}>{ex.count} SETS</Text>
+                {ex.top ? (
+                  <Text style={text.meta}>
+                    TOP {formatWeight(ex.top.weightKg ?? 0, settings.weightUnit)} {unitLabel} ×{' '}
+                    {ex.top.reps}
+                  </Text>
+                ) : null}
+                <Text style={text.meta}>{formatTonnage(ex.volumeKg, settings.weightUnit)}</Text>
+              </View>
+            </View>
           ))}
         </Section>
       </Screen>
