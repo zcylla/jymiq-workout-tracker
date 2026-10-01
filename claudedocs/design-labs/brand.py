@@ -15,6 +15,8 @@ BRAND = ROOT / 'assets/brand'
 IMAGES = ROOT / 'assets/images'
 REVIEW = Path('/tmp/claude-1000/-home-inowu-Desktop-Projects-personal-jymiq-workout-tracker/f3aac079-a4dd-41ec-b0c0-439b8167f523/scratchpad/brand-check.png')
 NOTIFICATION_REVIEW = REVIEW.with_name('notif-check.png')
+DEV_MONO_REVIEW = REVIEW.with_name('dev-mono-check.png')
+DEV_MONO_CHOICE = 'A / 3x centre disc'
 GROUND = '#0a0908'
 GOLD = '#e4c68c'
 LIVE = '#df5441'
@@ -231,6 +233,52 @@ def notification_review_sheet():
     sheet.save(NOTIFICATION_REVIEW)
 
 
+def dev_monochrome_candidates(mark, ticks, safe_scale):
+    disc, _ = profile(**(CONFIG | dict(centre=CONFIG['centre'] * 3)))
+    ring = '<circle cx="50" cy="50" r="24" stroke="#f6f3ec" stroke-width="2"/>'
+    needle = line((50, 50), point(22, ticks[CONFIG['cursor']]['angle']), 'h', 5)
+    candidates = {}
+    for name, geometry in [('Production', mark), ('A / 3x centre disc', disc),
+                           ('B / inner ring', mark + ring), ('C / radial needle', mark + needle)]:
+        layer = render(svg(transformed(monochrome(geometry), safe_scale)), 1024)
+        white = Image.new('RGBA', layer.size, '#ffffff')
+        white.putalpha(layer.getchannel('A'))
+        candidates[name] = white
+    return candidates
+
+
+def dev_monochrome_review_sheet(candidates):
+    sheet = Image.new('RGB', (4256, 1740), GROUND)
+    draw = ImageDraw.Draw(sheet)
+    draw.text((24, 16), 'Monochrome comparison / white on #1a1a1a / identical fit and ahead alpha', fill=WHITE)
+    production = candidates['Production']
+    bounds = production.getchannel('A').getbbox()
+    ring_diameter = max(bounds[2] - bounds[0], bounds[3] - bounds[1])
+    for column, (name, layer) in enumerate(candidates.items()):
+        x = 24 + column * 1056
+        draw.text((x, 48), name + (' / DEVELOPMENT SELECTED' if name == DEV_MONO_CHOICE else ''), fill=WHITE)
+        for y, circle_size, layer_size, label in [
+                (80, 1024, 1024, 'Full-size 1024px layer'),
+                (1140, 189, round(1024 * 68 / ring_diameter), 'Launcher: 189px circle / ~68px ring'),
+                (1380, 133, round(1024 * 48 / ring_diameter), '48px ring / same launcher proportion'),
+                (1560, 67, round(1024 * 24 / ring_diameter), '24px ring / same launcher proportion')]:
+            panel = Image.new('RGBA', (circle_size, circle_size), (0, 0, 0, 0))
+            ImageDraw.Draw(panel).ellipse((0, 0, circle_size-1, circle_size-1), fill='#1a1a1a')
+            scaled = layer if layer_size == 1024 else layer.resize((layer_size, layer_size), Image.Resampling.LANCZOS)
+            offset = (circle_size-layer_size)//2
+            panel.alpha_composite(scaled, (offset, offset))
+            sheet.paste(panel, (x, y), panel)
+            draw.text((x, y + circle_size + 8), label, fill=WHITE)
+        for i, size in enumerate([48, 24]):
+            scaled = layer.resize((size, size), Image.Resampling.LANCZOS)
+            panel = Image.new('RGBA', (size, size), '#1a1a1a')
+            panel.alpha_composite(scaled)
+            sheet.paste(panel.convert('RGB'), (x + 300 + i * 120, 1560))
+            draw.text((x + 300 + i * 120, 1616), f'{size}px layer', fill=WHITE)
+    DEV_MONO_REVIEW.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(DEV_MONO_REVIEW)
+
+
 def main():
     BRAND.mkdir(parents=True, exist_ok=True)
     mark, ticks = profile(**CONFIG)
@@ -277,6 +325,10 @@ def main():
     (IMAGES / 'dev').mkdir(parents=True, exist_ok=True)
     for name, im in dev_outputs.items():
         im.save(IMAGES / 'dev' / name)
+    candidates = dev_monochrome_candidates(mark, ticks, safe_scale)
+    candidates[DEV_MONO_CHOICE].save(IMAGES / 'dev' / 'android-icon-monochrome.png')
+    dev_monochrome_review_sheet(candidates)
+    radial_check('dev/android-icon-monochrome.png')
     radial_check('dev/android-icon-foreground.png')
     radial_check('android-icon-foreground.png')
     radial_check('android-icon-monochrome.png')
@@ -284,6 +336,7 @@ def main():
     notification_review_sheet()
     print(f'Review: {REVIEW}')
     print(f'Notification review: {NOTIFICATION_REVIEW}')
+    print(f'Development monochrome review: {DEV_MONO_REVIEW}')
 
 
 if __name__ == '__main__':

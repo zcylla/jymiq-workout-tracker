@@ -487,7 +487,7 @@ Phase 1, 2 and 6 gates, and they are absent from a release build.
 
 Production is the default: **Jymiq**, `com.zcylla.jymiq`, scheme `jymiq`, gold icons.
 Its workout data and cloud backup are real; Google returns to `jymiq:///sign-in`.
-Development is **Jymiq Dev**, `com.zcylla.jymiq.dev`, scheme `jymiqdev`, red icon accents.
+Development is **Jymiq Dev**, `com.zcylla.jymiq.dev`, scheme `jymiqdev`, red icon accents and a larger monochrome centre disc.
 Both installs can coexist with separate SQLite sandboxes. Dev scripts blank
 `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` through Metro and Gradle;
 empty strings make the Supabase client null, so development has no cloud backup.

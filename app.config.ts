@@ -15,6 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       adaptiveIcon: {
         ...base.android?.adaptiveIcon,
         foregroundImage: './assets/images/dev/android-icon-foreground.png',
+        monochromeImage: './assets/images/dev/android-icon-monochrome.png',
       },
     },
   };
