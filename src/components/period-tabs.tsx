@@ -1,8 +1,8 @@
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { color, radius, size, text } from '@/theme';
+import { radius, size } from '@/theme';
 
-import { pop } from './haptics';
+import { EdgeChip } from './edge-chip';
 
 const HEIGHT = 32;
 
@@ -26,37 +26,18 @@ export function PeriodTabs<T extends string>({
         overflow: 'visible',
       }}
     >
-      {options.map((option) => {
-        const active = option.key === value;
-        return (
-          <Pressable
-            key={option.key}
-            hitSlop={{ top: (size.hit - HEIGHT) / 2, bottom: (size.hit - HEIGHT) / 2 }}
-            onPress={() => {
-              if (!active) pop();
-              onChange(option.key);
-            }}
-            accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-            style={{
-              flex: 1,
-              minWidth: size.hit,
-              height: HEIGHT,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: radius.row,
-              boxShadow: active ? `0 0 0 1.5px ${color.accent}` : undefined,
-            }}
-          >
-            <Text
-              numberOfLines={1}
-              style={[text.pill, { color: active ? color.accent : color.lo }]}
-            >
-              {option.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+      {options.map((option) => (
+        <EdgeChip
+          key={option.key}
+          label={option.label}
+          active={option.key === value}
+          onPress={() => onChange(option.key)}
+          height={HEIGHT}
+          radius={radius.row}
+          minWidth={size.hit}
+          hitSlop={{ top: (size.hit - HEIGHT) / 2, bottom: (size.hit - HEIGHT) / 2 }}
+        />
+      ))}
     </View>
   );
 }
