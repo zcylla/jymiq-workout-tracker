@@ -239,6 +239,7 @@ export default function ExerciseScreen() {
           {gran !== 'all' ? (
             <Section label={COMPARED[gran]} plated={false}>
               <StatTiles
+                glass
                 items={[
                   {
                     label: 'BEST e1RM',
@@ -299,7 +300,7 @@ export default function ExerciseScreen() {
         </>
       ) : null}
 
-      <Section label={`REP MAXES · ${unitLabel}`} plated={false}>
+      <Section label="REP MAXES" plated={false}>
         <View>
           {maxes.map((m) => (
             <View
