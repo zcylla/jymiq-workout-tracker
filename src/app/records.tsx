@@ -1,39 +1,51 @@
-import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Text, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Rail, type RailItem, Screen, ScreenHeader, Section } from '@/components';
+import { Screen, ScreenHeader } from '@/components';
+import { RailRow } from '@/components/rail';
+import { useRows } from '@/data/live';
 import { recordsQuery } from '@/data/queries/records';
 import { useSettings } from '@/data/settings';
 import { formatPrValue, PR_LABELS, type PrCategory } from '@/lib/pr';
 import { sessionDateLabel, sessionDotTone } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
-import { color, text } from '@/theme';
+import { color, space, text } from '@/theme';
 
 /** Shadowing the global `Record<K, V>` utility in this file would be a trap. */
 type PrRow = Awaited<ReturnType<typeof recordsQuery>>[number];
 
 /** Lab 36 C4, pushed from History and Load. */
 export default function RecordsScreen() {
-  const { data } = useLiveQuery(
+  const insets = useSafeAreaInsets();
+  const records = useRows(
     useMemo(() => recordsQuery(), []),
     [],
   );
-  const records = data ?? [];
-
-  const railItems: RailItem[] = records.map((r) => ({
-    tone: sessionDotTone(r.achievedAt),
-    body: <RecordRow record={r} />,
-  }));
-
   return (
-    <Screen>
+    <Screen scroll={false}>
       <ScreenHeader title="Records" onBack={() => router.back()} />
 
-      <Section first plated={false}>
-        {records.length ? <Rail items={railItems} air={26} animate /> : null}
-      </Section>
+      <FlatList
+        data={records}
+        keyExtractor={(record) => record.id}
+        renderItem={({ item, index }) => (
+          <RailRow
+            item={{ tone: sessionDotTone(item.achievedAt), body: <RecordRow record={item} /> }}
+            last={index === (records?.length ?? 0) - 1}
+            air={26}
+          />
+        )}
+        initialNumToRender={14}
+        windowSize={3}
+        maxToRenderPerBatch={7}
+        removeClippedSubviews
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + space.between }}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={records === null ? null : <Text style={text.body}>No records yet</Text>}
+      />
     </Screen>
   );
 }
