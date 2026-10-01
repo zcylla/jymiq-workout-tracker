@@ -18,6 +18,7 @@ NOTIFICATION_REVIEW = REVIEW.with_name('notif-check.png')
 GROUND = '#0a0908'
 GOLD = '#e4c68c'
 WHITE = '#f6f3ec'
+ADAPTIVE_FIT_DIAMETER_RATIO = 70 / 108
 COLOURS = {'h': WHITE, 'a': GOLD, 'm': '#a8a091', 't2': '#7d7666', 'd': '#5a5449'}
 CONFIG = dict(count=48, cursor=33, rim=45, gain=2.2, width_floor=1.15,
               centre=3.5, weight=1.2)
@@ -128,7 +129,7 @@ def radial_check(name):
                  if (a := alpha.getpixel((x, y))) > 0]
     any_radius = max(d for d, a in distances)
     opaque_radius = max(d for d, a in distances if a == 255)
-    limit = im.width * 33 / 108
+    limit = im.width * ADAPTIVE_FIT_DIAMETER_RATIO / 2
     assert any_radius + math.sqrt(.5) <= limit
     print(f'{name}: opaque radius={opaque_radius:.6f}px; nonzero-alpha radius={any_radius:.6f}px; '
           f'pixel-corner bound={any_radius + math.sqrt(.5):.6f}px; safe radius={limit:.6f}px; '
@@ -249,7 +250,7 @@ def main():
     radius = max(max(abs(t['outer']), abs(t['inner'])) + t['width']/2 for t in ticks)
     extent = max(abs(p[axis] - 50) + t['width']/2
                  for t in ticks for p in (t['start'], t['end']) for axis in (0, 1))
-    safe_scale = (1024 * 33 / 108 - 2) / (radius * 1024 / 100)
+    safe_scale = (1024 * ADAPTIVE_FIT_DIAMETER_RATIO / 2 - 2) / (radius * 1024 / 100)
     print(f'Geometry: radial extent={radius:.9f}; symmetric box half-extent={extent:.9f}; '
           f'adaptive scale={safe_scale:.12f}; 2px raster margin')
     outputs = {'icon.png': render(sources['jymiq-icon.svg'], 1024).convert('RGB'),
