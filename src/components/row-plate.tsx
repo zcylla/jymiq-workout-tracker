@@ -1,7 +1,7 @@
 import { createContext, type ReactNode, useContext } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { color, containment, radius, space } from '@/theme';
+import { color, containment, radius, space, wash } from '@/theme';
 
 import { GlassUnder, glassStyle, useControlGlass, useGlass } from './glass';
 import { AnimatedPressable, usePressFeel } from './press';
@@ -20,6 +20,7 @@ export function RowPlate({
   tone = 'raised',
   disabled = false,
   tinted: tintedProp,
+  selected = false,
 }: {
   children: ReactNode;
   onPress?: () => void;
@@ -27,6 +28,8 @@ export function RowPlate({
   disabled?: boolean;
   /** Overrides the group's `tinted` for this one row. */
   tinted?: boolean;
+  /** Washed and ringed in the accent, the way the week strip marks today. */
+  selected?: boolean;
 }) {
   const press = usePressFeel();
   const groupTinted = useContext(TintedRows);
@@ -42,9 +45,26 @@ export function RowPlate({
     glass && glassStyle(glass, blur),
     tone === 'destructive' && { backgroundColor: color.live },
   ];
-  const under = glass ? (
-    <GlassUnder recipe={glass} blur={blur} target={target} radius={radius.row} />
-  ) : null;
+  const under = (
+    <>
+      {glass ? <GlassUnder recipe={glass} blur={blur} target={target} radius={radius.row} /> : null}
+      {selected ? (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              borderRadius: radius.row,
+              borderCurve: 'continuous',
+              backgroundColor: wash.chip,
+              borderWidth: 1.5,
+              borderColor: color.accent,
+            },
+          ]}
+        />
+      ) : null}
+    </>
+  );
 
   if (!onPress)
     return (
