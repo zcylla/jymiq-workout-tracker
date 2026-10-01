@@ -17,9 +17,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { color, hairline, motion, radius, space, wash } from '@/theme';
-
-import { glassStyle, useGlass } from './glass';
+import { controlEdgeDense, hairline, motion, radius, space, wash } from '@/theme';
 
 /**
  * The shared shell for every overlay on the live screen (sets, exercises, the
@@ -64,7 +62,6 @@ export function Sheet({
   const progressSV = useSharedValue(0);
   const dragYSV = useSharedValue(0);
   const panelHSV = useSharedValue(height);
-  const { recipe } = useGlass('chrome');
 
   if (open && !mounted) setMounted(true);
 
@@ -133,13 +130,12 @@ export function Sheet({
           {
             width,
             maxHeight: height * 0.8,
-            backgroundColor: color.panel,
+            ...controlEdgeDense,
             borderTopLeftRadius: radius.sheet,
             borderTopRightRadius: radius.sheet,
             borderCurve: 'continuous',
             paddingBottom: Math.max(insets.bottom, space.within),
           },
-          recipe && glassStyle(recipe, 0),
           panelStyle,
         ]}
       >

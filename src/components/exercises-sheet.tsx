@@ -6,7 +6,6 @@ import { setSessionCursor } from '@/data/mutations/sessions';
 import { exerciseStillFor } from '@/data/exercise-image';
 import { color, hairline, type Ink, ls, radius, sans, size, space, text, wash } from '@/theme';
 
-import { useGlass } from './glass';
 import { Chevron } from './icon';
 import { ReorderList } from './reorder-list';
 import { Sheet } from './sheet';
@@ -115,7 +114,6 @@ export function ExercisesSheet({
   onReplace,
   onAdd,
 }: Props) {
-  const { recipe } = useGlass('chrome');
   const done = exercises.filter((e) => e.setsTotal > 0 && e.setsDone >= e.setsTotal).length;
 
   const selectExercise = (id: string) => {
@@ -143,7 +141,7 @@ export function ExercisesSheet({
         renderRow={(e, i, handle) => (
           <SwipeRow
             key={e.id}
-            surface={recipe?.fill.backgroundColor ?? color.panel}
+            surface="transparent"
             onDelete={onDelete ? () => onDelete(e.id) : undefined}
             onSwap={onReplace ? () => onReplace(e.id) : undefined}
           >
