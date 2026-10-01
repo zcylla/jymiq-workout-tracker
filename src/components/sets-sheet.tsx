@@ -6,8 +6,6 @@ import { formatWeight, type Unit } from '@/lib/units';
 import { useSettings } from '@/data/settings';
 import { color, hairline, type Ink, radius, size, space, text, wash } from '@/theme';
 
-import { useGlass } from './glass';
-
 import { Chevron } from './icon';
 import { HANDLE_WIDTH, ReorderList } from './reorder-list';
 import { Sheet } from './sheet';
@@ -19,7 +17,6 @@ type SheetSet = {
   weightKg: number | null;
   reps: number | null;
   rpe: number | null;
-  e1rmKg: number | null;
   completedAt: number | null;
 };
 
@@ -41,7 +38,7 @@ type Props = {
 
 const dash = (v: string | null) => v ?? '—';
 
-/** kit's mono value column — right-aligned, a fixed width so four numbers line up. */
+/** kit's mono value column — right-aligned, a fixed width so numbers line up. */
 function Col({ w, color: c, children }: { w: number; color: Ink; children: string }) {
   return <Text style={{ ...text.numSm, width: w, textAlign: 'right', color: c }}>{children}</Text>;
 }
@@ -66,13 +63,10 @@ function SetRow({
   const weightColor = state === 'done' ? color.hi : state === 'current' ? color.accent : color.mid;
   const repsColor = state === 'done' ? color.mid : state === 'current' ? color.accent : color.mid;
   const rpeColor = state === 'done' ? color.mid : color.dim;
-  const e1rmColor = state === 'done' ? color.accent : color.dim;
 
   const weightText = dash(set.weightKg == null ? null : formatWeight(set.weightKg, unit));
   const repsText = dash(set.reps == null ? null : `×${set.reps}`);
   const rpeText = state === 'done' ? dash(set.rpe == null ? null : String(set.rpe)) : '—';
-  const e1rmText =
-    state === 'done' ? dash(set.e1rmKg == null ? null : formatWeight(set.e1rmKg, unit)) : '—';
 
   return (
     <Pressable
@@ -84,16 +78,13 @@ function SetRow({
           height: size.hit,
           gap: 4,
           paddingHorizontal: 8,
-          borderRadius: radius.row,
           borderBottomWidth: 0.5,
-          borderBottomColor: hairline.onPlate,
+          borderBottomColor: hairline.inset,
           opacity: pressed ? 0.7 : state === 'ahead' ? 0.5 : 1,
         },
       ]}
     >
-      {handle ? (
-        <View style={{ backgroundColor: wash.field, borderRadius: radius.row }}>{handle}</View>
-      ) : null}
+      {handle}
       <Text style={{ ...text.numSm, width: 20, color: indexColor }}>
         {String(set.position).padStart(2, '0')}
       </Text>
@@ -106,9 +97,6 @@ function SetRow({
       </Col>
       <Col w={28} color={rpeColor}>
         {rpeText}
-      </Col>
-      <Col w={42} color={e1rmColor}>
-        {e1rmText}
       </Col>
       <View style={{ width: 16, alignItems: 'flex-end' }}>
         {state === 'current' ? null : <Chevron />}
@@ -137,7 +125,6 @@ export function SetsSheet({
   onDelete,
 }: Props) {
   const { weightUnit } = useSettings();
-  const { recipe } = useGlass('chrome');
   const done = sets.filter((s) => s.completedAt != null).length;
 
   const selectSet = (id: string) => {
@@ -177,18 +164,18 @@ export function SetsSheet({
         </Text>
         <Text style={[text.label, { width: 28, textAlign: 'right' }]}>REP</Text>
         <Text style={[text.label, { width: 28, textAlign: 'right' }]}>RPE</Text>
-        <Text style={[text.label, { width: 42, textAlign: 'right' }]}>e1RM</Text>
         <View style={{ width: 16 }} />
       </View>
 
       <ReorderList
+        quiet
         items={sets}
         rowHeight={size.hit}
         onReorder={onReorder}
         renderRow={(s, _i, handle) => (
           <SwipeRow
             key={s.id}
-            surface={recipe?.fill.backgroundColor ?? color.panel}
+            surface="transparent"
             onDelete={onDelete ? () => onDelete(s.id) : undefined}
           >
             <SetRow

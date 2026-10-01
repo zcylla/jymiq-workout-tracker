@@ -22,6 +22,7 @@ type Props<T extends Item> = {
   rowHeight: number;
   /** Space between rows, for plates that are not flush. */
   gap?: number;
+  quiet?: boolean;
   /** Omitted, nothing is draggable and `renderRow` gets no handle. */
   onReorder?: (fromIndex: number, toIndex: number) => void;
   /** Place `handle` as the row's first child; it is null when reordering is off. */
@@ -41,6 +42,7 @@ export function ReorderList<T extends Item>({
   items,
   rowHeight,
   gap = 0,
+  quiet = false,
   onReorder,
   renderRow,
 }: Props<T>) {
@@ -52,6 +54,7 @@ export function ReorderList<T extends Item>({
       items={items}
       rowHeight={rowHeight}
       gap={gap}
+      quiet={quiet}
       onReorder={onReorder}
       renderRow={renderRow}
     />
@@ -62,6 +65,7 @@ function Sortable<T extends Item>({
   items,
   rowHeight,
   gap = 0,
+  quiet = false,
   onReorder,
   renderRow,
 }: Props<T> & { onReorder: (from: number, to: number) => void }) {
@@ -84,6 +88,7 @@ function Sortable<T extends Item>({
           index={i}
           rowHeight={rowHeight}
           pitch={pitch}
+          quiet={quiet}
           orderSV={orderSV}
           activeIdSV={activeIdSV}
           dragTopSV={dragTopSV}
@@ -101,6 +106,7 @@ function SortRow({
   index,
   rowHeight,
   pitch,
+  quiet,
   orderSV,
   activeIdSV,
   dragTopSV,
@@ -111,6 +117,7 @@ function SortRow({
   index: number;
   rowHeight: number;
   pitch: number;
+  quiet: boolean;
   orderSV: SharedValue<string[]>;
   activeIdSV: SharedValue<string | null>;
   dragTopSV: SharedValue<number>;
@@ -167,7 +174,7 @@ function SortRow({
       zIndex: active ? 10 : 0,
       transform: [
         { translateY: active ? dragTopSV.get() : withTiming(slot, { duration: motion.fast }) },
-        { scale: withTiming(active ? LIFT_SCALE : 1, { duration: motion.fast }) },
+        { scale: withTiming(active && !quiet ? LIFT_SCALE : 1, { duration: motion.fast }) },
       ],
     };
   });
@@ -196,14 +203,16 @@ function SortRow({
     <Animated.View
       style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: rowHeight }, rowStyle]}
     >
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          liftStyle,
-          { borderRadius: radius.row, backgroundColor: color.raised, boxShadow: chromeShadow },
-        ]}
-      />
+      {!quiet ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            liftStyle,
+            { borderRadius: radius.row, backgroundColor: color.raised, boxShadow: chromeShadow },
+          ]}
+        />
+      ) : null}
       {children(handle)}
     </Animated.View>
   );
