@@ -1,5 +1,6 @@
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import * as Sentry from '@sentry/react-native';
+import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -14,9 +15,11 @@ import migrations from '@/../drizzle/migrations';
 import { db } from '@/data/db';
 import { authCodeFromUrl, exchangeAuthCode } from '@/data/supabase';
 import { LiveNotification } from '@/data/use-live-notification';
+import { sentryEnvironment } from '@/lib/sentry-env';
 import { color, space, text } from '@/theme';
 
 Sentry.init({
+  environment: __DEV__ ? 'development' : sentryEnvironment(Constants.expoConfig?.android?.package),
   dsn: 'https://e0e2f7ee755ffa2f2fb91baa992e8c5a@o4511058190925824.ingest.us.sentry.io/4512183427727360',
   sendDefaultPii: true,
   enableLogs: true,

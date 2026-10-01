@@ -492,6 +492,7 @@ Both installs can coexist with separate SQLite sandboxes. Dev scripts blank
 `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` through Metro and Gradle;
 empty strings make the Supabase client null, so development has no cloud backup.
 The dev scheme is also absent from Supabase's redirect allow-list.
+Sentry events carry an `environment`: debug builds (`__DEV__`) always report `development`, because a dev client reads its config from Metro; release builds use the package id from `Constants.expoConfig?.android?.package` (`.dev` suffix is `development`, anything else `production`).
 
 - `pnpm start:dev`: development Metro with `--dev-client` and no cloud.
 - `pnpm prebuild:dev` / `pnpm prebuild:prod`: clean Android generation for that variant.
