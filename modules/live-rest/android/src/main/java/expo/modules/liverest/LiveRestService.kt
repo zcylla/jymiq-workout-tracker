@@ -32,7 +32,16 @@ class LiveRestService : Service() {
 
   fun update() {
     handler.removeCallbacks(tick)
-    val options = LiveRestNotification.current
+    try {
+      updateRest()
+    } catch (exception: Exception) {
+      Log.w("LiveRest", "Rest notification unavailable; stopping service", exception)
+      detachAndStop()
+    }
+  }
+
+  private fun updateRest() {
+    val options = LiveRestNotification.restore(this)
     val endMs = options?.rest?.endMs
     val nowMs = System.currentTimeMillis()
     if (options == null || endMs == null || endMs <= nowMs) {

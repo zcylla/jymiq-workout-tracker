@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import {
   type LiveNotificationState,
@@ -8,12 +8,57 @@ import {
 } from '@/lib/live-notification';
 
 import LiveRest from '../../modules/live-rest';
+import type { RestAction } from '../../modules/live-rest';
 
 const IDENTIFIER = 'live-workout';
 const CHANNEL = 'session';
 let pending = Promise.resolve();
 let revision = 0;
 let active = false;
+let restActionsPending = 0;
+let actionsPending = Promise.resolve();
+
+export function listenForRestActions(
+  apply: (actions: RestAction[]) => void,
+  settled: () => void,
+): () => void {
+  if (LiveRest === null) {
+    settled();
+    return () => {};
+  }
+  const native = LiveRest;
+  let mounted = true;
+  const enqueue = (action?: RestAction) => {
+    restActionsPending++;
+    revision++;
+    actionsPending = actionsPending.then(async () => {
+      try {
+        const actions = action ? [action] : await native.consumeRestActions();
+        apply(actions);
+      } catch {
+      } finally {
+        restActionsPending--;
+        if (mounted) settled();
+      }
+    });
+  };
+  enqueue();
+  let subscription: ReturnType<typeof native.addListener> | undefined;
+  let appState: ReturnType<typeof AppState.addEventListener> | undefined;
+  try {
+    subscription = native.addListener('onRestAction', (action) => enqueue(action));
+    appState = AppState.addEventListener('change', (status) => {
+      if (status === 'active') enqueue();
+    });
+  } catch {}
+  return () => {
+    mounted = false;
+    try {
+      subscription?.remove();
+      appState?.remove();
+    } catch {}
+  };
+}
 
 async function ensureChannel(): Promise<void> {
   await Notifications.setNotificationChannelAsync(CHANNEL, {
@@ -87,7 +132,7 @@ export function updateLiveNotification(
   const requestedRevision = ++revision;
   pending = pending.then(async () => {
     try {
-      if (requestedRevision !== revision) return;
+      if (requestedRevision !== revision || restActionsPending > 0) return;
       if (state === null) {
         await LiveRest?.hide();
         await cancelRestEnd();

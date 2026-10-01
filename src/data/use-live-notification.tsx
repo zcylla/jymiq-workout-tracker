@@ -13,14 +13,16 @@ import { useRows } from './live';
 import {
   askNotificationPermission,
   listenForLiveNotification,
+  listenForRestActions,
   updateLiveNotification,
 } from './live-notification';
+import { clearRest, extendRest, shortenRest } from './mutations/sessions';
 import { activeSessionQuery, sessionExercisesQuery, sessionSetsQuery } from './queries/sessions';
 import { setSettings, useSettings } from './settings';
 
 type Session = Awaited<ReturnType<typeof activeSessionQuery>>[number];
 
-function useLiveNotification(session: Session): void {
+function useLiveNotification(session: Session, actionsRevision: number): void {
   const exercises = useRows(
     useMemo(() => sessionExercisesQuery(session.id), [session.id]),
     [session.id],
@@ -57,25 +59,60 @@ function useLiveNotification(session: Session): void {
   }, [session.restUntil, refresh]);
 
   useEffect(() => {
-    rest.current = observeNotificationRest(rest.current, session.restUntil, Date.now());
-  }, [session.restUntil]);
-
-  useEffect(() => {
-    if (state === null) return;
-    const rendered = liveNotificationContent({ ...state, nowMs: Date.now() });
-    const signature = JSON.stringify([rendered.title, rendered.body, state.restUntil]);
-    if (last.current === signature) return;
-    last.current = signature;
-    void updateLiveNotification(state, rest.current?.startMs ?? null);
-  }, [state, refresh]);
+    try {
+      if (state === null) return;
+      const current = activeSessionQuery().all()[0];
+      if (current?.id !== session.id) return;
+      const latest = { ...state, restUntil: current.restUntil };
+      rest.current = observeNotificationRest(
+        rest.current,
+        latest.restUntil,
+        Date.now(),
+        latest.restKey,
+      );
+      const rendered = liveNotificationContent({ ...latest, nowMs: Date.now() });
+      const signature = JSON.stringify([
+        rendered.title,
+        rendered.body,
+        latest.restUntil,
+        latest.restKey,
+        actionsRevision,
+      ]);
+      if (last.current === signature) return;
+      last.current = signature;
+      void updateLiveNotification(latest, rest.current?.startMs ?? null);
+    } catch {}
+  }, [state, session.id, refresh, actionsRevision]);
 }
 
-function ActiveNotification({ session }: { session: Session }) {
-  useLiveNotification(session);
+function ActiveNotification({
+  session,
+  actionsRevision,
+}: {
+  session: Session;
+  actionsRevision: number;
+}) {
+  useLiveNotification(session, actionsRevision);
   return null;
 }
 
 function NotificationObserver() {
+  const [actionsRevision, actionsSettled] = useReducer((value: number) => value + 1, 0);
+  useEffect(
+    () =>
+      listenForRestActions((actions) => {
+        for (const action of actions) {
+          try {
+            const session = activeSessionQuery().all()[0];
+            if (session?.restUntil == null) continue;
+            if (action.type === 'plus') extendRest(session.id, 30);
+            else if (action.type === 'minus') shortenRest(session.id, 30);
+            else if (action.type === 'skip') clearRest(session.id);
+          } catch {}
+        }
+      }, actionsSettled),
+    [],
+  );
   const { liveNotification: setting } = useSettings();
   const liveNotification = setting === true;
   useEffect(() => {
@@ -95,10 +132,10 @@ function NotificationObserver() {
   }, [ready]);
   useEffect(() => {
     if (noSession || !liveNotification) void updateLiveNotification(null);
-  }, [noSession, liveNotification]);
+  }, [noSession, liveNotification, actionsRevision]);
   const session = sessions?.[0];
-  return session && ready && liveNotification ? (
-    <ActiveNotification key={session.id} session={session} />
+  return session && ready && liveNotification && actionsRevision > 0 ? (
+    <ActiveNotification key={session.id} session={session} actionsRevision={actionsRevision} />
   ) : null;
 }
 

@@ -4,7 +4,7 @@ import { estimate1RM } from '@/lib/e1rm';
 import { newId } from '@/lib/id';
 import { performAgainPlan } from '@/lib/perform-again';
 import { type PrHit, detectSessionVolumePr, detectSetPrs } from '@/lib/pr';
-import { resolveRestSec } from '@/lib/rest';
+import { adjustRestUntil, resolveRestSec } from '@/lib/rest';
 
 import { getSettings } from '../settings';
 import { syncSoon } from '../sync';
@@ -720,16 +720,35 @@ export function setSessionCursor(
 }
 
 export function clearRest(sessionId: string): void {
-  db.update(sessions).set({ restUntil: null }).where(eq(sessions.id, sessionId)).run();
+  db.update(sessions)
+    .set({ restUntil: null })
+    .where(and(eq(sessions.id, sessionId), sql`${sessions.restUntil} is not null`))
+    .run();
 }
 
 /** +30s on the countdown. Nothing is running, nothing to extend; an expired clock restarts from now. */
 export function extendRest(sessionId: string, seconds: number): void {
-  const now = Date.now();
-  db.update(sessions)
-    .set({ restUntil: sql`max(${sessions.restUntil}, ${now}) + ${Math.round(seconds * 1000)}` })
-    .where(and(eq(sessions.id, sessionId), sql`${sessions.restUntil} is not null`))
-    .run();
+  adjustRest(sessionId, seconds);
+}
+
+export function shortenRest(sessionId: string, seconds: number): void {
+  adjustRest(sessionId, -seconds);
+}
+
+function adjustRest(sessionId: string, deltaSec: number): void {
+  db.transaction((tx) => {
+    const [row] = tx
+      .select({ restUntil: sessions.restUntil })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .limit(1)
+      .all();
+    if (row?.restUntil == null) return;
+    tx.update(sessions)
+      .set({ restUntil: adjustRestUntil(row.restUntil, Date.now(), deltaSec) })
+      .where(eq(sessions.id, sessionId))
+      .run();
+  });
 }
 
 /** A blank note is no note. */

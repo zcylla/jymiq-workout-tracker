@@ -79,13 +79,31 @@ test('rest observations preserve the start across updates and extensions', () =>
   });
 });
 
-test('cleared or replaced rests get a fresh start; expiry alone does not reset it', () => {
+test('shortened rests preserve their start; clearing resets it', () => {
   const first = { startMs: nowMs, endMs: nowMs + 90_000 };
   assert.equal(observeNotificationRest(first, null, nowMs + 10_000), null);
   assert.deepEqual(observeNotificationRest(first, first.endMs, first.endMs + 1), first);
   assert.deepEqual(observeNotificationRest(first, nowMs + 60_000, nowMs + 10_000), {
+    startMs: nowMs,
+    endMs: nowMs + 60_000,
+  });
+  assert.deepEqual(observeNotificationRest(first, nowMs - 1, nowMs + 10_000), {
+    startMs: nowMs,
+    endMs: nowMs - 1,
+  });
+});
+
+test('a newly logged set starts a fresh rest even without an observed clear', () => {
+  const first = observeNotificationRest(null, nowMs + 90_000, nowMs, 'set-1');
+  assert.deepEqual(observeNotificationRest(first, nowMs + 60_000, nowMs + 10_000, 'set-1'), {
+    startMs: nowMs,
+    endMs: nowMs + 60_000,
+    key: 'set-1',
+  });
+  assert.deepEqual(observeNotificationRest(first, nowMs + 60_000, nowMs + 10_000, 'set-2'), {
     startMs: nowMs + 10_000,
     endMs: nowMs + 60_000,
+    key: 'set-2',
   });
 });
 
@@ -175,6 +193,30 @@ test('persisted cursor selects the current target without advancing it twice dur
   assert.equal(result.nextSetNumber, 2);
   assert.equal(result.weightKg, 100);
   assert.equal(result.reps, 8);
+});
+
+test('rest identity survives cursor and draft edits but changes after logging another set', () => {
+  const first = liveNotificationState(
+    { ...session, restUntil: nowMs + 90_000 },
+    exercises,
+    sets,
+    'kg',
+  );
+  const edited = liveNotificationState(
+    { ...session, currentSetId: 's1', restUntil: nowMs + 60_000 },
+    exercises,
+    [sets[0], { ...sets[1], weightKg: 105 }],
+    'kg',
+  );
+  assert.equal(first.restKey, edited.restKey);
+  const next = liveNotificationState(
+    session,
+    exercises,
+    [sets[0], { ...sets[1], completedAt: 200 }],
+    'kg',
+  );
+  assert.notEqual(first.restKey, next.restKey);
+  assert.equal(nativeLiveNotificationContent(first, nowMs).rest?.key, first.restKey);
 });
 
 test('the dialled draft takes precedence over the target', () => {

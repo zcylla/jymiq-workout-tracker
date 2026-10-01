@@ -11,8 +11,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import org.json.JSONArray
+import org.json.JSONObject
 
-data class RestWindow(val startMs: Long, val endMs: Long)
+data class RestWindow(val startMs: Long, val endMs: Long, val key: String? = null)
 data class WorkoutNotification(val title: String, val lines: List<String>, val rest: RestWindow?)
 
 internal object LiveRestNotification {
@@ -24,6 +26,13 @@ internal object LiveRestNotification {
 
   fun show(context: Context, options: WorkoutNotification) {
     current = options
+    val stored = JSONObject().put("title", options.title).put("lines", JSONArray(options.lines))
+    options.rest?.let { rest ->
+      stored.put("rest", JSONObject().put("startMs", rest.startMs).put("endMs", rest.endMs).put("key", rest.key))
+    }
+    if (!LiveRestActions.preferences(context).edit().putString("notification", stored.toString()).commit()) {
+      Log.w("LiveRest", "Could not persist workout notification")
+    }
     val rest = options.rest
     if (rest == null || rest.endMs <= System.currentTimeMillis()) {
       stopService(context)
@@ -57,8 +66,24 @@ internal object LiveRestNotification {
 
   fun hide(context: Context) {
     current = null
+    LiveRestActions.preferences(context).edit().remove("notification").commit()
     stopService(context)
     manager(context).cancel(ID)
+  }
+
+  fun restore(context: Context): WorkoutNotification? {
+    current?.let { return it }
+    val stored = LiveRestActions.preferences(context).getString("notification", null) ?: return null
+    val options = JSONObject(stored)
+    val lines = options.getJSONArray("lines")
+    current = WorkoutNotification(
+      options.getString("title"),
+      (0 until lines.length()).map { lines.getString(it) },
+      options.optJSONObject("rest")?.let {
+        RestWindow(it.getLong("startMs"), it.getLong("endMs"), if (it.has("key")) it.getString("key") else null)
+      }
+    )
+    return current
   }
 
   private fun stopService(context: Context) {
@@ -111,7 +136,7 @@ internal object LiveRestNotification {
     }
     builder.setSmallIcon(icon)
       .setContentTitle(options.title)
-      .setContentText(lines.take(2).joinToString(" · "))
+      .setContentText(if (resting) "Resting" else if (rest != null) "Rest over" else lines.take(2).joinToString(" · "))
       .setStyle(Notification.BigTextStyle().bigText(lines.joinToString("\n")))
       .setContentIntent(tap)
       .setOngoing(true)
@@ -129,6 +154,13 @@ internal object LiveRestNotification {
       val max = ((rest.endMs - rest.startMs + 999) / 1000).coerceIn(1, Int.MAX_VALUE.toLong()).toInt()
       val progress = ((nowMs - rest.startMs) / 1000).coerceIn(0, max.toLong()).toInt()
       builder.setProgress(max, progress, false).setWhen(rest.endMs)
+      listOf("minus" to "−30s", "plus" to "+30s", "skip" to "Skip").forEachIndexed { index, (type, label) ->
+        val action = Intent(context, LiveRestReceiver::class.java).setAction("expo.modules.liverest.$type")
+        val pending = PendingIntent.getBroadcast(
+          context, ID + index + 1, action, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        builder.addAction(Notification.Action.Builder(null, label, pending).build())
+      }
     } else {
       builder.setProgress(0, 0, false)
     }

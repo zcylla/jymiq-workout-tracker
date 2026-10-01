@@ -13,22 +13,26 @@ export interface LiveNotificationState {
   completedSets: number;
   totalSets: number;
   nextSetNumber: number | null;
+  restKey?: string;
 }
 
 export interface NotificationRest {
   startMs: number;
   endMs: number;
+  key?: string;
 }
 
 export function observeNotificationRest(
   previous: NotificationRest | null,
   restUntil: number | null,
   nowMs: number,
+  key?: string,
 ): NotificationRest | null {
   if (restUntil == null) return null;
   return {
-    startMs: previous && restUntil >= previous.endMs ? previous.startMs : nowMs,
+    startMs: previous && previous.key === key ? previous.startMs : nowMs,
     endMs: restUntil,
+    ...(key !== undefined ? { key } : {}),
   };
 }
 
@@ -41,7 +45,13 @@ export function nativeLiveNotificationContent(
     title,
     lines: body.split('\n'),
     ...(state.restUntil != null && restStartMs != null
-      ? { rest: { startMs: restStartMs, endMs: state.restUntil } }
+      ? {
+          rest: {
+            startMs: restStartMs,
+            endMs: state.restUntil,
+            ...(state.restKey !== undefined ? { key: state.restKey } : {}),
+          },
+        }
       : {}),
   };
 }
@@ -69,6 +79,7 @@ export function liveNotificationContent(state: LiveNotificationState & { nowMs: 
 }
 
 interface Session {
+  id?: string;
   name: string;
   currentSessionExerciseId: string | null;
   currentSetId: string | null;
@@ -108,6 +119,9 @@ export function liveNotificationState(
   const last = sets
     .filter((s) => s.completedAt != null)
     .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))[0];
+  const restSet = activeSets
+    .filter((s) => s.completedAt != null)
+    .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))[0];
   return {
     routineName: session.name,
     exerciseName: exercise?.name ?? null,
@@ -124,5 +138,6 @@ export function liveNotificationState(
     completedSets: activeSets.filter((s) => s.completedAt != null).length,
     totalSets: activeSets.length,
     nextSetNumber: set && set.completedAt == null ? set.position : null,
+    restKey: `${session.id ?? ''}:${restSet?.id ?? ''}:${restSet?.completedAt ?? ''}`,
   };
 }
