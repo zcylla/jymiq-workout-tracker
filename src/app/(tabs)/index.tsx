@@ -124,7 +124,9 @@ export default function TodayScreen() {
       {fresh ? (
         <FirstSteps />
       ) : (
-        <NextCard next={next} lastRunAt={lastRunAt} loading={active === null} />
+        <View style={{ paddingTop: space.pad }}>
+          <NextCard next={next} lastRunAt={lastRunAt} loading={active === null} />
+        </View>
       )}
 
       <Section label="THIS WEEK" pad={WEEK_PAD} tone="glass">
