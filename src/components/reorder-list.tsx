@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect } from 'react';
+import { Fragment, type ReactNode, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -47,7 +47,13 @@ export function ReorderList<T extends Item>({
   renderRow,
 }: Props<T>) {
   if (!onReorder) {
-    return <View style={{ gap }}>{items.map((item, i) => renderRow(item, i, null))}</View>;
+    return (
+      <View style={{ gap }}>
+        {items.map((item, i) => (
+          <Fragment key={item.id}>{renderRow(item, i, null)}</Fragment>
+        ))}
+      </View>
+    );
   }
   return (
     <Sortable
