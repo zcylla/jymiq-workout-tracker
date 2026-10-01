@@ -20,10 +20,10 @@ const state = {
   nextSetNumber: 3,
 };
 
-test('normal set shows the routine, current set, load and progress', () => {
+test('a normal set shows the routine, exercise and load without counters', () => {
   assert.deepEqual(liveNotificationContent(state), {
     title: 'Leg Day',
-    body: 'Barbell Squat · Set 3 of 5\n100 kg × 8 reps\n2 of 5 sets logged',
+    body: 'Barbell Squat\n100 kg × 8 reps',
   });
 });
 
@@ -31,56 +31,29 @@ test('pounds use the shared kilogram display conversion', () => {
   assert.match(liveNotificationContent({ ...state, unit: 'lb' }).body, /220\.5 lb × 8 reps/);
 });
 
-test('running rest includes the absolute end and a snapshot of time remaining', () => {
+test('a running rest says when it ends', () => {
   const restUntil = nowMs + 90_000;
   assert.match(
     liveNotificationContent({ ...state, restUntil }).body,
-    new RegExp(`Resting until ${timeLabel(restUntil)} · 1:30 left`),
+    new RegExp(`Rest until ${timeLabel(restUntil)}$`),
   );
 });
 
-test('remaining rest rounds up and uses the supplied clock', () => {
-  assert.match(liveNotificationContent({ ...state, restUntil: nowMs + 1001 }).body, /0:02 left/);
+test('a rest is still running until its exact deadline', () => {
+  assert.match(liveNotificationContent({ ...state, restUntil: nowMs + 1 }).body, /Rest until /);
 });
 
-test('rest ends at the exact deadline and names the current upcoming set', () => {
-  assert.match(
-    liveNotificationContent({ ...state, restUntil: nowMs }).body,
-    /Rest over — Set 3 next/,
-  );
+test('rest is over at the exact deadline', () => {
+  assert.match(liveNotificationContent({ ...state, restUntil: nowMs }).body, /Rest over$/);
 });
 
 test('an overdue rest stays finished', () => {
-  assert.match(
-    liveNotificationContent({ ...state, restUntil: nowMs - 60_000 }).body,
-    /Rest over — Set 3 next/,
-  );
-});
-
-test('the last completed set does not promise a nonexistent next set', () => {
-  assert.match(
-    liveNotificationContent({
-      ...state,
-      restUntil: nowMs,
-      nextSetNumber: null,
-      completedSets: 5,
-    }).body,
-    /Rest over — All sets logged/,
-  );
+  assert.match(liveNotificationContent({ ...state, restUntil: nowMs - 60_000 }).body, /Rest over$/);
 });
 
 test('missing, empty and whitespace-only routine names fall back to Workout', () => {
   for (const routineName of [null, '', '   ']) {
     assert.equal(liveNotificationContent({ ...state, routineName }).title, 'Workout');
-  }
-});
-
-test('first and last sets keep their one-based positions', () => {
-  for (const setNumber of [1, 5]) {
-    assert.match(
-      liveNotificationContent({ ...state, setNumber }).body,
-      new RegExp(`Set ${setNumber} of 5`),
-    );
   }
 });
 
@@ -91,7 +64,7 @@ test('missing or zero load is bodyweight', () => {
 });
 
 test('missing reps are not invented', () => {
-  assert.match(liveNotificationContent({ ...state, reps: null }).body, /\n100 kg\n/);
+  assert.match(liveNotificationContent({ ...state, reps: null }).body, /\n100 kg$/m);
 });
 
 const session = {
@@ -195,6 +168,6 @@ test('an empty session has no invented exercise or set', () => {
   const result = liveNotificationState({ ...session, name: '' }, [], [], 'kg');
   assert.deepEqual(liveNotificationContent({ ...result, nowMs }), {
     title: 'Workout',
-    body: 'Workout in progress\n0 of 0 sets logged',
+    body: 'Workout in progress',
   });
 });

@@ -1,4 +1,4 @@
-import { formatRest, restRemainingSec, timeLabel } from './time.ts';
+import { restRemainingSec, timeLabel } from './time.ts';
 import { type Unit, formatWeight } from './units.ts';
 
 export interface LiveNotificationState {
@@ -19,11 +19,7 @@ export function liveNotificationContent(state: LiveNotificationState & { nowMs: 
   title: string;
   body: string;
 } {
-  const lines = [
-    state.exerciseName
-      ? `${state.exerciseName}${state.setNumber == null ? '' : ` · Set ${state.setNumber} of ${state.setCount}`}`
-      : 'Workout in progress',
-  ];
+  const lines = [state.exerciseName ?? 'Workout in progress'];
   if (state.setNumber != null) {
     const load =
       state.weightKg == null || state.weightKg === 0
@@ -31,17 +27,11 @@ export function liveNotificationContent(state: LiveNotificationState & { nowMs: 
         : `${formatWeight(state.weightKg, state.unit)} ${state.unit}`;
     lines.push(state.reps == null ? load : `${load} × ${state.reps} reps`);
   }
-  lines.push(`${state.completedSets} of ${state.totalSets} sets logged`);
   if (state.restUntil != null) {
-    const left = restRemainingSec(state.restUntil, state.nowMs);
     lines.push(
-      left > 0
-        ? `Resting until ${timeLabel(state.restUntil)} · ${formatRest(left)} left`
-        : state.nextSetNumber != null
-          ? `Rest over — Set ${state.nextSetNumber} next`
-          : state.completedSets === state.totalSets
-            ? 'Rest over — All sets logged'
-            : 'Rest over',
+      restRemainingSec(state.restUntil, state.nowMs) > 0
+        ? `Rest until ${timeLabel(state.restUntil)}`
+        : 'Rest over',
     );
   }
   return { title: state.routineName?.trim() || 'Workout', body: lines.join('\n') };
