@@ -103,33 +103,54 @@ export type NewRoutineExercise = {
  * never disagree.
  */
 export function addExerciseToRoutine(input: NewRoutineExercise): string {
-  const id = newId();
+  return appendExercisesToRoutine(input.routineId, [input])[0];
+}
+
+export function addExercisesToRoutine(input: {
+  routineId: string;
+  exerciseIds: readonly string[];
+}): void {
+  if (!input.exerciseIds.length) return;
+  const targetSets = getSettings().defaultSets;
+  appendExercisesToRoutine(
+    input.routineId,
+    input.exerciseIds.map((exerciseId) => ({ routineId: input.routineId, exerciseId, targetSets })),
+  );
+}
+
+function appendExercisesToRoutine(
+  routineId: string,
+  inputs: readonly NewRoutineExercise[],
+): string[] {
+  const ids = inputs.map(() => newId());
 
   db.transaction((tx) => {
     const [last] = tx
       .select({ max: sql<number | null>`max(${routineExercises.position})` })
       .from(routineExercises)
-      .where(eq(routineExercises.routineId, input.routineId))
+      .where(eq(routineExercises.routineId, routineId))
       .all();
 
-    tx.insert(routineExercises)
-      .values({
-        id,
-        routineId: input.routineId,
-        exerciseId: input.exerciseId,
-        position: (last?.max ?? -1) + 1,
-        targetSets: input.targetSets ?? getSettings().defaultSets,
-        targetReps: input.targetReps ?? null,
-        targetWeightKg: input.targetWeightKg ?? null,
-        restSec: input.restSec ?? null,
-        note: input.note ?? null,
-      })
-      .run();
+    inputs.forEach((input, index) => {
+      tx.insert(routineExercises)
+        .values({
+          id: ids[index],
+          routineId,
+          exerciseId: input.exerciseId,
+          position: (last?.max ?? -1) + 1 + index,
+          targetSets: input.targetSets ?? getSettings().defaultSets,
+          targetReps: input.targetReps ?? null,
+          targetWeightKg: input.targetWeightKg ?? null,
+          restSec: input.restSec ?? null,
+          note: input.note ?? null,
+        })
+        .run();
+    });
 
-    touch(tx, input.routineId);
+    touch(tx, routineId);
   });
 
-  return id;
+  return ids;
 }
 
 export function updateRoutineExercise(
