@@ -1,4 +1,5 @@
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
+import * as Sentry from '@sentry/react-native';
 import * as Linking from 'expo-linking';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +15,15 @@ import { db } from '@/data/db';
 import { authCodeFromUrl, exchangeAuthCode } from '@/data/supabase';
 import { LiveNotification } from '@/data/use-live-notification';
 import { color, space, text } from '@/theme';
+
+Sentry.init({
+  dsn: 'https://e0e2f7ee755ffa2f2fb91baa992e8c5a@o4511058190925824.ingest.us.sentry.io/4512183427727360',
+  sendDefaultPii: true,
+  enableLogs: true,
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+});
 
 /**
  * `(tabs)` is the anchor, so a deep link into a detail route still has the tab
@@ -43,7 +53,7 @@ function migrationError(error: Error): string {
   return reason ? `${reason}\n\n${error.message}` : error.message;
 }
 
-export default function RootLayout() {
+function RootLayout() {
   useAuthDeepLink();
   // The render is gated on migrations rather than racing them, and a failure is
   // shown rather than swallowed — a half-migrated database is the one state
@@ -90,3 +100,5 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);
