@@ -6,6 +6,7 @@
   "dependencies": {
     "@bryllim/workout-guide": "^1.0.0",
     "@expo/ui": "~57.0.16",
+    "@sentry/react-native": "^8.29.0",
     "@shopify/flash-list": "2.0.2",
     "@shopify/react-native-skia": "2.6.2",
     "@supabase/supabase-js": "^2.115.0",
