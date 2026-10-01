@@ -11,7 +11,6 @@ import {
   ChipStrip,
   Icon,
   ListRow,
-  Pill,
   RowPlate,
   ScreenHeader,
   SearchField,
@@ -158,6 +157,7 @@ export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
           ) : (
             <RowPlate
               tinted
+              selected={routinePicking && selectedIds.includes(item.row.id)}
               onPress={() => {
                 if (replace) {
                   replaceSessionExercise(replace, item.row.id);
@@ -182,11 +182,6 @@ export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
                 title={item.row.name}
                 meta={item.row.equipment.toUpperCase()}
                 chevron={routinePicking ? false : undefined}
-                right={
-                  routinePicking && selectedIds.includes(item.row.id) ? (
-                    <Pill label={String(selectedIds.indexOf(item.row.id) + 1)} />
-                  ) : undefined
-                }
               />
             </RowPlate>
           )
