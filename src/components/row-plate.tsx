@@ -22,7 +22,7 @@ export function RowPlate({
 }: {
   children: ReactNode;
   onPress?: () => void;
-  tone?: 'raised' | 'panel';
+  tone?: 'raised' | 'panel' | 'destructive';
   disabled?: boolean;
 }) {
   const press = usePressFeel();
@@ -35,6 +35,7 @@ export function RowPlate({
     { paddingHorizontal: 14 },
     tone === 'panel' && { backgroundColor: color.panel },
     recipe && glassStyle(recipe, blur),
+    tone === 'destructive' && { backgroundColor: color.live },
   ];
   const under = recipe ? (
     <GlassUnder recipe={recipe} blur={blur} target={target} radius={radius.row} />

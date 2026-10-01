@@ -35,7 +35,7 @@ import {
   describeBackup,
   parseBackup,
 } from '@/lib/import';
-import { color, radius, text } from '@/theme';
+import { color, radius, size, text } from '@/theme';
 
 /**
  * Account and sync. Reachable from the gear on Today; nothing else in the app
@@ -428,8 +428,10 @@ export default function SignInScreen() {
             <RowPlate>
               <ListRow chevron={false} quiet title={session.user.email ?? 'Signed in'} />
             </RowPlate>
-            <RowPlate onPress={signOut}>
-              <ListRow chevron={false} quiet title="Sign out" />
+            <RowPlate tone="destructive" onPress={signOut}>
+              <View style={{ minHeight: size.hit, justifyContent: 'center' }}>
+                <Text style={[text.rowName, { color: color.ink }]}>Sign out</Text>
+              </View>
             </RowPlate>
           </RowPlates>
         </Section>
