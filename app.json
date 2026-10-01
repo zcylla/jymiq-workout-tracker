@@ -111,6 +111,14 @@
             }
           ]
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "jymiq-workout-tracker",
+          "organization": "jymiq"
+        }
       ]
     ],
     "experiments": {
