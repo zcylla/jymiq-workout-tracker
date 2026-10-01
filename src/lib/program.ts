@@ -14,6 +14,15 @@ import { dayKey, mondayIndex } from './calendar.ts';
  */
 
 export const WEEKDAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+export const WEEKDAY_NAMES = [
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+  'SUNDAY',
+] as const;
 
 export interface Schedule<T = unknown> {
   /** Monday-first weekday (0–6) → the routine planned for it. Absent is rest. */
