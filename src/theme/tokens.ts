@@ -1,3 +1,5 @@
+import type { ViewStyle } from 'react-native';
+
 /**
  * The locked design tokens. THIS IS THE ONLY FILE IN THE APP CONTAINING A HEX
  * LITERAL — see claudedocs/design-exploration.md §0 and claudedocs/design-labs/kit.py.
@@ -196,7 +198,155 @@ export const chromeGlass = {
   blurTint: glassRecipes.tint.blurTint,
 } as const;
 
-export type GlassRecipe = (typeof glassRecipes)[keyof typeof glassRecipes] | typeof chromeGlass;
+export type GlassRecipe = {
+  fill: ViewStyle;
+  drop?: string;
+  tile: ViewStyle;
+  blurTint: 'dark' | 'default';
+};
+
+export type ControlRecipe = {
+  fill: ViewStyle;
+  label: string;
+  note: string;
+  pressedOpacity: number;
+};
+
+export const controlRecipes = {
+  flat: {
+    fill: {
+      backgroundColor: 'rgba(255,255,255,0.06)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.10)',
+    },
+    label: 'FLAT',
+    note: 'A quiet white wash with a soft hairline.',
+    pressedOpacity: 0.7,
+  },
+  outline: {
+    fill: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.14)',
+    },
+    label: 'OUTLINE',
+    note: 'Just an outline; the ground shows through.',
+    pressedOpacity: 0.7,
+  },
+  cardMatch: {
+    fill: {
+      ...glassRecipes.frost.fill,
+      boxShadow: `${glassRecipes.frost.fill.boxShadow}, ${glassRecipes.frost.drop}`,
+    },
+    label: 'CARD MATCH',
+    note: 'The cards’ frost fill, soft highlight and drop.',
+    pressedOpacity: 0.7,
+  },
+  ink: {
+    fill: {
+      backgroundColor: '#29251e',
+      borderWidth: 0,
+      borderColor: 'transparent',
+      boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.08)',
+    },
+    label: 'INK',
+    note: 'Solid warm ink with a barely visible top edge.',
+    pressedOpacity: 0.7,
+  },
+  tonal: {
+    fill: {
+      backgroundColor: 'rgba(228,198,140,0.08)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(228,198,140,0.20)',
+    },
+    label: 'TONAL',
+    note: 'A faint gold wash and a warm hairline.',
+    pressedOpacity: 0.7,
+  },
+  edge: {
+    fill: {
+      backgroundColor: 'rgba(255,255,255,0.025)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.16)',
+      boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.16)',
+    },
+    label: 'EDGE',
+    note: 'Almost clear, with a crisp border and top edge.',
+    pressedOpacity: 0.7,
+  },
+} as const satisfies Record<string, ControlRecipe>;
+
+export type ControlBlurRecipe = ControlRecipe & {
+  blur: number;
+  blurTint: 'dark' | 'default';
+};
+
+export const controlBlurRecipes = {
+  flatBlur20: {
+    ...controlRecipes.flat,
+    fill: { ...controlRecipes.flat.fill, backgroundColor: 'rgba(255,255,255,0.035)' },
+    label: 'FLAT 20',
+    note: '3.5% white fill · 10% white hairline · blur 20.',
+    blur: 20,
+    blurTint: 'dark',
+  },
+  flatBlur50: {
+    ...controlRecipes.flat,
+    fill: { ...controlRecipes.flat.fill, backgroundColor: 'rgba(255,255,255,0.035)' },
+    label: 'FLAT 50',
+    note: '3.5% white fill · 10% white hairline · blur 50.',
+    blur: 50,
+    blurTint: 'dark',
+  },
+  tonalBlur20: {
+    ...controlRecipes.tonal,
+    fill: { ...controlRecipes.tonal.fill, backgroundColor: 'rgba(228,198,140,0.05)' },
+    label: 'TONAL 20',
+    note: '5% accent fill · 20% accent hairline · blur 20.',
+    blur: 20,
+    blurTint: 'dark',
+  },
+  tonalBlur50: {
+    ...controlRecipes.tonal,
+    fill: { ...controlRecipes.tonal.fill, backgroundColor: 'rgba(228,198,140,0.05)' },
+    label: 'TONAL 50',
+    note: '5% accent fill · 20% accent hairline · blur 50.',
+    blur: 50,
+    blurTint: 'dark',
+  },
+  edgeBlur20: {
+    ...controlRecipes.edge,
+    fill: { ...controlRecipes.edge.fill, backgroundColor: 'rgba(255,255,255,0.01)' },
+    label: 'EDGE 20',
+    note: '1% white fill · 16% white border and inset top highlight · blur 20.',
+    blur: 20,
+    blurTint: 'dark',
+  },
+  edgeBlur50: {
+    ...controlRecipes.edge,
+    fill: { ...controlRecipes.edge.fill, backgroundColor: 'rgba(255,255,255,0.01)' },
+    label: 'EDGE 50',
+    note: '1% white fill · 16% white border and inset top highlight · blur 50.',
+    blur: 50,
+    blurTint: 'dark',
+  },
+} as const satisfies Record<string, ControlBlurRecipe>;
+
+export const controlGlass = {
+  fill: controlBlurRecipes.edgeBlur20.fill,
+  drop: '',
+  tile: controlBlurRecipes.edgeBlur20.fill,
+  blurTint: controlBlurRecipes.edgeBlur20.blurTint,
+  blur: controlBlurRecipes.edgeBlur20.blur,
+} as const satisfies GlassRecipe & { blur: number };
+
+/** The tab bar: the edge look over a near-opaque dark fill, since it floats over scrolling content and cannot blur it cheaply. */
+export const controlEdgeDense = {
+  backgroundColor: 'rgba(34,31,25,0.94)',
+  borderWidth: 0.5,
+  borderColor: controlBlurRecipes.edgeBlur20.fill.borderColor,
+  boxShadow: `${controlBlurRecipes.edgeBlur20.fill.boxShadow}, 0 10px 24px rgba(0,0,0,0.38)`,
+} as const;
 
 /** The glass lab's grounds, drawn by `Backdrop` in place of the dot field. */
 export const backgrounds = {
