@@ -11,6 +11,7 @@ export {
   controlRecipes,
   controlEdgeDense,
   controlBarBlur,
+  controlSheetBlur,
   controlGlass,
   type ControlRecipe,
   controlBlurRecipes,

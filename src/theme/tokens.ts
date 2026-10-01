@@ -342,7 +342,7 @@ export const controlGlass = {
 
 const controlBarDrop = '0 10px 24px rgba(0,0,0,0.38)';
 
-/** The tab bar's dense fallback while no live screen blur target is registered. */
+/** Floating surfaces' dense fallback while no live blur target is available. */
 export const controlEdgeDense = {
   backgroundColor: 'rgba(34,31,25,0.94)',
   borderWidth: 0.5,
@@ -354,6 +354,11 @@ export const controlBarBlur = {
   ...controlGlass,
   fill: { ...controlGlass.fill, backgroundColor: 'rgba(18,16,13,0.45)' },
   drop: controlBarDrop,
+} as const satisfies GlassRecipe & { blur: number };
+
+export const controlSheetBlur = {
+  ...controlBarBlur,
+  fill: { ...controlBarBlur.fill, backgroundColor: 'rgba(18,16,13,0.55)' },
 } as const satisfies GlassRecipe & { blur: number };
 
 /** The glass lab's grounds, drawn by `Backdrop` in place of the dot field. */

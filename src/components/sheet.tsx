@@ -17,7 +17,10 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { controlEdgeDense, hairline, motion, radius, space, wash } from '@/theme';
+import { controlEdgeDense, controlSheetBlur, hairline, motion, radius, space, wash } from '@/theme';
+
+import { GlassUnder, glassStyle } from './glass';
+import { useScreenBlurTarget } from './screen-blur';
 
 /**
  * The shared shell for every overlay on the live screen (sets, exercises, the
@@ -58,6 +61,7 @@ export function Sheet({
 }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const target = useScreenBlurTarget();
   const [mounted, setMounted] = useState(open);
   const progressSV = useSharedValue(0);
   const dragYSV = useSharedValue(0);
@@ -130,7 +134,13 @@ export function Sheet({
           {
             width,
             maxHeight: height * 0.8,
-            ...controlEdgeDense,
+            ...(target
+              ? {
+                  ...glassStyle(controlSheetBlur, controlSheetBlur.blur),
+                  borderWidth: controlEdgeDense.borderWidth,
+                  borderColor: 'transparent',
+                }
+              : controlEdgeDense),
             borderTopLeftRadius: radius.sheet,
             borderTopRightRadius: radius.sheet,
             borderCurve: 'continuous',
@@ -139,6 +149,14 @@ export function Sheet({
           panelStyle,
         ]}
       >
+        {target ? (
+          <GlassUnder
+            recipe={controlSheetBlur}
+            blur={controlSheetBlur.blur}
+            target={target}
+            radius={{ borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet }}
+          />
+        ) : null}
         <GestureDetector gesture={pan}>
           <View style={{ alignItems: 'center', paddingTop: 14, paddingBottom: 12 }}>
             <View

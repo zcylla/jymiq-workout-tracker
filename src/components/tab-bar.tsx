@@ -1,13 +1,5 @@
 import { type TabTriggerSlotProps, useTabTrigger } from 'expo-router/ui';
-import {
-  createContext,
-  type ReactNode,
-  type RefObject,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   type SharedValue,
@@ -21,7 +13,6 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { useGlassTrial } from '@/data/glass-trial';
 import { stepBar } from '@/lib/tab-bar';
 import {
   color,
@@ -39,6 +30,7 @@ import { GlassUnder, glassStyle } from './glass';
 import { tick } from './haptics';
 import { Icon, type IconName } from './icon';
 import { AnimatedPressable, usePressFeel } from './press';
+import { useScreenBlurTarget } from './screen-blur';
 
 /**
  * W2 (Lab 23) — four labelled tabs on one plane with an inset circular start
@@ -68,30 +60,10 @@ const TAB_NAMES = Object.keys(TABS) as TabName[];
  * scroll has to reach it through a shared value that lives above both.
  */
 const MinimisedContext = createContext<SharedValue<number> | null>(null);
-type RegisterBlurTarget = (target: RefObject<View | null>) => () => void;
-const TabBarBlurRegistrationContext = createContext<RegisterBlurTarget | null>(null);
-const TabBarBlurTargetContext = createContext<RefObject<View | null> | null>(null);
 
 export function TabBarProvider({ children }: { children: ReactNode }) {
   const minimisedSV = useSharedValue(0);
-  const [blurTarget, setBlurTarget] = useState<RefObject<View | null> | null>(null);
-  const registerBlurTarget = useCallback((target: RefObject<View | null>) => {
-    setBlurTarget(target);
-    return () => setBlurTarget((current) => (current === target ? null : current));
-  }, []);
-  return (
-    <MinimisedContext.Provider value={minimisedSV}>
-      <TabBarBlurRegistrationContext.Provider value={registerBlurTarget}>
-        <TabBarBlurTargetContext.Provider value={blurTarget}>
-          {children}
-        </TabBarBlurTargetContext.Provider>
-      </TabBarBlurRegistrationContext.Provider>
-    </MinimisedContext.Provider>
-  );
-}
-
-export function useTabBarBlurTarget() {
-  return useContext(TabBarBlurRegistrationContext);
+  return <MinimisedContext.Provider value={minimisedSV}>{children}</MinimisedContext.Provider>;
 }
 
 /**
@@ -120,10 +92,8 @@ export function useTabBarScroll() {
 export function TabBar({ children, onStart }: { children: ReactNode; onStart?: () => void }) {
   const insets = useSafeAreaInsets();
   const minimisedSV = useContext(MinimisedContext);
-  const blurTarget = useContext(TabBarBlurTargetContext);
-  const trial = useGlassTrial();
+  const target = useScreenBlurTarget();
   if (!minimisedSV) throw new Error('TabBar must be inside <TabBarProvider>');
-  const target = trial.style !== 'off' && trial.scope !== 'off' ? blurTarget : null;
   const surface = target
     ? {
         ...glassStyle(controlBarBlur, controlBarBlur.blur),

@@ -8,8 +8,7 @@ import { chromeGlass, controlGlass, type GlassRecipe, glassRecipes } from '@/the
 
 /**
  * The screen's backdrop, wrapped in a `BlurTargetView`, when the trial blurs.
- * Null anywhere outside a `Screen` — the tab bar, the action bar, a sheet — so
- * those surfaces fall back to their recipe without a blur.
+ * Floating surfaces outside a `Screen` use the separate focused-screen target.
  */
 export const BlurTargetContext = createContext<RefObject<View | null> | null>(null);
 
@@ -63,10 +62,14 @@ export function GlassUnder({
   recipe: GlassRecipe;
   blur: number;
   target: RefObject<View | null> | null;
-  radius: number;
+  radius: number | Pick<ViewStyle, 'borderTopLeftRadius' | 'borderTopRightRadius'>;
 }) {
   if (blur === 0 || !target) return null;
-  const clip = { borderRadius: radius, borderCurve: 'continuous', overflow: 'hidden' } as const;
+  const clip = {
+    ...(typeof radius === 'number' ? { borderRadius: radius } : radius),
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+  } as const;
   return (
     <BlurView
       pointerEvents="none"

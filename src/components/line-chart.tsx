@@ -7,7 +7,8 @@ import {
   Skia,
   vec,
 } from '@shopify/react-native-skia';
-import { useEffect, useMemo, useState } from 'react';
+import { BlurTargetView } from 'expo-blur';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Text, TextInput, type TextInputProps, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -20,6 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { useGlassTrial } from '@/data/glass-trial';
 import { axisLabel, type Bucket, type Granularity, type Metric } from '@/lib/exercise-progress';
 import {
   chartWindow,
@@ -35,7 +37,18 @@ import {
 } from '@/lib/line-chart';
 import { progressTooltip } from '@/lib/progress-tooltip';
 import type { Unit } from '@/lib/units';
-import { color, controlEdgeDense, hairline, radius, space, text, trend as fill } from '@/theme';
+import {
+  color,
+  controlBarBlur,
+  controlEdgeDense,
+  hairline,
+  radius,
+  space,
+  text,
+  trend as fill,
+} from '@/theme';
+
+import { GlassUnder, glassStyle } from './glass';
 
 const HEIGHT = 96;
 const DOT = 2.5;
@@ -224,6 +237,9 @@ function InteractiveChart({
 }: Props & { inspection: Inspection }) {
   const [width, setWidth] = useState(0);
   const [selected, setSelected] = useState(-1);
+  const chartTargetRef = useRef<View>(null);
+  const trial = useGlassTrial();
+  const blurs = trial.style !== 'off' && trial.scope !== 'off';
   const windowSV = useSharedValue<ChartWindow>(chartWindow(slots, 1, 0));
   const initialSV = useSharedValue<ChartWindow>(chartWindow(slots, 1, 0));
   const focalSV = useSharedValue(0);
@@ -392,6 +408,41 @@ function InteractiveChart({
     ? progressTooltip(bucket, inspection.metric, inspection.granularity, inspection.unit)
     : null;
 
+  const canvas = (
+    <Canvas style={{ width, height: HEIGHT }}>
+      <Group clip={{ x: 0, y: 0, width, height: HEIGHT }}>
+        <Path path={areaSV}>
+          <LinearGradient
+            start={vec(0, 0)}
+            end={vec(0, HEIGHT)}
+            colors={[fill.fillTop, fill.fillBottom]}
+          />
+        </Path>
+        <Path
+          path={`M0 ${HEIGHT - 0.5} L${width} ${HEIGHT - 0.5}`}
+          style="stroke"
+          strokeWidth={1}
+          color={hairline.baseline}
+        />
+        <Path path={fitSV} style="stroke" strokeWidth={1.5} color={color.mid} opacity={0.5}>
+          <DashPathEffect intervals={[4, 4]} />
+        </Path>
+        <Path path={guideSV} style="stroke" strokeWidth={1} color={color.lo} opacity={0.5} />
+        <Path
+          path={lineSV}
+          style="stroke"
+          strokeWidth={2}
+          strokeCap="round"
+          strokeJoin="round"
+          color={color.accent}
+        />
+        <Path path={dotsSV} color={color.accent} />
+        <Path path={peakSV} color={color.hi} />
+        <Path path={ringSV} style="stroke" strokeWidth={1.5} color={color.hi} />
+      </Group>
+    </Canvas>
+  );
+
   return (
     <View style={{ flexDirection: 'row', gap: 9, alignItems: 'flex-start' }}>
       <View style={{ width: axisWidth, height: HEIGHT, justifyContent: 'space-between' }}>
@@ -408,50 +459,13 @@ function InteractiveChart({
             style={{ height: HEIGHT }}
           >
             {width > 0 ? (
-              <Canvas style={{ width, height: HEIGHT }}>
-                <Group clip={{ x: 0, y: 0, width, height: HEIGHT }}>
-                  <Path path={areaSV}>
-                    <LinearGradient
-                      start={vec(0, 0)}
-                      end={vec(0, HEIGHT)}
-                      colors={[fill.fillTop, fill.fillBottom]}
-                    />
-                  </Path>
-                  <Path
-                    path={`M0 ${HEIGHT - 0.5} L${width} ${HEIGHT - 0.5}`}
-                    style="stroke"
-                    strokeWidth={1}
-                    color={hairline.baseline}
-                  />
-                  <Path
-                    path={fitSV}
-                    style="stroke"
-                    strokeWidth={1.5}
-                    color={color.mid}
-                    opacity={0.5}
-                  >
-                    <DashPathEffect intervals={[4, 4]} />
-                  </Path>
-                  <Path
-                    path={guideSV}
-                    style="stroke"
-                    strokeWidth={1}
-                    color={color.lo}
-                    opacity={0.5}
-                  />
-                  <Path
-                    path={lineSV}
-                    style="stroke"
-                    strokeWidth={2}
-                    strokeCap="round"
-                    strokeJoin="round"
-                    color={color.accent}
-                  />
-                  <Path path={dotsSV} color={color.accent} />
-                  <Path path={peakSV} color={color.hi} />
-                  <Path path={ringSV} style="stroke" strokeWidth={1.5} color={color.hi} />
-                </Group>
-              </Canvas>
+              blurs ? (
+                <BlurTargetView ref={chartTargetRef} style={{ width, height: HEIGHT }}>
+                  {canvas}
+                </BlurTargetView>
+              ) : (
+                canvas
+              )
             ) : null}
             <Animated.View
               pointerEvents="none"
@@ -475,11 +489,25 @@ function InteractiveChart({
                     gap: 4,
                     borderRadius: radius.row,
                     borderCurve: 'continuous',
-                    ...controlEdgeDense,
+                    ...(blurs
+                      ? {
+                          ...glassStyle(controlBarBlur, controlBarBlur.blur),
+                          borderWidth: controlEdgeDense.borderWidth,
+                          borderColor: 'transparent',
+                        }
+                      : controlEdgeDense),
                   },
                   tooltipStyle,
                 ]}
               >
+                {blurs ? (
+                  <GlassUnder
+                    recipe={controlBarBlur}
+                    blur={controlBarBlur.blur}
+                    target={chartTargetRef}
+                    radius={radius.row}
+                  />
+                ) : null}
                 <Text numberOfLines={1} style={[text.meta, { color: color.hi }]}>
                   {content.heading}
                 </Text>
