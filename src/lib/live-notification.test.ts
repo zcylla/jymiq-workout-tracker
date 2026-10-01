@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { liveNotificationContent, liveNotificationState } from './live-notification.ts';
+import {
+  liveNotificationContent,
+  liveNotificationState,
+  nativeLiveNotificationContent,
+  observeNotificationRest,
+} from './live-notification.ts';
 import { timeLabel } from './time.ts';
 
 const nowMs = new Date(2026, 9, 1, 15, 40, 30).getTime();
@@ -19,6 +24,70 @@ const state = {
   totalSets: 5,
   nextSetNumber: 3,
 };
+
+test('native rest content replaces the text deadline with a timer descriptor', () => {
+  const restUntil = nowMs + 90_000;
+  assert.deepEqual(nativeLiveNotificationContent({ ...state, restUntil }, nowMs), {
+    title: 'Leg Day',
+    lines: ['Barbell Squat', '100 kg × 8 reps'],
+    rest: { startMs: nowMs, endMs: restUntil },
+  });
+});
+
+test('native content without rest has no timer or rest line', () => {
+  assert.deepEqual(nativeLiveNotificationContent(state, null), {
+    title: 'Leg Day',
+    lines: ['Barbell Squat', '100 kg × 8 reps'],
+  });
+});
+
+test('expired native rest still carries its deadline so native code shows Rest over', () => {
+  assert.deepEqual(
+    nativeLiveNotificationContent({ ...state, restUntil: nowMs }, nowMs - 90_000).rest,
+    {
+      startMs: nowMs - 90_000,
+      endMs: nowMs,
+    },
+  );
+});
+
+test('native lines retain bodyweight, unit conversion and empty session fallbacks', () => {
+  assert.deepEqual(nativeLiveNotificationContent({ ...state, weightKg: 0 }, null).lines, [
+    'Barbell Squat',
+    'Bodyweight × 8 reps',
+  ]);
+  assert.equal(
+    nativeLiveNotificationContent({ ...state, unit: 'lb' }, null).lines[1],
+    '220.5 lb × 8 reps',
+  );
+  assert.deepEqual(
+    nativeLiveNotificationContent(
+      { ...state, routineName: '', exerciseName: null, setNumber: null },
+      null,
+    ),
+    { title: 'Workout', lines: ['Workout in progress'] },
+  );
+});
+
+test('rest observations preserve the start across updates and extensions', () => {
+  const first = observeNotificationRest(null, nowMs + 90_000, nowMs);
+  assert.deepEqual(first, { startMs: nowMs, endMs: nowMs + 90_000 });
+  assert.deepEqual(observeNotificationRest(first, nowMs + 90_000, nowMs + 10_000), first);
+  assert.deepEqual(observeNotificationRest(first, nowMs + 120_000, nowMs + 30_000), {
+    startMs: nowMs,
+    endMs: nowMs + 120_000,
+  });
+});
+
+test('cleared or replaced rests get a fresh start; expiry alone does not reset it', () => {
+  const first = { startMs: nowMs, endMs: nowMs + 90_000 };
+  assert.equal(observeNotificationRest(first, null, nowMs + 10_000), null);
+  assert.deepEqual(observeNotificationRest(first, first.endMs, first.endMs + 1), first);
+  assert.deepEqual(observeNotificationRest(first, nowMs + 60_000, nowMs + 10_000), {
+    startMs: nowMs + 10_000,
+    endMs: nowMs + 60_000,
+  });
+});
 
 test('a normal set shows the routine, exercise and load without counters', () => {
   assert.deepEqual(liveNotificationContent(state), {

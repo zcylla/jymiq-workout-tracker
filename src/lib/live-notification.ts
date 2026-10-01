@@ -15,6 +15,37 @@ export interface LiveNotificationState {
   nextSetNumber: number | null;
 }
 
+export interface NotificationRest {
+  startMs: number;
+  endMs: number;
+}
+
+export function observeNotificationRest(
+  previous: NotificationRest | null,
+  restUntil: number | null,
+  nowMs: number,
+): NotificationRest | null {
+  if (restUntil == null) return null;
+  return {
+    startMs: previous && restUntil >= previous.endMs ? previous.startMs : nowMs,
+    endMs: restUntil,
+  };
+}
+
+export function nativeLiveNotificationContent(
+  state: LiveNotificationState,
+  restStartMs: number | null,
+): { title: string; lines: string[]; rest?: NotificationRest } {
+  const { title, body } = liveNotificationContent({ ...state, restUntil: null, nowMs: 0 });
+  return {
+    title,
+    lines: body.split('\n'),
+    ...(state.restUntil != null && restStartMs != null
+      ? { rest: { startMs: restStartMs, endMs: state.restUntil } }
+      : {}),
+  };
+}
+
 export function liveNotificationContent(state: LiveNotificationState & { nowMs: number }): {
   title: string;
   body: string;
