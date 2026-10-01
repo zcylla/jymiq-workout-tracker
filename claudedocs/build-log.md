@@ -3,34 +3,62 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-**START HERE (2026-09-30, end of session).** `main` is clean and green (`pnpm check` exit 0, 324 tests, 3 old
-lint warnings), nothing is pushed, no worktrees are left. The dev client on the phone includes `expo-blur`;
-Metro is started with `pnpm expo start --dev-client` (it now ignores `.claude/worktrees`). Read this block, then
-"Pick this up here".
-- **Glass (owner's pick, final):** frost style, blur 20, today's dot background, scope `cards+chrome`: every main
-  card is frost, and all chrome (tab bar, action bar, sheets) is `chromeGlass`, an **opaque** dense tint with no
-  blur (`src/theme/tokens.ts`). It is `DEFAULT_TRIAL` in `src/lib/glass-trial.ts`; the lab `/dev/glass` persists per
-  phone, so re-apply preset A there after changing a default. **Measured (dev client, Today scroll scenario,
-  2026-09-30):** frost 20 cards 4.9% janky / 19 ms median; the opaque chrome tint adds nothing; a **live blur of
-  the tab bar over scrolling content was built and dropped: 51% janky, 34 ms median** (a BlurView needs its own
-  target over the scroll content; the code is in git at e5b1972). History with two blurred plates is ~7-8%.
-  The tab bar is now an absolute overlay at the bottom (screens already pad by `useTabBarHeight`).
-- **Design boards:** `kit.py` and 19 labs were brought in line with the app (History tab, frost plate, `linechart`
-  and `segmented`, TYPE button, kg volume); all gate READY (`bbdc207`). **Not yet uploaded:** the owner runs
-  `/design-sync`, then `DesignSync` `finalize_plan` and `write_files` to project
-  85c2eefb-a239-4501-83a0-a24a4ccd7cae, naming files `Lab NN - Title.dc.html`. Lab 48 is 313 KB (over the
-  256 KiB read cap); the frost blur on the boards is a 6px guess and tiles inside plates were not recomputed.
-- **Open owner decisions:** body measurements is the next feature (chosen 2026-09-30; needs a design note against
-  section 0 and probably a new table, so ask before a schema change); reminders, starter plan templates and share a
-  session are still unbuilt.
-- **Still open from earlier:** performance (tab switching is one ~100 ms frame per switch and is real in release
-  builds; ideas in "Pick this up here"), cloud backup verification (incremental push, restore from cloud), 12 empty
-  mirror tables on the wrong Supabase project `hrmxlijtdldcmljkhwhf` to drop, the rest `DurationSheet` and haptics
-  and a 360dp screen not yet seen on the phone, `exerciseE1rmQuery` is unused, the progress chart's middle x label is
-  approximate, weight edits/deletes in History are not offered (only weigh-ins).
-- **Working agreements:** features before performance; build a release variant only when it matters; guard every
-  adb tap with a focus check; commits are atomic and single-line with a lowercase subject (`commitlint`); never
-  remove a worktree before `git log -1` shows its commit.
+**START HERE (2026-10-01, end of session).** `main` is clean and green (`pnpm check` exit 0, 465 tests, 3 old lint
+warnings), nothing is pushed, no worktrees are left, 70 commits since the last handoff. Read this block, then
+"Pick this up here". The phone holds the owner's REAL data (a restored Gym Day import: 764 sessions, 16,084 sets,
+304 exercises = the 302 built-ins + 2 custom): no scratch sessions, no adb taps without asking, read-only
+screenshots and deep links (`jymiq:///records`, `jymiq:///exercise/<id>`) are fine. Metro:
+`pnpm expo start --dev-client` (+ `adb reverse tcp:8081 tcp:8081`); the phone runs a DEBUG dev client installed over the
+old release build (data kept). **Installed build predates the last two native changes**: the rest notification
+buttons (-30s / +30s / Skip, `dded820`) and the importance bump to channel `session-v2` (`5461559`). Getting them
+on the phone = `pnpm expo run:android --no-bundler` (JDK 21, `ANDROID_HOME`; 15 s to 1.5 min, restarts the app, so
+ask first). Not yet seen on the phone: those buttons, the notification's `Resting` text, the dropdown routine menu,
+chart pinch/pan/tooltip, the Today card collapse animation, the blur at 50 on the tab bar/sheets/tooltips.
+- **Look, as shipped (owner's picks):** cards = frost, blur 20, dots ground, scope `cards` (`DEFAULT_TRIAL`). Controls
+  and rows = the **edge look**, `controlBlurRecipes.edgeBlur20` (1% white fill, 0.5pt 16% border, inset top highlight,
+  blur 20) exposed as `controlGlass`/`useControlGlass()`; used by the live HISTORY/STATS/NOTES/SWAP buttons, Settings
+  and Session-tab rows, routine/program/library/exercise-new rows (`RowPlates tinted`, `RowPlate tinted`), the metric and
+  period chips (`EdgeChip`) and the 'this week vs last' tiles. **Floating surfaces** (tab bar, action bar secondary
+  button, sheets, dropdown, chart tooltip) use `controlBarBlur`/`controlSheetBlur` = edge look + dark fill + **real blur
+  50** over the focused screen's outer `BlurTargetView` (`src/components/screen-blur.tsx`, `useScreenBlurTarget`),
+  falling back to `controlEdgeDense` when no target. The old bevel tint `chromeGlass` survives only as the lab's CURRENT
+  block (`/dev/control-tint` and `/dev/glass`, linked from the DEV list on Today). **Cost warning:** a live blur of
+  scrolling content under the tab bar measured 51% janky frames vs 4.9% at blur 20 (dev build, 2026-09-30); 50 and the
+  many blurred rows (Settings ~13, Session ~8, the library list) are unmeasured. Revert is per commit.
+- **Shipped this session:** Today card collapses its exercises (animated, bordered dot list) and sits lower; History swipe
+  between months; exercise screen: rep maxes show year/unit/date under the weight, LOG sets listed vertically, PROGRESS
+  chart with pinch/pan zoom (min 4 slots, clamped), tap tooltip, DAY/WEEK/MONTH/YEAR/ALL tabs (`PeriodTabs`), fainter trend;
+  Records screen windowed (1,531 rows crashed it); routine three-dots = `DropdownMenu`; `PrimaryButton` for sheet Saves;
+  Sign out is a red row; weight increment follows the unit; settings toggle for the workout notification (starts from the
+  first-launch permission answer); live session in lb, REPS/RPE chip taps, Android Back leaves editing first; sets sheet is
+  a quiet list; imported exercises show library art by name; 10px `text.caption` (below the old 11px floor, owner-asked).
+- **Workout notification:** `modules/live-rest/` (local Expo module, Kotlin): owns the ongoing notification, a determinate
+  progress bar + native countdown during rest via a short foreground service (`specialUse`; Play review would be needed to
+  distribute), action buttons through `LiveRestReceiver`, hand-off to JS by event or SharedPreferences (never both),
+  `shortenRest`/`extendRest`/`clearRest` apply it to SQLite. JS falls back to the expo-notifications text path when the module
+  is missing. Verify the native build without installing: `cd android && ./gradlew :app:assembleDebug`.
+- **Importer:** `scripts/import-daily-strength.mjs` maps each Daily Strength exercise to a built-in via the hand-matched
+  `src/lib/daily-strength-exercises.ts` (63 matched, 2 custom: One Arm Low Pulley Cable Triceps Extension, Triceps Extension
+  Machine). Restore now keeps and re-seeds the 302-exercise library. To redo: zip `Download/daily_strength_2026_09_30.zip` and
+  base `Documents/jymiq-2026-09-30-1652.json` on the phone, `--source-only --weekly-order`, push to `Documents`, owner restores
+  in Account.
+- **Design boards:** `kit.py` and labs match the app as of 2026-09-30 (History tab, frost plate, line chart, TYPE, kg) and are
+  committed, **not uploaded**; they predate the edge look, period tabs, tooltip, dropdown and Today card. The owner runs
+  `/design-sync`, then `DesignSync` `finalize_plan` + `write_files` to project 85c2eefb-a239-4501-83a0-a24a4ccd7cae
+  (`Lab NN - Title.dc.html`). Lab 48 is over the 256 KiB read cap.
+- **Open owner decisions / unbuilt:** body measurements (chosen next; needs a §0 design note and probably a table: ask before a
+  schema change); reminders, starter plan templates, share a session; whether ActionBar secondary labels (CANCEL, EDIT, SKIP,
+  PAUSE, SETS) should be sentence case; whether the LOG section label keeps its unit; whether to measure and possibly tame the
+  blur cost.
+- **Still open from before:** performance (tab switching ~100 ms/frame), cloud backup verification (Account shows a 23,554-row
+  backup; an incremental push and a restore from cloud are unverified), 12 empty mirror tables on the wrong Supabase project
+  `hrmxlijtdldcmljkhwhf` to drop, `exerciseE1rmQuery` unused, finishing an empty live session lands on a blank summary, the
+  Records first row sits tight under its title, History weight edits only for weigh-ins.
+- **Working agreements:** Codex Sol 6.1 for bounded implementation (`codex_cli` + `gpt-6.1-sol`, or `codex_sol_high`), brief
+  them with exact files and a verification command, review the diff and run `pnpm check` yourself; commits are atomic, single
+  line, lowercase, scopes `theme components icons app data lib dev design build deps`, never push, whole files per commit when
+  another agent is editing (lefthook's typecheck breaks on a partly staged file); features before performance; guard every adb
+  tap with a focus check; screenshots are half-size, double coordinates for taps.
 
 Last updated 2026-09-30 (afternoon). **Feature pass, all merged and checked on the phone.** Built from
 the owner's reference app (Gym Day, `com.anthonyng.workoutapp` — see the memory note): routine target
