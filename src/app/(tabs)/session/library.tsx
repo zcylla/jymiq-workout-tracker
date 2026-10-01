@@ -6,21 +6,26 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  ActionBar,
   Chip,
   ChipStrip,
   Icon,
   ListRow,
+  Pill,
   RowPlate,
   ScreenHeader,
   SearchField,
   Section,
+  useActionBarHeight,
   useTabBarHeight,
 } from '@/components';
 import { exerciseStillFor } from '@/data/exercise-image';
-import { addExerciseToRoutine } from '@/data/mutations/routines';
+import { addExercisesToRoutine } from '@/data/mutations/routines';
 import { addExerciseToSession, replaceSessionExercise } from '@/data/mutations/sessions';
 import { exerciseListQuery, recentExercisesQuery } from '@/data/queries/exercises';
+import { routineExercisesQuery } from '@/data/queries/routines';
 import type { Equipment } from '@/data/schema';
+import { toggleExerciseSelection } from '@/lib/exercise-selection';
 import { color, space } from '@/theme';
 
 const FILTERS: { label: string; value: Equipment | null }[] = [
@@ -52,14 +57,18 @@ const LABEL_GAP = space.within - space.row;
 export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
   const insets = useSafeAreaInsets();
   const tabBar = useTabBarHeight();
+  const actionBar = useActionBarHeight();
   const { routineId, sessionId, replace } = useLocalSearchParams<{
     routineId?: string;
     sessionId?: string;
     replace?: string;
   }>();
   const picking = Boolean(routineId || sessionId || replace);
+  const routinePicking = Boolean(routineId && !sessionId && !replace);
   const [search, setSearch] = useState('');
   const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const showActionBar = routinePicking && selectedIds.length > 0;
 
   const query = useMemo(() => exerciseListQuery({ search, equipment }), [search, equipment]);
   const { data: rows, updatedAt } = useLiveQuery(query, [search, equipment]);
@@ -67,106 +76,137 @@ export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
     useMemo(() => recentExercisesQuery(), []),
     [],
   );
+  const { data: routineRows } = useLiveQuery(
+    useMemo(() => routineExercisesQuery(routineId ?? ''), [routineId]),
+    [routineId],
+  );
 
   const items = useMemo<Item[]>(() => {
-    const all = (rows ?? []).map((row) => ({ key: row.id, row }));
-    if (search.trim() || equipment || !recentRows?.length) return all;
+    const usedIds = new Set(routinePicking ? routineRows.map((row) => row.exerciseId) : []);
+    const all = (rows ?? [])
+      .filter((row) => !usedIds.has(row.id))
+      .map((row) => ({ key: row.id, row }));
+    const recent = (recentRows ?? []).filter((row) => !usedIds.has(row.id));
+    if (search.trim() || equipment || !recent.length) return all;
     return [
       { key: 'label:recent', label: 'RECENT' },
-      ...recentRows.map((row) => ({ key: `recent:${row.id}`, row })),
-      { key: 'label:all', label: 'ALL' },
+      ...recent.map((row) => ({ key: `recent:${row.id}`, row })),
+      ...(all.length || !routinePicking ? [{ key: 'label:all', label: 'ALL' }] : []),
       ...all,
     ];
-  }, [rows, recentRows, search, equipment]);
+  }, [rows, recentRows, search, equipment, routinePicking, routineRows]);
 
   return (
-    <FlashList
-      data={items}
-      keyExtractor={(item) => item.key}
-      getItemType={(item) => ('row' in item ? 'row' : 'label')}
-      contentContainerStyle={{
-        paddingHorizontal: space.pad,
-        paddingTop: insets.top,
-        paddingBottom: space.between + (tabbed ? tabBar : insets.bottom),
-      }}
-      ItemSeparatorComponent={() => <View style={{ height: space.row }} />}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-      style={{ backgroundColor: color.ground }}
-      ListHeaderComponent={
-        <View style={{ gap: space.within, paddingBottom: space.within }}>
-          <ScreenHeader
-            title={replace ? 'Replace exercise' : picking ? 'Add exercise' : 'Library'}
-            onBack={() => router.back()}
-            right={
-              <Pressable onPress={() => router.push('/exercise/new')} hitSlop={12}>
-                <Icon name="plus" />
-              </Pressable>
-            }
-          />
-          <SearchField
-            placeholder={`Search ${rows?.length ?? 0} exercises`}
-            value={search}
-            onChangeText={setSearch}
-          />
-          <ChipStrip>
-            {FILTERS.map((f) => (
-              <Chip
-                key={f.label}
-                label={f.label}
-                on={equipment === f.value}
-                onPress={() => setEquipment(f.value)}
-              />
-            ))}
-          </ChipStrip>
-        </View>
-      }
-      ListEmptyComponent={
-        updatedAt === undefined ? null : (
-          <RowPlate tinted onPress={() => router.push('/exercise/new')}>
-            <ListRow title="Add custom exercise" />
-          </RowPlate>
-        )
-      }
-      renderItem={({ item }) =>
-        'label' in item ? (
-          <View style={{ paddingBottom: LABEL_GAP }}>
-            <Section label={item.label} plated={false} first={item.key === 'label:recent'}>
-              {null}
-            </Section>
-          </View>
-        ) : (
-          <RowPlate
-            tinted
-            onPress={() => {
-              if (replace) {
-                replaceSessionExercise(replace, item.row.id);
-                router.back();
-                return;
+    <View style={{ flex: 1, backgroundColor: color.ground }}>
+      <FlashList
+        data={items}
+        extraData={selectedIds}
+        keyExtractor={(item) => item.key}
+        getItemType={(item) => ('row' in item ? 'row' : 'label')}
+        contentContainerStyle={{
+          paddingHorizontal: space.pad,
+          paddingTop: insets.top,
+          paddingBottom:
+            space.between + (tabbed ? tabBar : insets.bottom) + (showActionBar ? actionBar : 0),
+        }}
+        ItemSeparatorComponent={() => <View style={{ height: space.row }} />}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={{ backgroundColor: color.ground }}
+        ListHeaderComponent={
+          <View style={{ gap: space.within, paddingBottom: space.within }}>
+            <ScreenHeader
+              title={replace ? 'Replace exercise' : picking ? 'Add exercise' : 'Library'}
+              onBack={() => router.back()}
+              right={
+                <Pressable onPress={() => router.push('/exercise/new')} hitSlop={12}>
+                  <Icon name="plus" />
+                </Pressable>
               }
-              if (sessionId) {
-                addExerciseToSession(sessionId, item.row.id);
-                router.back();
-                return;
-              }
-              if (routineId) {
-                addExerciseToRoutine({ routineId, exerciseId: item.row.id });
-                router.back();
-                return;
-              }
-              router.push(`/exercise/${item.row.id}`);
-            }}
-          >
-            <ListRow
-              quiet
-              art={exerciseStillFor(item.row.id, item.row.name)}
-              title={item.row.name}
-              meta={item.row.equipment.toUpperCase()}
             />
-          </RowPlate>
-        )
-      }
-    />
+            <SearchField
+              placeholder={`Search ${rows?.length ?? 0} exercises`}
+              value={search}
+              onChangeText={setSearch}
+            />
+            <ChipStrip>
+              {FILTERS.map((f) => (
+                <Chip
+                  key={f.label}
+                  label={f.label}
+                  on={equipment === f.value}
+                  onPress={() => setEquipment(f.value)}
+                />
+              ))}
+            </ChipStrip>
+          </View>
+        }
+        ListEmptyComponent={
+          updatedAt === undefined ? null : (
+            <RowPlate tinted onPress={() => router.push('/exercise/new')}>
+              <ListRow title="Add custom exercise" />
+            </RowPlate>
+          )
+        }
+        renderItem={({ item }) =>
+          'label' in item ? (
+            <View style={{ paddingBottom: LABEL_GAP }}>
+              <Section label={item.label} plated={false} first={item.key === 'label:recent'}>
+                {null}
+              </Section>
+            </View>
+          ) : (
+            <RowPlate
+              tinted
+              onPress={() => {
+                if (replace) {
+                  replaceSessionExercise(replace, item.row.id);
+                  router.back();
+                  return;
+                }
+                if (sessionId) {
+                  addExerciseToSession(sessionId, item.row.id);
+                  router.back();
+                  return;
+                }
+                if (routineId) {
+                  setSelectedIds((selection) => toggleExerciseSelection(selection, item.row.id));
+                  return;
+                }
+                router.push(`/exercise/${item.row.id}`);
+              }}
+            >
+              <ListRow
+                quiet
+                art={exerciseStillFor(item.row.id, item.row.name)}
+                title={item.row.name}
+                meta={item.row.equipment.toUpperCase()}
+                chevron={routinePicking ? false : undefined}
+                right={
+                  routinePicking && selectedIds.includes(item.row.id) ? (
+                    <Pill label={String(selectedIds.indexOf(item.row.id) + 1)} />
+                  ) : undefined
+                }
+              />
+            </RowPlate>
+          )
+        }
+      />
+      {showActionBar ? (
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: tabbed ? tabBar : 0 }}>
+          <ActionBar
+            primary={`Add ${selectedIds.length}`}
+            onPrimary={() => {
+              if (!routineId) return;
+              addExercisesToRoutine({ routineId, exerciseIds: selectedIds });
+              router.back();
+            }}
+            secondary="CANCEL"
+            onSecondary={() => router.back()}
+          />
+        </View>
+      ) : null}
+    </View>
   );
 }
 
