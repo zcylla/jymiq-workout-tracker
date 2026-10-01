@@ -16,6 +16,17 @@ export interface RestDefaults {
   isolation: number;
 }
 
+export function adjustRestUntil(
+  restUntil: number | null,
+  nowMs: number,
+  deltaSec: number,
+): number | null {
+  if (restUntil == null) return null;
+  const endMs =
+    (deltaSec > 0 ? Math.max(restUntil, nowMs) : restUntil) + Math.round(deltaSec * 1000);
+  return endMs > nowMs ? endMs : null;
+}
+
 export function resolveRestSec(
   routineRestSec: number | null | undefined,
   exerciseRestSec: number | null | undefined,
