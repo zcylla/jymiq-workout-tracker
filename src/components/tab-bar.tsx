@@ -14,9 +14,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { stepBar } from '@/lib/tab-bar';
-import { chromeShadow, color, fabShadow, hairline, type Ink, motion, radius, text } from '@/theme';
+import {
+  color,
+  controlEdgeDense,
+  fabShadow,
+  hairline,
+  type Ink,
+  motion,
+  radius,
+  text,
+} from '@/theme';
 
-import { glassStyle, useGlass } from './glass';
 import { tick } from './haptics';
 import { Icon, type IconName } from './icon';
 import { AnimatedPressable, usePressFeel } from './press';
@@ -82,8 +90,6 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
   const insets = useSafeAreaInsets();
   const minimisedSV = useContext(MinimisedContext);
   if (!minimisedSV) throw new Error('TabBar must be inside <TabBarProvider>');
-  const { recipe } = useGlass('chrome');
-  const glass = recipe && glassStyle(recipe, 0);
 
   const progressSV = useDerivedValue(() =>
     withTiming(minimisedSV.get(), { duration: motion.base }),
@@ -126,10 +132,8 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
               padding: 4,
               borderRadius: radius.sheet,
               borderCurve: 'continuous',
-              backgroundColor: color.raised,
-              boxShadow: chromeShadow,
+              ...controlEdgeDense,
             },
-            glass,
           ]}
         >
           {children}
@@ -158,10 +162,8 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
               paddingVertical: 9,
               paddingHorizontal: 18,
               borderRadius: radius.full,
-              backgroundColor: color.raised,
-              boxShadow: chromeShadow,
+              ...controlEdgeDense,
             },
-            glass,
           ]}
         >
           {TAB_NAMES.map((name) => (

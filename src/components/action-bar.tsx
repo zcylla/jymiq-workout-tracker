@@ -1,9 +1,8 @@
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { chromeShadow, color, fabShadow, radius, text } from '@/theme';
+import { color, controlEdgeDense, fabShadow, radius, text } from '@/theme';
 
-import { glassStyle, useGlass } from './glass';
 import { tick } from './haptics';
 import { AnimatedPressable, usePressFeel } from './press';
 
@@ -36,7 +35,6 @@ export function ActionBar({
   const insets = useSafeAreaInsets();
   const secondaryPress = usePressFeel();
   const primaryPress = usePressFeel(0.15);
-  const { recipe } = useGlass('chrome');
   return (
     <View
       style={{
@@ -59,10 +57,8 @@ export function ActionBar({
               justifyContent: 'center',
               borderRadius: radius.bar,
               borderCurve: 'continuous',
-              backgroundColor: color.raised,
-              boxShadow: chromeShadow,
+              ...controlEdgeDense,
             },
-            recipe && glassStyle(recipe, 0),
             secondaryPress.style,
           ]}
         >
