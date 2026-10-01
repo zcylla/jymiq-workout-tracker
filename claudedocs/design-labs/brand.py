@@ -17,6 +17,7 @@ REVIEW = Path('/tmp/claude-1000/-home-inowu-Desktop-Projects-personal-jymiq-work
 NOTIFICATION_REVIEW = REVIEW.with_name('notif-check.png')
 GROUND = '#0a0908'
 GOLD = '#e4c68c'
+LIVE = '#df5441'
 WHITE = '#f6f3ec'
 ADAPTIVE_FIT_DIAMETER_RATIO = 70 / 108
 COLOURS = {'h': WHITE, 'a': GOLD, 'm': '#a8a091', 't2': '#7d7666', 'd': '#5a5449'}
@@ -268,6 +269,15 @@ def main():
         outputs[name] = white
     for name, im in outputs.items():
         im.save(IMAGES / name)
+    dev_mark = mark.replace(f'stroke="{GOLD}"', f'stroke="{LIVE}"')
+    dev_outputs = {
+        'icon.png': render(svg(bg + transformed(dev_mark, .78)), 1024).convert('RGB'),
+        'android-icon-foreground.png': render(svg(transformed(dev_mark, safe_scale)), 1024),
+    }
+    (IMAGES / 'dev').mkdir(parents=True, exist_ok=True)
+    for name, im in dev_outputs.items():
+        im.save(IMAGES / 'dev' / name)
+    radial_check('dev/android-icon-foreground.png')
     radial_check('android-icon-foreground.png')
     radial_check('android-icon-monochrome.png')
     review_sheet()
