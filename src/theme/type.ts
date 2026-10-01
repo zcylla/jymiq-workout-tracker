@@ -46,6 +46,7 @@ export const text = {
   label: { ...mono(500), fontSize: 11, letterSpacing: ls(0.14, 11), lineHeight: lh(11), color: color.lo },
   /** kit's inline mono meta line under a row title. */
   meta: { ...mono(400), fontSize: 11, letterSpacing: ls(0.08, 11), lineHeight: lh(11), color: color.lo },
+  caption: { ...mono(400), fontSize: 10, letterSpacing: ls(0.08, 10), lineHeight: lh(10), color: color.lo },
   /** kit's action-bar primary — the one 16px step, and the only one on an accent fill. */
   action: { ...sans(600), fontSize: 16, lineHeight: lh(16), color: color.ink },
 
