@@ -421,26 +421,26 @@ export default function SignInScreen() {
 
   if (session) {
     return (
-      <>
-        <Screen bottomInset={actionBar}>
-          <ScreenHeader title="Account" onBack={() => router.back()} />
-          <Section first plated={false}>
-            <RowPlates>
-              <RowPlate>
-                <ListRow chevron={false} quiet title={session.user.email ?? 'Signed in'} />
-              </RowPlate>
-            </RowPlates>
+      <Screen>
+        <ScreenHeader title="Account" onBack={() => router.back()} />
+        <Section first plated={false}>
+          <RowPlates>
+            <RowPlate>
+              <ListRow chevron={false} quiet title={session.user.email ?? 'Signed in'} />
+            </RowPlate>
+            <RowPlate onPress={signOut}>
+              <ListRow chevron={false} quiet title="Sign out" />
+            </RowPlate>
+          </RowPlates>
+        </Section>
+        <SyncSection />
+        <DataSection />
+        {status ? (
+          <Section plated={false}>
+            <Note>{status}</Note>
           </Section>
-          <SyncSection />
-          <DataSection />
-          {status ? (
-            <Section plated={false}>
-              <Note>{status}</Note>
-            </Section>
-          ) : null}
-        </Screen>
-        <ActionBar primary="Sign out" onPrimary={signOut} />
-      </>
+        ) : null}
+      </Screen>
     );
   }
 
