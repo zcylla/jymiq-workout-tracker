@@ -16,6 +16,7 @@ test('the defaults are the behaviour the app already had', () => {
   assert.equal(DEFAULT_SETTINGS.weightIncrementKg, 2.5);
   assert.equal(DEFAULT_SETTINGS.defaultSets, 3);
   assert.equal(DEFAULT_SETTINGS.keepScreenOn, false);
+  assert.equal(DEFAULT_SETTINGS.liveNotification, true);
 });
 
 test('nothing readable in the store gives the defaults rather than a crash', () => {
@@ -75,6 +76,9 @@ test('keep screen on only counts a real boolean', () => {
   assert.equal(coerceSettings({ keepScreenOn: true }).keepScreenOn, true);
   assert.equal(coerceSettings({ keepScreenOn: 'yes' }).keepScreenOn, false);
   assert.equal(coerceSettings({}).keepScreenOn, false);
+  assert.equal(coerceSettings({ liveNotification: false }).liveNotification, false);
+  assert.equal(coerceSettings({ liveNotification: 'no' }).liveNotification, true);
+  assert.equal(coerceSettings({}).liveNotification, true);
 });
 
 test('a store from before these settings reads as the old behaviour', () => {

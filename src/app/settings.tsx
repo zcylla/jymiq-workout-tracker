@@ -141,6 +141,13 @@ export default function SettingsScreen() {
                 onToggle={(keepScreenOn) => setSettings({ keepScreenOn })}
               />
             </RowPlate>
+            <RowPlate>
+              <Toggle
+                label="Workout notification"
+                on={settings.liveNotification}
+                onToggle={(liveNotification) => setSettings({ liveNotification })}
+              />
+            </RowPlate>
           </RowPlates>
         </Section>
 

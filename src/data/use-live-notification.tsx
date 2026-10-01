@@ -62,6 +62,7 @@ function ActiveNotification({ session }: { session: Session }) {
 }
 
 function NotificationObserver() {
+  const { liveNotification } = useSettings();
   const sessions = useRows(
     useMemo(() => activeSessionQuery(), []),
     [],
@@ -74,10 +75,12 @@ function NotificationObserver() {
     return listenForLiveNotification(() => router.push('/live'));
   }, [ready]);
   useEffect(() => {
-    if (noSession) void updateLiveNotification(null);
-  }, [noSession]);
+    if (noSession || !liveNotification) void updateLiveNotification(null);
+  }, [noSession, liveNotification]);
   const session = sessions?.[0];
-  return session && ready ? <ActiveNotification key={session.id} session={session} /> : null;
+  return session && ready && liveNotification ? (
+    <ActiveNotification key={session.id} session={session} />
+  ) : null;
 }
 
 export function LiveNotification() {
