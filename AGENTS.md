@@ -86,9 +86,20 @@ export ANDROID_HOME=$HOME/Android/Sdk
 
 pnpm install                        # also fetches the 36 MB of exercise illustrations
 pnpm check                          # format + typecheck + lint + icon style + unit tests
+pnpm start:dev                      # Jymiq Dev Metro, Supabase vars blank
+pnpm prebuild:dev                   # clean Android generation for Jymiq Dev, no cloud
+pnpm prebuild:prod                  # clean Android generation for Jymiq (default identity)
+pnpm build:dev                      # clean prebuild + arm64 debug APK, no cloud
+pnpm build:prod                     # clean prebuild + arm64 release APK
 pnpm expo run:android               # full dev build onto a connected phone (no emulator installed)
 pnpm expo start --dev-client        # then just Metro
 adb reverse tcp:8081 tcp:8081       # phone reaches Metro over USB
 pnpm db:gen                         # regenerate migrations after editing src/data/schema.ts
 pnpm expo customize tsconfig.json   # regenerate typed-route types without starting Metro
 ```
+
+Production is the default and holds real workout data and cloud backup. Development uses
+`com.zcylla.jymiq.dev`, its own SQLite sandbox, `jymiqdev`, and red launcher accents. Use the dev
+scripts to keep both Supabase variables empty, including during Gradle. Switching variants requires
+`prebuild --clean`; the scripts regenerate disposable `android/`. Export the JDK/SDK variables above
+before building. See `claudedocs/build-log.md` for signing and database access.

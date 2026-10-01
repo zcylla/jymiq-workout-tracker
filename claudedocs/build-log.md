@@ -483,6 +483,27 @@ Phase 1, 2 and 6 gates, and they are absent from a release build.
 
 ---
 
+## App variants
+
+Production is the default: **Jymiq**, `com.zcylla.jymiq`, scheme `jymiq`, gold icons.
+Its workout data and cloud backup are real; Google returns to `jymiq:///sign-in`.
+Development is **Jymiq Dev**, `com.zcylla.jymiq.dev`, scheme `jymiqdev`, red icon accents.
+Both installs can coexist with separate SQLite sandboxes. Dev scripts blank
+`EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` through Metro and Gradle;
+empty strings make the Supabase client null, so development has no cloud backup.
+The dev scheme is also absent from Supabase's redirect allow-list.
+
+- `pnpm start:dev`: development Metro with `--dev-client` and no cloud.
+- `pnpm prebuild:dev` / `pnpm prebuild:prod`: clean Android generation for that variant.
+- `pnpm build:dev` / `pnpm build:prod`: clean prebuild, then arm64 debug / release APK.
+
+Export `JAVA_HOME=/usr/lib/jvm/java-21-openjdk` and `ANDROID_HOME=$HOME/Android/Sdk`
+before building. Switching variants requires `expo prebuild --platform android --clean`:
+`android/` is gitignored disposable output. Coordinate before replacing it if another job uses it.
+A release build is not debuggable, so `adb run-as` cannot read its database; debug/dev builds allow it.
+The generated release build uses the debug keystore and can update the existing production install
+when signed with the same key, retaining its data. Keep that keystore when regenerating.
+
 ## How to run it
 
 The machine has the Android SDK, `adb`, Gradle and two JDKs, but **two environment facts break the
