@@ -11,6 +11,7 @@ import { DialogProvider } from '@/components';
 import migrations from '@/../drizzle/migrations';
 import { db } from '@/data/db';
 import { authCodeFromUrl, exchangeAuthCode } from '@/data/supabase';
+import { LiveNotification } from '@/data/use-live-notification';
 import { color, space, text } from '@/theme';
 
 /**
@@ -79,6 +80,7 @@ export default function RootLayout() {
                 pushes, and Phase 6 owns disabling the back gesture on it. */}
               <Stack.Screen name="live" options={{ animation: 'fade' }} />
             </Stack>
+            <LiveNotification />
           </DialogProvider>
         )}
       </SafeAreaProvider>
