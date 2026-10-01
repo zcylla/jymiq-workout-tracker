@@ -34,6 +34,7 @@ interface SyncState {
 
 const KEY = 'sync-state';
 const UPSERT_CHUNK = 200;
+const DELETE_CHUNK = 40;
 const MAX_ROUNDS = 20;
 const PAGE = 1000;
 const DEBOUNCE_MS = 3000;
@@ -133,15 +134,17 @@ export async function pushNow(): Promise<PushResult> {
       const { keyCols } = SYNC_REGISTRY[g.table];
       const names = keyCols.map((k) => sqlName(g.table, k));
       if (names.length === 1) {
-        const { error } = await client
-          .from(g.table)
-          .delete()
-          .eq('user_id', userId)
-          .in(
-            names[0],
-            g.keys.map((k) => k[0]),
-          );
-        if (error) throw new PushError(error.message);
+        for (const part of chunk(g.keys, DELETE_CHUNK)) {
+          const { error } = await client
+            .from(g.table)
+            .delete()
+            .eq('user_id', userId)
+            .in(
+              names[0],
+              part.map((k) => k[0]),
+            );
+          if (error) throw new PushError(error.message);
+        }
       } else {
         for (const key of g.keys) {
           let q = client.from(g.table).delete().eq('user_id', userId);
