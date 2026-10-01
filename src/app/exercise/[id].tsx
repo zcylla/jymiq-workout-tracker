@@ -14,6 +14,7 @@ import {
   Segmented,
   StatTiles,
 } from '@/components';
+import { PeriodTabs } from '@/components/period-tabs';
 import { exerciseArt } from '@/data/exercise-art';
 import { useRows } from '@/data/live';
 import { exerciseMusclesQuery, exerciseQuery, exerciseSetsQuery } from '@/data/queries/exercises';
@@ -47,13 +48,14 @@ const METRICS: { key: Metric; label: string }[] = [
 ];
 
 const GRANULARITIES: { key: Granularity; label: string }[] = [
-  { key: 'day', label: 'D' },
-  { key: 'week', label: 'W' },
-  { key: 'month', label: 'M' },
-  { key: 'year', label: 'Y' },
+  { key: 'day', label: 'DAY' },
+  { key: 'week', label: 'WEEK' },
+  { key: 'month', label: 'MONTH' },
+  { key: 'year', label: 'YEAR' },
+  { key: 'all', label: 'ALL' },
 ];
 
-const COMPARED: Record<Granularity, string> = {
+const COMPARED: Record<Exclude<Granularity, 'all'>, string> = {
   day: 'LATEST DAY VS PREVIOUS',
   week: 'THIS WEEK VS LAST',
   month: 'THIS MONTH VS LAST',
@@ -216,75 +218,84 @@ export default function ExerciseScreen() {
               plated={false}
             >
               <Segmented options={METRICS} value={metric} onChange={setMetric} />
-              <Segmented options={GRANULARITIES} value={gran} onChange={setGran} />
+              <PeriodTabs options={GRANULARITIES} value={gran} onChange={setGran} />
               <LineChart
                 points={series.points}
                 slots={series.slots}
                 trend={fit}
                 xLabels={axisLabels(series, gran)}
                 format={formatY}
+                inspection={{
+                  starts: series.starts,
+                  buckets: binned,
+                  metric,
+                  granularity: gran,
+                  unit,
+                }}
               />
             </Section>
           </View>
 
-          <Section label={COMPARED[gran]} plated={false}>
-            <StatTiles
-              items={[
-                {
-                  label: 'BEST e1RM',
-                  value:
-                    current?.e1rmKg == null
-                      ? DASH
-                      : formatPrValue('best_e1rm', current.e1rmKg, unit),
-                  visual: <Text style={text.label}>{unitLabel}</Text>,
-                  below: (
-                    <Change
-                      amount={periodChange(
-                        current?.e1rmKg ?? null,
-                        previous?.e1rmKg ?? null,
-                        toUnit,
-                      )}
-                      format={String}
-                    />
-                  ),
-                },
-                {
-                  label: 'VOLUME',
-                  value: current ? formatTonnage(current.volumeKg, unit) : DASH,
-                  below: (
-                    <Change
-                      amount={periodChange(
-                        current?.volumeKg ?? null,
-                        previous?.volumeKg ?? null,
-                        toUnit,
-                      )}
-                      format={(n) => formatTonnage(toKg(n, unit), unit)}
-                    />
-                  ),
-                },
-                {
-                  label: 'MOST REPS',
-                  value: current ? String(current.reps) : DASH,
-                  below: (
-                    <Change
-                      amount={periodChange(current?.reps ?? null, previous?.reps ?? null)}
-                      format={String}
-                    />
-                  ),
-                },
-                {
-                  label: 'SESSIONS',
-                  value: current ? String(current.sessions) : DASH,
-                  below: (
-                    <Change
-                      amount={periodChange(current?.sessions ?? null, previous?.sessions ?? null)}
-                      format={String}
-                    />
-                  ),
-                },
-              ]}
-            />
-          </Section>
+          {gran !== 'all' ? (
+            <Section label={COMPARED[gran]} plated={false}>
+              <StatTiles
+                items={[
+                  {
+                    label: 'BEST e1RM',
+                    value:
+                      current?.e1rmKg == null
+                        ? DASH
+                        : formatPrValue('best_e1rm', current.e1rmKg, unit),
+                    visual: <Text style={text.label}>{unitLabel}</Text>,
+                    below: (
+                      <Change
+                        amount={periodChange(
+                          current?.e1rmKg ?? null,
+                          previous?.e1rmKg ?? null,
+                          toUnit,
+                        )}
+                        format={String}
+                      />
+                    ),
+                  },
+                  {
+                    label: 'VOLUME',
+                    value: current ? formatTonnage(current.volumeKg, unit) : DASH,
+                    below: (
+                      <Change
+                        amount={periodChange(
+                          current?.volumeKg ?? null,
+                          previous?.volumeKg ?? null,
+                          toUnit,
+                        )}
+                        format={(n) => formatTonnage(toKg(n, unit), unit)}
+                      />
+                    ),
+                  },
+                  {
+                    label: 'MOST REPS',
+                    value: current ? String(current.reps) : DASH,
+                    below: (
+                      <Change
+                        amount={periodChange(current?.reps ?? null, previous?.reps ?? null)}
+                        format={String}
+                      />
+                    ),
+                  },
+                  {
+                    label: 'SESSIONS',
+                    value: current ? String(current.sessions) : DASH,
+                    below: (
+                      <Change
+                        amount={periodChange(current?.sessions ?? null, previous?.sessions ?? null)}
+                        format={String}
+                      />
+                    ),
+                  },
+                ]}
+              />
+            </Section>
+          ) : null}
         </>
       ) : null}
 
@@ -307,11 +318,13 @@ export default function ExerciseScreen() {
                 <Text style={[text.num, m.source === null && { color: color.lo }]}>
                   {m.weightKg === null
                     ? DASH
-                    : m.source === 'est'
-                      ? formatPrValue('best_e1rm', m.weightKg, unit)
-                      : formatWeight(m.weightKg, unit)}
+                    : `${
+                        m.source === 'est'
+                          ? formatPrValue('best_e1rm', m.weightKg, unit)
+                          : formatWeight(m.weightKg, unit)
+                      } ${unitLabel}`}
                 </Text>
-                <Text style={text.label}>
+                <Text style={text.caption}>
                   {m.source === 'est'
                     ? 'EST'
                     : m.at === null

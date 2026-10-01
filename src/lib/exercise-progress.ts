@@ -1,8 +1,9 @@
+import { visibleSlots, type ChartWindow } from './line-chart.ts';
 import { mondayIndex } from './calendar.ts';
 import { countsForRecord, type LoggedSet } from './exercise-stats.ts';
 import type { Kg } from './units.ts';
 
-export type Granularity = 'day' | 'week' | 'month' | 'year';
+export type Granularity = 'day' | 'week' | 'month' | 'year' | 'all';
 export type Metric = 'e1rm' | 'weight' | 'volume' | 'reps';
 export type Trend = 'up' | 'down' | 'flat';
 
@@ -47,7 +48,7 @@ export function bucketStart(at: number, gran: Granularity): number {
   const [y, m, day] = [d.getFullYear(), d.getMonth(), d.getDate()];
   if (gran === 'day') return new Date(y, m, day).getTime();
   if (gran === 'week') return new Date(y, m, day - mondayIndex(d)).getTime();
-  if (gran === 'month') return new Date(y, m, 1).getTime();
+  if (gran === 'month' || gran === 'all') return new Date(y, m, 1).getTime();
   return new Date(y, 0, 1).getTime();
 }
 
@@ -105,7 +106,7 @@ export function progressSeries(
     const value = metricValue(b, metric);
     return value === null ? [] : [{ start: b.start, value }];
   });
-  if (!valid.length) return EMPTY;
+  if (!valid.length && !(gran === 'all' && bs.length)) return EMPTY;
 
   if (gran === 'day') {
     const last = valid.slice(-DAY_POINTS);
@@ -128,9 +129,14 @@ export function progressSeries(
     slots = WEEK_SLOTS;
     startOf = (slot) => at(slot).getTime();
     slotOf = (start) => Math.round((start - at(0).getTime()) / WEEK_MS);
-  } else if (gran === 'month') {
-    const base = today.getFullYear() * 12 + today.getMonth() - (MONTH_SLOTS - 1);
-    slots = MONTH_SLOTS;
+  } else if (gran === 'month' || gran === 'all') {
+    const currentMonth = today.getFullYear() * 12 + today.getMonth();
+    const first = new Date(bs[0].start);
+    const base =
+      gran === 'all'
+        ? first.getFullYear() * 12 + first.getMonth()
+        : currentMonth - (MONTH_SLOTS - 1);
+    slots = Math.max(1, currentMonth - base + 1);
     startOf = (slot) => new Date(Math.floor((base + slot) / 12), (base + slot) % 12, 1).getTime();
     slotOf = (start) => {
       const d = new Date(start);
@@ -155,19 +161,21 @@ export function progressSeries(
   };
 }
 
-function labelOf(start: number, gran: Granularity): string {
+export function axisLabel(start: number, gran: Granularity): string {
   const d = new Date(start);
   if (gran === 'year') return String(d.getFullYear());
-  if (gran === 'month') return `${MONTHS[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`;
+  if (gran === 'month' || gran === 'all')
+    return `${MONTHS[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`;
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
 /** The first, middle and last slot of the window, or fewer when they coincide. Nothing when there is nothing to label. */
-export function axisLabels(series: Series, gran: Granularity): string[] {
+export function axisLabels(series: Series, gran: Granularity, window?: ChartWindow): string[] {
   if (!series.points.length) return [];
-  const last = series.starts.length - 1;
-  const picks = [...new Set([0, Math.floor(last / 2), last])];
-  return picks.map((i) => labelOf(series.starts[i], gran));
+  const { first, last } = visibleSlots(window ?? { start: 0, count: series.slots }, series.slots);
+  if (last < first) return [];
+  const picks = [...new Set([first, Math.floor((first + last) / 2), last])];
+  return picks.map((i) => axisLabel(series.starts[i], gran));
 }
 
 /** Least squares of value on slot. Null under two points. */
@@ -209,6 +217,7 @@ export function comparePeriods(
   gran: Granularity,
   now: number,
 ): { current: Bucket | null; previous: Bucket | null } {
+  if (gran === 'all') return { current: null, previous: null };
   if (gran === 'day') {
     return { current: bs[bs.length - 1] ?? null, previous: bs[bs.length - 2] ?? null };
   }

@@ -379,3 +379,57 @@ test('a change is signed, in whole units, from the rounded figures that are prin
   assert.equal(periodChange(100, 99.6, lb), 0);
   assert.equal(periodChange(100, 90, lb), 22);
 });
+
+test('all history uses uncapped calendar months with gaps through the current month', () => {
+  const bs = buckets([set(2023, 10, 5, 50, 15), set(2026, 9, 5, 100, 5)], 'all');
+  const s = progressSeries(bs, 'all', 'weight', ms(2026, 9, 17));
+  assert.equal(s.slots, 36);
+  assert.deepEqual(
+    s.points.map((p) => p.slot),
+    [0, 35],
+  );
+  assert.equal(s.starts[0], dayStart(2023, 10, 1));
+  assert.equal(s.starts[35], dayStart(2026, 9, 1));
+  assert.deepEqual(axisLabels(s, 'all'), ["OCT '23", "MAR '25", "SEP '26"]);
+  const estimates = progressSeries(bs, 'all', 'e1rm', ms(2026, 9, 17));
+  assert.equal(estimates.slots, 36);
+  assert.equal(estimates.points[0].slot, 35);
+  assert.deepEqual(comparePeriods(bs, 'all', ms(2026, 9, 17)), { current: null, previous: null });
+});
+
+test('all history aggregates months, ignores uncounted sets and has no synthetic zero points', () => {
+  const bs = buckets(
+    [
+      set(2026, 7, 1, 100, 5),
+      set(2026, 7, 31, 105, 5),
+      set(2020, 1, 1, 100, 5, { kind: 'warmup' }),
+    ],
+    'all',
+  );
+  assert.equal(bs.length, 1);
+  assert.equal(bs[0].sessions, 2);
+  assert.equal(bs[0].weightKg, 105);
+  const s = progressSeries(bs, 'all', 'volume', ms(2026, 9, 17));
+  assert.equal(s.slots, 3);
+  assert.equal(s.points.length, 1);
+  assert.equal(s.points[0].value, 1025);
+  assert.deepEqual(progressSeries([], 'all', 'weight', ms(2026, 9, 17)).points, []);
+});
+
+test('visible axis labels come from actual visible slots, including monthly gaps', () => {
+  const bs = buckets([set(2026, 1, 1, 100, 5)], 'all');
+  const s = progressSeries(bs, 'all', 'weight', ms(2026, 9, 17));
+  assert.deepEqual(axisLabels(s, 'all', { start: 2.2, count: 4 }), [
+    "MAR '26",
+    "APR '26",
+    "JUN '26",
+  ]);
+});
+
+test('all keeps the counted history calendar even when the selected metric has no estimates', () => {
+  const bs = buckets([set(2023, 10, 5, 50, 15)], 'all');
+  const s = progressSeries(bs, 'all', 'e1rm', ms(2026, 9, 17));
+  assert.equal(s.slots, 36);
+  assert.equal(s.starts[0], dayStart(2023, 10, 1));
+  assert.deepEqual(s.points, []);
+});
