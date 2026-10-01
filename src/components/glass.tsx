@@ -1,10 +1,10 @@
 import { BlurView } from 'expo-blur';
 import { createContext, type RefObject, useContext } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useGlassTrial } from '@/data/glass-trial';
 import { type Element, glassOf } from '@/lib/glass-trial';
-import { chromeGlass, type GlassRecipe, glassRecipes } from '@/theme';
+import { chromeGlass, controlGlass, type GlassRecipe, glassRecipes } from '@/theme';
 
 /**
  * The screen's backdrop, wrapped in a `BlurTargetView`, when the trial blurs.
@@ -30,10 +30,24 @@ export function useGlass(element: Element) {
   return { recipe, blur: target ? blur : 0, target };
 }
 
+export function useControlGlass() {
+  const trial = useGlassTrial();
+  const target = useContext(BlurTargetContext);
+  const recipe = trial.style !== 'off' && trial.scope !== 'off' ? controlGlass : null;
+  return { recipe, blur: recipe && target ? recipe.blur : 0, target };
+}
+
 /** The surface's own style: the whole recipe, or only the drop shadow when a `GlassUnder` draws the fill. */
-export function glassStyle(recipe: GlassRecipe, blur: number) {
-  if (blur > 0) return { backgroundColor: 'transparent', boxShadow: recipe.drop };
-  return { ...recipe.fill, boxShadow: `${recipe.fill.boxShadow}, ${recipe.drop}` };
+export function glassStyle(recipe: GlassRecipe, blur: number): ViewStyle {
+  if (blur > 0) return { backgroundColor: 'transparent', boxShadow: recipe.drop || [] };
+  return {
+    ...recipe.fill,
+    boxShadow: recipe.drop
+      ? recipe.fill.boxShadow
+        ? `${recipe.fill.boxShadow}, ${recipe.drop}`
+        : recipe.drop
+      : (recipe.fill.boxShadow ?? []),
+  };
 }
 
 /**

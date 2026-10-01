@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { color, containment, type Ink, radius, space, text } from '@/theme';
 
-import { glassStyle, useGlass } from './glass';
+import { GlassUnder, glassStyle, useControlGlass } from './glass';
 import { pop } from './haptics';
 import { Icon, type IconName } from './icon';
 import { AnimatedPressable, usePressFeel } from './press';
@@ -50,7 +50,7 @@ function Destination({
   dot?: boolean;
 }) {
   const press = usePressFeel();
-  const { recipe } = useGlass('chrome');
+  const { recipe, blur, target } = useControlGlass();
   return (
     <AnimatedPressable
       onPress={onPress}
@@ -67,10 +67,13 @@ function Destination({
           justifyContent: 'center',
           gap: 3,
         },
-        recipe && glassStyle(recipe, 0),
+        recipe && glassStyle(recipe, blur),
         press.style,
       ]}
     >
+      {recipe ? (
+        <GlassUnder recipe={recipe} blur={blur} target={target} radius={radius.plate} />
+      ) : null}
       <Icon name={icon} tone={color.mid} />
       <Text style={[text.meta, { color: color.mid }]}>{label}</Text>
       {dot ? (

@@ -1,10 +1,12 @@
-import type { ReactNode } from 'react';
+import { createContext, type ReactNode, useContext } from 'react';
 import { View } from 'react-native';
 
 import { color, containment, radius, space } from '@/theme';
 
-import { GlassUnder, glassStyle, useGlass } from './glass';
+import { GlassUnder, glassStyle, useControlGlass, useGlass } from './glass';
 import { AnimatedPressable, usePressFeel } from './press';
+
+const TintedRows = createContext(false);
 
 /**
  * kit's `prow()` — one row on its own plate (Lab 42 P5).
@@ -24,16 +26,20 @@ export function RowPlate({
   disabled?: boolean;
 }) {
   const press = usePressFeel();
-  const { recipe, blur, target } = useGlass('row');
+  const tinted = useContext(TintedRows);
+  const control = useControlGlass();
+  const row = useGlass('row');
+  const { recipe, blur, target } = tinted ? control : row;
+  const glass = tone !== 'destructive' ? recipe : null;
   const style = [
     containment.rowPlate,
     { paddingHorizontal: 14 },
     tone === 'panel' && { backgroundColor: color.panel },
-    recipe && glassStyle(recipe, blur),
+    glass && glassStyle(glass, blur),
     tone === 'destructive' && { backgroundColor: color.live },
   ];
-  const under = recipe ? (
-    <GlassUnder recipe={recipe} blur={blur} target={target} radius={radius.row} />
+  const under = glass ? (
+    <GlassUnder recipe={glass} blur={blur} target={target} radius={radius.row} />
   ) : null;
 
   if (!onPress)
@@ -61,6 +67,10 @@ export function RowPlate({
  * kit's `prows()`. The rows are the plates, so whatever section holds this must
  * not be one as well.
  */
-export function RowPlates({ children }: { children: ReactNode }) {
-  return <View style={{ gap: space.row }}>{children}</View>;
+export function RowPlates({ children, tinted = false }: { children: ReactNode; tinted?: boolean }) {
+  return (
+    <TintedRows.Provider value={tinted}>
+      <View style={{ gap: space.row }}>{children}</View>
+    </TintedRows.Provider>
+  );
 }
