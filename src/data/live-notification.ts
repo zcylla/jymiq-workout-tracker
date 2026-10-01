@@ -11,7 +11,7 @@ import LiveRest from '../../modules/live-rest';
 import type { RestAction } from '../../modules/live-rest';
 
 const IDENTIFIER = 'live-workout';
-const CHANNEL = 'session';
+const CHANNEL = 'session-v2';
 let pending = Promise.resolve();
 let revision = 0;
 let active = false;
@@ -63,7 +63,7 @@ export function listenForRestActions(
 async function ensureChannel(): Promise<void> {
   await Notifications.setNotificationChannelAsync(CHANNEL, {
     name: 'Workout in progress',
-    importance: Notifications.AndroidImportance.LOW,
+    importance: Notifications.AndroidImportance.DEFAULT,
     sound: null,
     enableVibrate: false,
     vibrationPattern: [0],
@@ -119,7 +119,7 @@ function content(
     autoDismiss: false,
     sound: false,
     vibrate: [0],
-    priority: 'low',
+    priority: 'default',
   };
 }
 
@@ -184,7 +184,7 @@ export function listenForLiveNotification(onOpen: () => void): () => void {
         shouldShowList: active && notification.request.identifier === IDENTIFIER,
         shouldPlaySound: false,
         shouldSetBadge: false,
-        priority: Notifications.AndroidNotificationPriority.LOW,
+        priority: Notifications.AndroidNotificationPriority.DEFAULT,
       }),
     });
   } catch {}

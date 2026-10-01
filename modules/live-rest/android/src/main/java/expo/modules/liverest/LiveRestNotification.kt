@@ -19,7 +19,7 @@ data class WorkoutNotification(val title: String, val lines: List<String>, val r
 
 internal object LiveRestNotification {
   const val ID = 7401
-  private const val CHANNEL = "session"
+  private const val CHANNEL = "session-v2"
   var current: WorkoutNotification? = null
     private set
   var service: LiveRestService? = null
@@ -105,7 +105,7 @@ internal object LiveRestNotification {
   @Suppress("DEPRECATION")
   fun build(context: Context, options: WorkoutNotification): Notification {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val channel = NotificationChannel(CHANNEL, "Workout in progress", NotificationManager.IMPORTANCE_LOW)
+      val channel = NotificationChannel(CHANNEL, "Workout in progress", NotificationManager.IMPORTANCE_DEFAULT)
       channel.setSound(null, null)
       channel.enableVibration(false)
       channel.enableLights(false)
@@ -143,7 +143,7 @@ internal object LiveRestNotification {
       .setAutoCancel(false)
       .setOnlyAlertOnce(true)
       .setVisibility(Notification.VISIBILITY_PUBLIC)
-      .setPriority(Notification.PRIORITY_LOW)
+      .setPriority(Notification.PRIORITY_DEFAULT)
       .setSound(null)
       .setVibrate(longArrayOf(0))
       .setShowWhen(resting)
