@@ -41,7 +41,7 @@ export default function RoutinesScreen() {
       />
 
       <Section first plated={false}>
-        <RowPlates tinted>
+        <RowPlates>
           {routines?.map((r, i) => (
             <Listed key={r.id} index={i}>
               <RowPlate onPress={() => router.push(`/routine/${r.id}`)}>
@@ -58,7 +58,7 @@ export default function RoutinesScreen() {
       </Section>
 
       <Section plated={false}>
-        <RowPlates tinted>
+        <RowPlates>
           <Link href="/session/programs" asChild>
             <RowPlate onPress={() => {}}>
               <ListRow title="Programs" />

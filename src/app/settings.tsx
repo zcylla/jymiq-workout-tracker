@@ -69,7 +69,7 @@ export default function SettingsScreen() {
         <ScreenHeader title="Settings" onBack={() => router.back()} />
 
         <Section first label="UNITS" plated={false}>
-          <RowPlates tinted>
+          <RowPlates>
             <RowPlate
               onPress={() =>
                 setSettings({ weightUnit: settings.weightUnit === 'kg' ? 'lb' : 'kg' })
@@ -86,7 +86,7 @@ export default function SettingsScreen() {
         </Section>
 
         <Section label="TRAINING" plated={false}>
-          <RowPlates tinted>
+          <RowPlates>
             <RowPlate onPress={() => router.push('/check-in')}>
               <ListRow
                 quiet
@@ -159,7 +159,7 @@ export default function SettingsScreen() {
         </Section>
 
         <Section plated={false}>
-          <RowPlates tinted>
+          <RowPlates>
             <RowPlate onPress={() => router.push('/sign-in')}>
               <ListRow quiet title="Account" />
             </RowPlate>
