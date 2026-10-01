@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -8,6 +9,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import {
   Calendar,
@@ -54,6 +56,8 @@ export default function HistoryScreen() {
 
   const now = useMemo(() => nowMs(), []);
   const [back, setBack] = useState(0);
+  const previousMonth = () => setBack((current) => current + 1);
+  const nextMonth = () => setBack((current) => Math.max(0, current - 1));
   const grid = useMemo(() => {
     const today = new Date(now);
     return monthGrid(new Date(today.getFullYear(), today.getMonth() - back, 1), now);
@@ -119,18 +123,13 @@ export default function HistoryScreen() {
         kicker={String(grid.year)}
         right={
           <View style={{ flexDirection: 'row' }}>
-            <Pager label="Previous month" onPress={() => setBack(back + 1)} />
-            <Pager
-              label="Next month"
-              next
-              disabled={back === 0}
-              onPress={() => setBack(back - 1)}
-            />
+            <Pager label="Previous month" onPress={previousMonth} />
+            <Pager label="Next month" next disabled={back === 0} onPress={nextMonth} />
           </View>
         }
       />
 
-      <MonthSwap step={back}>
+      <MonthSwap step={back} onPrevious={previousMonth} onNext={nextMonth}>
         <Section first pad={15} tone="glass">
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
             {all === null ? (
@@ -230,7 +229,17 @@ export default function HistoryScreen() {
  * left. It starts at zero opacity, which also hides the frame or two in which the new month's query
  * has not answered and the grid holds the last month's rows.
  */
-function MonthSwap({ step, children }: { step: number; children: ReactNode }) {
+function MonthSwap({
+  step,
+  children,
+  onPrevious,
+  onNext,
+}: {
+  step: number;
+  children: ReactNode;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
   const inSV = useSharedValue(1);
   const fromSV = useSharedValue(0);
   const last = useRef(step);
@@ -252,10 +261,32 @@ function MonthSwap({ step, children }: { step: number; children: ReactNode }) {
     transform: [{ translateX: (1 - inSV.get()) * fromSV.get() }],
   }));
 
-  return <Animated.View style={style}>{children}</Animated.View>;
+  const pan = Gesture.Pan()
+    .activeOffsetX([-24, 24])
+    .failOffsetY([-12, 12])
+    .onEnd((event, success) => {
+      if (!success) return;
+      const x = event.translationX;
+      const fling =
+        Math.abs(x) >= MIN_FLING &&
+        Math.abs(event.velocityX) >= FLING &&
+        Math.sign(event.velocityX) === Math.sign(x);
+      if (Math.abs(x) < SWIPE_DISTANCE && !fling) return;
+      if (x > 0) scheduleOnRN(onPrevious);
+      else if (step > 0) scheduleOnRN(onNext);
+    });
+
+  return (
+    <GestureDetector gesture={pan}>
+      <Animated.View style={style}>{children}</Animated.View>
+    </GestureDetector>
+  );
 }
 
 const TRAVEL = 24;
+const SWIPE_DISTANCE = 64;
+const FLING = 900;
+const MIN_FLING = 48;
 
 /** One arrow of the month pager: a 44pt target around a 22pt glyph. */
 function Pager({
