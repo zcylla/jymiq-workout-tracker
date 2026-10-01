@@ -1,7 +1,13 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-import { type LiveNotificationState, liveNotificationContent } from '@/lib/live-notification';
+import {
+  type LiveNotificationState,
+  liveNotificationContent,
+  nativeLiveNotificationContent,
+} from '@/lib/live-notification';
+
+import LiveRest from '../../modules/live-rest';
 
 const IDENTIFIER = 'live-workout';
 const CHANNEL = 'session';
@@ -72,7 +78,10 @@ function content(
   };
 }
 
-export function updateLiveNotification(state: LiveNotificationState | null): Promise<void> {
+export function updateLiveNotification(
+  state: LiveNotificationState | null,
+  restStartMs: number | null = null,
+): Promise<void> {
   if (Platform.OS !== 'android') return Promise.resolve();
   active = state !== null;
   const requestedRevision = ++revision;
@@ -80,6 +89,7 @@ export function updateLiveNotification(state: LiveNotificationState | null): Pro
     try {
       if (requestedRevision !== revision) return;
       if (state === null) {
+        await LiveRest?.hide();
         await cancelRestEnd();
         await dismiss();
         return;
@@ -87,6 +97,12 @@ export function updateLiveNotification(state: LiveNotificationState | null): Pro
       if (!(await canNotify()) || requestedRevision !== revision) return;
       await cancelRestEnd();
       if (requestedRevision !== revision) return;
+      if (LiveRest !== null) {
+        await dismiss();
+        if (requestedRevision !== revision) return;
+        await LiveRest.show(nativeLiveNotificationContent(state, restStartMs));
+        return;
+      }
       await Notifications.scheduleNotificationAsync({
         identifier: IDENTIFIER,
         content: content(state, Date.now()),

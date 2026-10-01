@@ -2,7 +2,12 @@ import { router, useRootNavigationState } from 'expo-router';
 import { useEffect, useMemo, useReducer, useRef } from 'react';
 import { AppState, Platform } from 'react-native';
 
-import { liveNotificationContent, liveNotificationState } from '@/lib/live-notification';
+import {
+  type NotificationRest,
+  liveNotificationContent,
+  liveNotificationState,
+  observeNotificationRest,
+} from '@/lib/live-notification';
 
 import { useRows } from './live';
 import {
@@ -27,6 +32,7 @@ function useLiveNotification(session: Session): void {
   const { weightUnit } = useSettings();
   const [refresh, wake] = useReducer((value: number) => value + 1, 0);
   const last = useRef<string | null>(null);
+  const rest = useRef<NotificationRest | null>(null);
   const state = useMemo(
     () =>
       exercises === null || sets === null
@@ -51,12 +57,16 @@ function useLiveNotification(session: Session): void {
   }, [session.restUntil, refresh]);
 
   useEffect(() => {
+    rest.current = observeNotificationRest(rest.current, session.restUntil, Date.now());
+  }, [session.restUntil]);
+
+  useEffect(() => {
     if (state === null) return;
     const rendered = liveNotificationContent({ ...state, nowMs: Date.now() });
     const signature = JSON.stringify([rendered.title, rendered.body, state.restUntil]);
     if (last.current === signature) return;
     last.current = signature;
-    void updateLiveNotification(state);
+    void updateLiveNotification(state, rest.current?.startMs ?? null);
   }, [state, refresh]);
 }
 

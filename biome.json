@@ -26,6 +26,7 @@
     "includes": [
       "**",
       "!android/**",
+      "!modules/**/android/build/**",
       "!ios/**",
       "!drizzle/**",
       "!claudedocs/**",
