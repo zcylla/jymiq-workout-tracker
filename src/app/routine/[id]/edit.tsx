@@ -100,7 +100,7 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
         </Section>
 
         <Section label="EXERCISES" plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <ReorderList
               items={rows}
               rowHeight={58}
@@ -109,7 +109,11 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
                 reorderRoutineExercises(moved(rows, from, to).map((lift) => lift.id))
               }
               renderRow={(lift, _index, handle) => (
-                <SwipeRow key={lift.id} onDelete={() => remove(lift.id, lift.name)}>
+                <SwipeRow
+                  key={lift.id}
+                  surface="transparent"
+                  onDelete={() => remove(lift.id, lift.name)}
+                >
                   <RowPlate onPress={() => setExpanded(expanded === lift.id ? null : lift.id)}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', height: 58 }}>
                       {handle}

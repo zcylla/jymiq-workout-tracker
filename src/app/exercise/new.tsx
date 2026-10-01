@@ -132,7 +132,7 @@ export default function NewExerciseScreen() {
         </Section>
 
         <Section plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate>
               <Toggle label="Track RPE" on={trackRpe} onToggle={setTrackRpe} />
             </RowPlate>

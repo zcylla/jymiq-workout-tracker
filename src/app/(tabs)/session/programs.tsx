@@ -125,7 +125,7 @@ export default function ProgramsScreen() {
       <Section label={program ? 'NOT RUNNING' : 'YOUR PROGRAMS'} first={!program} plated={false}>
         {programs === null ? null : (
           <>
-            <RowPlates>
+            <RowPlates tinted>
               {idle.map((p, i) => (
                 <Listed key={p.id} index={i}>
                   <RowPlate onPress={() => router.push(`/program/${p.id}`)}>

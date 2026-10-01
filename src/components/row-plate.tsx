@@ -19,14 +19,18 @@ export function RowPlate({
   onPress,
   tone = 'raised',
   disabled = false,
+  tinted: tintedProp,
 }: {
   children: ReactNode;
   onPress?: () => void;
   tone?: 'raised' | 'panel' | 'destructive';
   disabled?: boolean;
+  /** Overrides the group's `tinted` for this one row. */
+  tinted?: boolean;
 }) {
   const press = usePressFeel();
-  const tinted = useContext(TintedRows);
+  const groupTinted = useContext(TintedRows);
+  const tinted = tintedProp ?? groupTinted;
   const control = useControlGlass();
   const row = useGlass('row');
   const { recipe, blur, target } = tinted ? control : row;

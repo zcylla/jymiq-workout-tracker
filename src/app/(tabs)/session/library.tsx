@@ -123,7 +123,7 @@ export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
       }
       ListEmptyComponent={
         updatedAt === undefined ? null : (
-          <RowPlate onPress={() => router.push('/exercise/new')}>
+          <RowPlate tinted onPress={() => router.push('/exercise/new')}>
             <ListRow title="Add custom exercise" />
           </RowPlate>
         )
@@ -137,6 +137,7 @@ export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
           </View>
         ) : (
           <RowPlate
+            tinted
             onPress={() => {
               if (replace) {
                 replaceSessionExercise(replace, item.row.id);

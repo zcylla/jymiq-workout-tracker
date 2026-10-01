@@ -227,7 +227,7 @@ export default function ProgramScreen() {
         </Section>
 
         <Section plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate onPress={confirmDelete}>
               <ListRow danger title="Delete program" />
             </RowPlate>
