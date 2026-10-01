@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { convertDailyStrength, type DailyStrengthArchive } from './daily-strength.ts';
+import {
+  convertDailyStrength,
+  type DailyStrengthArchive,
+  libraryIdsFromSeed,
+} from './daily-strength.ts';
 import { buildExport } from './export.ts';
 import { nextScheduled } from './program.ts';
 import { formatWeight } from './units.ts';
@@ -210,4 +214,179 @@ test('weekly order picks Wednesdays routine from the source program and leaves S
   const next = nextScheduled({ days, since: null }, new Date(2026, 8, 30));
   assert.equal(next?.routine, 'Push 2');
   assert.equal(next?.daysAway, 0);
+});
+
+test('matched exercises reference library rows throughout without importing source metadata', () => {
+  const f = fixture();
+  Object.assign(f.exercise, {
+    name: 'Barbell Bench Press',
+    equipment: 'Machine',
+    mechanicsType: 'isolation',
+    instructions: 'Source instructions',
+  });
+  f.archive['ExerciseNotes.json'] = [{ exercise: f.exercise, notes: 'Source note' }];
+  const { backup, report } = convertDailyStrength(f.archive, empty(), {
+    libraryIds: ['bench-press'],
+  });
+  assert.deepEqual(backup.tables.exercises, []);
+  assert.deepEqual(backup.tables.exercise_muscles, []);
+  for (const table of ['routine_exercises', 'session_exercises', 'personal_records']) {
+    assert.ok(rows(backup, table).length > 0);
+    assert.ok(rows(backup, table).every((r) => r.exerciseId === 'bench-press'));
+  }
+  assert.equal(report.matchedExercises, 1);
+  assert.deepEqual(report.unmatchedExercises, []);
+  assert.deepEqual(report.libraryMatches, [
+    { name: 'Barbell Bench Press', libraryId: 'bench-press' },
+  ]);
+  assert.equal(report.droppedExerciseInstructions, 1);
+  assert.equal(report.droppedExerciseNotes, 1);
+});
+
+test('unmatched exercises retain custom ids, descriptions and muscle links', () => {
+  const f = fixture();
+  Object.assign(f.exercise, { instructions: 'Keep these instructions' });
+  f.archive['ExerciseNotes.json'] = [{ exercise: f.exercise, notes: 'Keep this note' }];
+  const { backup, report } = convertDailyStrength(f.archive, empty(), {
+    libraryIds: ['bench-press'],
+  });
+  assert.equal(rows(backup, 'exercises')[0].id, 'daily-strength:exercise:ex');
+  assert.equal(rows(backup, 'exercises')[0].isCustom, true);
+  assert.equal(
+    rows(backup, 'exercises')[0].description,
+    'Keep these instructions\n\nKeep this note',
+  );
+  assert.equal(rows(backup, 'exercise_muscles')[0].exerciseId, 'daily-strength:exercise:ex');
+  assert.equal(report.matchedExercises, 0);
+  assert.deepEqual(report.unmatchedExercises, ['Bench']);
+  assert.equal(report.droppedExerciseInstructions, 0);
+  assert.equal(report.droppedExerciseNotes, 0);
+});
+
+test('one source id uses the same library match across differently named historical snapshots', () => {
+  const f = fixture();
+  f.session.workoutSessionExercises[0].exercise = { ...f.exercise, name: 'Barbell Bench Press' };
+  const { backup, report } = convertDailyStrength(f.archive, empty(), {
+    libraryIds: ['bench-press'],
+  });
+  assert.deepEqual(backup.tables.exercises, []);
+  assert.equal(rows(backup, 'routine_exercises')[0].exerciseId, 'bench-press');
+  assert.equal(rows(backup, 'session_exercises')[0].exerciseId, 'bench-press');
+  assert.deepEqual(report.libraryMatches, [
+    { name: 'Barbell Bench Press', libraryId: 'bench-press' },
+  ]);
+});
+
+test('two source exercises mapping to one library id keep their sets and share deduplicated records', () => {
+  const f = fixture();
+  f.exercise.name = 'Barbell Bench Press';
+  const second = { ...f.exercise, id: 'second-ex', name: 'Bench Press' };
+  f.session.workout.exerciseList.push({
+    ...f.session.workout.exerciseList[0],
+    id: 'second-rx',
+    exercise: second,
+  });
+  f.session.workoutSessionExercises.push({
+    ...f.session.workoutSessionExercises[0],
+    id: 'second-sx',
+    exercise: second,
+    workoutSessionSets: f.sets.map((s) => ({ ...s, id: `second-${s.id}` })),
+  });
+  const { backup, report } = convertDailyStrength(f.archive, empty(), {
+    libraryIds: ['bench-press'],
+  });
+  assert.equal(report.matchedExercises, 2);
+  assert.equal(report.libraryMatches.length, 2);
+  assert.deepEqual(backup.tables.exercises, []);
+  assert.deepEqual(backup.tables.exercise_muscles, []);
+  assert.equal(backup.counts.routine_exercises, 2);
+  assert.equal(backup.counts.session_exercises, 2);
+  assert.equal(backup.counts.sets, 6);
+  const records = rows(backup, 'personal_records');
+  assert.equal(new Set(records.map((r) => r.id)).size, records.length);
+  assert.equal(records.filter((r) => r.category === 'best_session_volume').length, 1);
+  assert.ok(records.every((r) => r.exerciseId === 'bench-press'));
+  const again = convertDailyStrength(f.archive, backup, { libraryIds: ['bench-press'] }).backup;
+  assert.deepEqual(again.tables, backup.tables);
+});
+
+test('source-only keeps existing library rows while excluding existing custom and training rows', () => {
+  const f = fixture();
+  f.exercise.name = 'Barbell Bench Press';
+  const builtIn = { id: 'bench-press', isCustom: false, equipment: 'barbell', kind: 'compound' };
+  const muscle = { exerciseId: 'bench-press', muscle: 'chest', role: 'prime' };
+  const base = buildExport(
+    {
+      exercises: [builtIn, { id: 'local-custom', isCustom: true }],
+      exercise_muscles: [muscle, { exerciseId: 'local-custom', muscle: 'back', role: 'prime' }],
+      sessions: [{ id: 'local-session' }],
+    },
+    { now: 1, appVersion: '1.0.0' },
+  );
+  const { backup } = convertDailyStrength(f.archive, base, {
+    sourceOnly: true,
+    libraryIds: ['bench-press'],
+  });
+  assert.deepEqual(backup.tables.exercises, [builtIn]);
+  assert.deepEqual(backup.tables.exercise_muscles, [muscle]);
+  assert.equal(backup.counts.sessions, 1);
+  assert.equal(rows(backup, 'sessions')[0].id, 'daily-strength:session:session');
+  assert.deepEqual(base.tables.exercises, [builtIn, { id: 'local-custom', isCustom: true }]);
+});
+
+test('seed id extraction reads exercise chunks and excludes muscle tuples and SQL comments', () => {
+  const seed = `-- Generated exercise library
+INSERT OR IGNORE INTO \`exercises\` (\`id\`,\`name\`) VALUES
+('bench-press','Bench Press'),
+('hammer-curl','Hammer Curl');
+--> statement-breakpoint
+INSERT OR IGNORE INTO \`exercises\` (\`id\`,\`name\`) VALUES
+('lat-pulldown','Lat Pulldown');
+--> statement-breakpoint
+INSERT OR IGNORE INTO \`exercise_muscles\` (\`exercise_id\`,\`muscle\`,\`role\`) VALUES
+('bench-press','chest','prime');`;
+  assert.deepEqual(libraryIdsFromSeed(seed), ['bench-press', 'hammer-curl', 'lat-pulldown']);
+});
+
+test('seed id extraction refuses empty, unreadable and duplicate library ids', () => {
+  assert.throws(() => libraryIdsFromSeed(''), /empty/);
+  assert.throws(
+    () => libraryIdsFromSeed('INSERT OR IGNORE INTO `exercises` (`id`) VALUES\n();'),
+    /Could not read/,
+  );
+  assert.throws(
+    () =>
+      libraryIdsFromSeed(
+        "INSERT OR IGNORE INTO `exercises` (`id`) VALUES\n('bench-press','a'),\n('bench-press','b');",
+      ),
+    /duplicated/,
+  );
+});
+
+test('the hand-matched map decides a name before the matcher, and null keeps it custom', () => {
+  const mapped = fixture();
+  mapped.exercise.name = 'Barbell Bicep Curl';
+  const { backup, report } = convertDailyStrength(mapped.archive, empty(), {
+    libraryIds: ['ez-bar-curl'],
+  });
+  assert.equal(rows(backup, 'routine_exercises')[0].exerciseId, 'ez-bar-curl');
+  assert.deepEqual(backup.tables.exercises, []);
+  assert.deepEqual(report.libraryMatches, [
+    { name: 'Barbell Bicep Curl', libraryId: 'ez-bar-curl' },
+  ]);
+
+  const custom = fixture();
+  custom.exercise.name = 'Pull over';
+  const result = convertDailyStrength(custom.archive, empty(), { libraryIds: ['ez-bar-curl'] });
+  assert.equal(rows(result.backup, 'exercises')[0].id, 'daily-strength:exercise:ex');
+  assert.deepEqual(result.report.unmatchedExercises, ['Pull over']);
+});
+
+test('a mapped library id missing from the library is an error, not a silent custom exercise', () => {
+  const f = fixture();
+  f.exercise.name = 'Barbell Bicep Curl';
+  assert.throws(
+    () => convertDailyStrength(f.archive, empty(), { libraryIds: ['bench-press'] }),
+    /ez-bar-curl/,
+  );
 });

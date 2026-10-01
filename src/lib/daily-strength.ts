@@ -1,4 +1,6 @@
 import { estimate1RM } from './e1rm.ts';
+import { DAILY_STRENGTH_LIBRARY } from './daily-strength-exercises.ts';
+import { matchArtKey } from './exercise-art-match.ts';
 import { buildExport, type ExportEnvelope } from './export.ts';
 import { KNOWN_TABLES, parseBackup } from './import.ts';
 import { detectSessionVolumePr, detectSetPrs, type PrBaseline } from './pr.ts';
@@ -103,10 +105,36 @@ const equipment = (ex: SourceExercise): string => {
   return 'other';
 };
 
+export function libraryIdsFromSeed(seedSql: string): string[] {
+  const ids = seedSql.split('--> statement-breakpoint').flatMap((statement) => {
+    if (!/^INSERT OR IGNORE INTO `exercises` /m.test(statement)) return [];
+    const rows = [...statement.matchAll(/^\('([a-z0-9-]+)',/gm)].map((m) => m[1]);
+    if (!rows.length) throw new Error('Could not read exercise ids from the library seed');
+    return rows;
+  });
+  if (!ids.length || new Set(ids).size !== ids.length)
+    throw new Error('Library seed exercise ids are empty or duplicated');
+  return ids;
+}
+
+function libraryIdFor(name: string, libraryIds: readonly string[]): string | null {
+  if (!libraryIds.length) return null;
+  if (!Object.hasOwn(DAILY_STRENGTH_LIBRARY, name)) return matchArtKey(name, libraryIds);
+  const mapped = DAILY_STRENGTH_LIBRARY[name];
+  if (mapped != null && !libraryIds.includes(mapped))
+    throw new Error(`Mapped library exercise ${mapped} for ${name} is not in the library`);
+  return mapped;
+}
+
 export function convertDailyStrength(
   archive: DailyStrengthArchive,
   current: ExportEnvelope,
-  options: { sourceOnly?: boolean; weeklyOrder?: boolean; now?: number } = {},
+  options: {
+    sourceOnly?: boolean;
+    weeklyOrder?: boolean;
+    now?: number;
+    libraryIds?: readonly string[];
+  } = {},
 ) {
   const parsed = parseBackup(JSON.stringify(current));
   if (!parsed.ok || parsed.backup.unknownTables.length)
@@ -114,8 +142,18 @@ export function convertDailyStrength(
   if (options.weeklyOrder && !options.sourceOnly)
     throw new Error('Weekly order requires source-only mode to replace the existing program');
   const now = options.now ?? Date.now();
+  const builtIn = (current.tables.exercises ?? []).filter((row) => (row as Row).isCustom === false);
+  const builtInIds = new Set(builtIn.map((row) => (row as Row).id));
   const base = options.sourceOnly
-    ? buildExport({}, { now, appVersion: current.appVersion })
+    ? buildExport(
+        {
+          exercises: builtIn,
+          exercise_muscles: (current.tables.exercise_muscles ?? []).filter((row) =>
+            builtInIds.has((row as Row).exerciseId),
+          ),
+        },
+        { now, appVersion: current.appVersion },
+      )
     : current;
   for (const name of ['WorkoutSession.json', 'Workout.json', 'UserPreferences.json']) {
     if (!Array.isArray(archive[name])) throw new Error(`Missing ${name}`);
@@ -141,6 +179,11 @@ export function convertDailyStrength(
     completedSets: 0,
     completionTimesInferredFromSessionEnd: 0,
     weightsConvertedFromPounds: 0,
+    matchedExercises: 0,
+    unmatchedExercises: [] as string[],
+    libraryMatches: [] as { name: string; libraryId: string }[],
+    droppedExerciseInstructions: 0,
+    droppedExerciseNotes: 0,
     unsupportedMuscles: [] as string[],
     skippedCatalogWorkouts: archive['Workout.json'].length - workouts.size,
     limitations: [
@@ -151,6 +194,7 @@ export function convertDailyStrength(
       'Set notes and rep ranges are retained in exercise/routine notes; routine per-set targets are reduced to the first set.',
       'Settings, reminders, equipment/plate catalogs, media and source statistics are not imported.',
       'Records are recomputed with Jymiq rules, and e1RM is estimated only for 1–12 reps.',
+      'Matched exercises use library metadata; source exercise instructions and notes are dropped and counted separately.',
       'Weights are converted once from the explicit source unit to Jymiq kilograms; display pounds in Settings.',
     ],
   };
@@ -178,12 +222,21 @@ export function convertDailyStrength(
     }
   }
   const sourceExercises = new Map<string, SourceExercise>();
+  const exerciseIds = new Map<string, string>();
   const register = (lift: SourceLift) => {
     const ex = lift.exercise;
     if (ex.category !== 'weight_and_reps' && ex.category !== 'reps')
       throw new Error(`Unsupported exercise category: ${ex.name} (${ex.category})`);
     sourceExercises.set(ex.id, ex);
   };
+  for (const w of workouts.values()) for (const lift of flatten(w.exerciseList)) register(lift);
+  for (const s of sourceSessions)
+    for (const lift of flatten(s.workoutSessionExercises)) register(lift);
+  for (const ex of sourceExercises.values())
+    exerciseIds.set(
+      ex.id,
+      libraryIdFor(ex.name, options.libraryIds ?? []) ?? id('exercise', ex.id),
+    );
   for (const w of workouts.values()) {
     const updatedAt = w.modifiedDate || timestamp;
     imported.routines.push({
@@ -196,13 +249,12 @@ export function convertDailyStrength(
       updatedAt,
     });
     for (const [position, lift] of flatten(w.exerciseList).entries()) {
-      register(lift);
       const targets = lift.workoutExerciseSets ?? [];
       const target = targets[0];
       imported.routine_exercises.push({
         id: id('routine-exercise', `${w.id}:${lift.id}`),
         routineId: id('routine', w.id),
-        exerciseId: id('exercise', lift.exercise.id),
+        exerciseId: exerciseIds.get(lift.exercise.id)!,
         position,
         targetSets: Math.max(1, targets.length),
         targetReps: target?.minReps ?? target?.maxReps ?? null,
@@ -226,14 +278,13 @@ export function convertDailyStrength(
     sourceSessionIds.add(sessionId);
     const sessionSets = [];
     for (const [position, lift] of flatten(s.workoutSessionExercises).entries()) {
-      register(lift);
       const sxId = id('session-exercise', lift.id);
       const sourceSets = lift.workoutSessionSets ?? [];
       const notes = sourceSets.filter((t) => t.notes).map((t) => `Set ${t.set}: ${t.notes}`);
       imported.session_exercises.push({
         id: sxId,
         sessionId,
-        exerciseId: id('exercise', lift.exercise.id),
+        exerciseId: exerciseIds.get(lift.exercise.id)!,
         routineExerciseId: null,
         position,
         plannedSets: sourceSets.length,
@@ -315,8 +366,18 @@ export function convertDailyStrength(
     | undefined;
   for (const ex of sourceExercises.values()) {
     const extra = notes?.find((n) => n.exercise.id === ex.id)?.notes;
+    const exerciseId = exerciseIds.get(ex.id)!;
+    if (exerciseId !== id('exercise', ex.id)) {
+      report.matchedExercises++;
+      report.libraryMatches.push({ name: ex.name, libraryId: exerciseId });
+      if (ex.instructions) report.droppedExerciseInstructions++;
+      report.droppedExerciseNotes +=
+        notes?.filter((n) => n.exercise.id === ex.id && n.notes).length ?? 0;
+      continue;
+    }
+    report.unmatchedExercises.push(ex.name);
     imported.exercises.push({
-      id: id('exercise', ex.id),
+      id: exerciseId,
       name: ex.name,
       equipment: equipment(ex),
       kind: ex.mechanicsType === 'compound' ? 'compound' : 'isolation',
@@ -346,7 +407,7 @@ export function convertDailyStrength(
         }
         if (mapped.has(muscle)) continue;
         mapped.add(muscle);
-        imported.exercise_muscles.push({ exerciseId: id('exercise', ex.id), muscle, role });
+        imported.exercise_muscles.push({ exerciseId, muscle, role });
       }
     }
   }
