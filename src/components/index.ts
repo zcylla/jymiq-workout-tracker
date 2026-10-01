@@ -11,6 +11,7 @@ export {
   type DialogRequest,
 } from './dialog';
 export { DurationSheet } from './duration-sheet';
+export { DropdownMenu, type DropdownAnchor, type DropdownItem } from './dropdown-menu';
 export { ExerciseLog } from './exercise-log';
 export { ExercisesSheet } from './exercises-sheet';
 export { ExerciseStill } from './exercise-still';

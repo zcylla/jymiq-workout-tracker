@@ -1,10 +1,12 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Pressable, Text, View } from 'react-native';
 
 import {
   ActionBar,
+  DropdownMenu,
+  type DropdownAnchor,
   ExerciseStill,
   Field,
   Sheet,
@@ -55,9 +57,11 @@ export default function RoutineScreen() {
   const actionBar = useActionBarHeight();
   const show = useDialog();
   const [menu, setMenu] = useState<'actions' | 'rename' | null>(null);
+  const menuButtonRef = useRef<View>(null);
+  const [menuAnchor, setMenuAnchor] = useState<DropdownAnchor | null>(null);
   const [name, setName] = useState('');
   useEffect(() => {
-    if (!menu) return;
+    if (menu !== 'rename') return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       setMenu(null);
       return true;
@@ -187,10 +191,18 @@ export default function RoutineScreen() {
           onBack={() => router.back()}
           right={
             <Pressable
+              ref={menuButtonRef}
+              collapsable={false}
               accessibilityRole="button"
               accessibilityLabel="Routine actions"
+              accessibilityState={{ disabled: !routine, expanded: menu === 'actions' }}
               disabled={!routine}
-              onPress={() => setMenu('actions')}
+              onPress={() =>
+                menuButtonRef.current?.measureInWindow((x, y, width, height) => {
+                  setMenuAnchor({ x, y, width, height });
+                  setMenu('actions');
+                })
+              }
               style={{
                 width: size.hit,
                 height: size.hit,
@@ -259,67 +271,65 @@ export default function RoutineScreen() {
         onPrimary={start}
         onSecondary={() => router.push(`/routine/${id}/edit`)}
       />
-      <Sheet open={menu !== null} onClose={() => setMenu(null)}>
+      <DropdownMenu
+        open={menu === 'actions'}
+        onClose={() => setMenu(null)}
+        anchor={menuAnchor}
+        items={[
+          {
+            label: 'Rename',
+            onPress: () => {
+              setName(routine?.name ?? '');
+              setMenu('rename');
+            },
+          },
+          {
+            label: 'Duplicate',
+            onPress: () =>
+              perform(() => {
+                const copyId = duplicateRoutine(id);
+                setMenu(null);
+                router.push(`/routine/${copyId}`);
+              }),
+          },
+          {
+            label: 'Delete',
+            tone: 'destructive',
+            onPress: () => {
+              setMenu(null);
+              show({
+                title: 'Delete routine?',
+                message: 'Your logged sessions will be kept.',
+                actions: [
+                  { label: 'Cancel', tone: 'cancel' },
+                  {
+                    label: 'Delete',
+                    tone: 'destructive',
+                    onPress: () =>
+                      perform(() => {
+                        deleteRoutine(id);
+                        router.back();
+                      }),
+                  },
+                ],
+              });
+            },
+          },
+        ]}
+      />
+      <Sheet open={menu === 'rename'} onClose={() => setMenu(null)}>
         <View style={{ gap: space.within }}>
-          {menu === 'rename' ? (
-            <>
-              <Field label="RENAME ROUTINE" value={name} onChangeText={setName} autoFocus />
-              <RoutineAction
-                label="SAVE"
-                disabled={!name.trim()}
-                onPress={() =>
-                  perform(() => {
-                    renameRoutine(id, name);
-                    setMenu(null);
-                  })
-                }
-              />
-            </>
-          ) : (
-            <>
-              <Text style={text.label}>ROUTINE ACTIONS</Text>
-              <RoutineAction
-                label="RENAME"
-                onPress={() => {
-                  setName(routine?.name ?? '');
-                  setMenu('rename');
-                }}
-              />
-              <RoutineAction
-                label="DUPLICATE"
-                onPress={() =>
-                  perform(() => {
-                    const copyId = duplicateRoutine(id);
-                    setMenu(null);
-                    router.push(`/routine/${copyId}`);
-                  })
-                }
-              />
-              <RoutineAction
-                label="DELETE"
-                destructive
-                onPress={() => {
-                  setMenu(null);
-                  show({
-                    title: 'Delete routine?',
-                    message: 'Your logged sessions will be kept.',
-                    actions: [
-                      { label: 'Cancel', tone: 'cancel' },
-                      {
-                        label: 'Delete',
-                        tone: 'destructive',
-                        onPress: () =>
-                          perform(() => {
-                            deleteRoutine(id);
-                            router.back();
-                          }),
-                      },
-                    ],
-                  });
-                }}
-              />
-            </>
-          )}
+          <Field label="RENAME ROUTINE" value={name} onChangeText={setName} autoFocus />
+          <RoutineAction
+            label="SAVE"
+            disabled={!name.trim()}
+            onPress={() =>
+              perform(() => {
+                renameRoutine(id, name);
+                setMenu(null);
+              })
+            }
+          />
         </View>
       </Sheet>
     </>
