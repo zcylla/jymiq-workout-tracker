@@ -6,7 +6,7 @@ import { color, controlBarBlur, controlEdgeDense, fabShadow, radius, text } from
 import { GlassUnder, glassStyle } from './glass';
 import { tick } from './haptics';
 import { AnimatedPressable, usePressFeel } from './press';
-import { useScreenBlurTarget } from './screen-blur';
+import { useScreenBlurTarget, useSheetOpen } from './screen-blur';
 
 /** The plane the bar occupies, so a `Screen` under it can clear its last row. */
 export function useActionBarHeight() {
@@ -38,9 +38,12 @@ export function ActionBar({
   const secondaryPress = usePressFeel();
   const primaryPress = usePressFeel(0.15);
   const target = useScreenBlurTarget();
+  const sheetOpen = useSheetOpen();
   return (
     <View
+      pointerEvents={sheetOpen ? 'none' : 'auto'}
       style={{
+        opacity: sheetOpen ? 0 : 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 9,

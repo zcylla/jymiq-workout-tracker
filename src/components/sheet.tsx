@@ -20,7 +20,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { controlEdgeDense, controlSheetBlur, hairline, motion, radius, space, wash } from '@/theme';
 
 import { GlassUnder, glassStyle } from './glass';
-import { useScreenBlurTarget } from './screen-blur';
+import { useScreenBlurTarget, useSheetOpenRegistration } from './screen-blur';
 
 /**
  * The shared shell for every overlay on the live screen (sets, exercises, the
@@ -63,11 +63,17 @@ export function Sheet({
   const insets = useSafeAreaInsets();
   const target = useScreenBlurTarget();
   const [mounted, setMounted] = useState(open);
+  const registerSheetOpen = useSheetOpenRegistration();
   const progressSV = useSharedValue(0);
   const dragYSV = useSharedValue(0);
   const panelHSV = useSharedValue(height);
 
   if (open && !mounted) setMounted(true);
+
+  useEffect(() => {
+    if (!mounted || !registerSheetOpen) return;
+    return registerSheetOpen();
+  }, [mounted, registerSheetOpen]);
 
   useEffect(() => {
     if (open) {
