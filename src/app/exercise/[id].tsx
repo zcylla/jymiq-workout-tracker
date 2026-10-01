@@ -304,12 +304,12 @@ export default function ExerciseScreen() {
                     ? formatPrValue('best_e1rm', m.weightKg, unit)
                     : formatWeight(m.weightKg, unit)}
               </Text>
-              <Text style={[text.label, { width: 92, textAlign: 'right' }]}>
+              <Text style={[text.label, { width: 128, textAlign: 'right' }]}>
                 {m.source === 'est'
                   ? 'EST'
                   : m.at === null
                     ? ''
-                    : sessionDateLabel(m.at, { upper: true, now })}
+                    : sessionDateLabel(m.at, { upper: true, now, year: true })}
               </Text>
             </View>
           ))}

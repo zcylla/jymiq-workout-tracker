@@ -20,6 +20,14 @@ test('the Today header says which day it is, even when that day is today', () =>
   assert.doesNotMatch(dateLabel(sun), /Today/);
 });
 
+test('a dated label can carry the year, and today never does', () => {
+  const day = Date.UTC(2025, 8, 13, 12, 0);
+  const now = Date.UTC(2026, 9, 1, 12, 0);
+  assert.match(sessionDateLabel(day, { now, year: true }), /^\w{3} \d{1,2} \w{3} 2025$/);
+  assert.match(sessionDateLabel(day, { now, year: true, upper: true }), / 2025$/);
+  assert.equal(sessionDateLabel(now, { now, year: true }), 'Today');
+});
+
 test('a duration that cannot be true is rejected at both ends', () => {
   assert.equal(isPlausibleDuration(null), false);
   assert.equal(isPlausibleDuration(0), false); // a stored zero never happened
