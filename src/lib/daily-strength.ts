@@ -103,17 +103,27 @@ const equipment = (ex: SourceExercise): string => {
   return 'other';
 };
 
-export function convertDailyStrength(archive: DailyStrengthArchive, base: ExportEnvelope) {
-  const parsed = parseBackup(JSON.stringify(base));
+export function convertDailyStrength(
+  archive: DailyStrengthArchive,
+  current: ExportEnvelope,
+  options: { sourceOnly?: boolean; weeklyOrder?: boolean; now?: number } = {},
+) {
+  const parsed = parseBackup(JSON.stringify(current));
   if (!parsed.ok || parsed.backup.unknownTables.length)
     throw new Error('Invalid Jymiq base backup');
+  if (options.weeklyOrder && !options.sourceOnly)
+    throw new Error('Weekly order requires source-only mode to replace the existing program');
+  const now = options.now ?? Date.now();
+  const base = options.sourceOnly
+    ? buildExport({}, { now, appVersion: current.appVersion })
+    : current;
   for (const name of ['WorkoutSession.json', 'Workout.json', 'UserPreferences.json']) {
     if (!Array.isArray(archive[name])) throw new Error(`Missing ${name}`);
   }
   const sourceSessions = archive['WorkoutSession.json'] as SourceSession[];
   if (!sourceSessions.length) throw new Error('No sessions in source backup');
   const prefs = archive['UserPreferences.json'] as {
-    currentSchedules?: { workouts: SourceWorkout[] }[];
+    currentSchedules?: { id: string; name: string; workouts: SourceWorkout[] }[];
   }[];
   const active = new Set(
     prefs.flatMap((p) => (p.currentSchedules ?? []).flatMap((s) => s.workouts.map((w) => w.id))),
@@ -135,7 +145,9 @@ export function convertDailyStrength(archive: DailyStrengthArchive, base: Export
     skippedCatalogWorkouts: archive['Workout.json'].length - workouts.size,
     limitations: [
       'Only routines referenced by history or the current schedule are imported; historical routines are archived.',
-      'Schedules have no weekday assignments and are not converted into weekly programs.',
+      options.weeklyOrder
+        ? 'The current schedule is explicitly assigned in source order, Monday first; remaining days are rest.'
+        : 'Schedules have no weekday assignments and are not converted into weekly programs.',
       'Set notes and rep ranges are retained in exercise/routine notes; routine per-set targets are reduced to the first set.',
       'Settings, reminders, equipment/plate catalogs, media and source statistics are not imported.',
       'Records are recomputed with Jymiq rules, and e1RM is estimated only for 1–12 reps.',
@@ -144,6 +156,27 @@ export function convertDailyStrength(archive: DailyStrengthArchive, base: Export
   };
   const timestamp = Math.min(...sourceSessions.map((s) => s.startDate));
   if (!Number.isFinite(timestamp) || timestamp <= 0) throw new Error('Invalid source timestamps');
+  if (options.weeklyOrder) {
+    const schedules = prefs.flatMap((p) => p.currentSchedules ?? []);
+    if (schedules.length !== 1)
+      throw new Error('Weekly order requires exactly one current schedule');
+    const schedule = schedules[0];
+    if (schedule.workouts.length < 1 || schedule.workouts.length > 7)
+      throw new Error('Weekly order requires one to seven routines');
+    const programId = id('program', schedule.id);
+    imported.programs.push({
+      id: programId,
+      name: schedule.name,
+      note: null,
+      status: 'active',
+      startedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+    for (const [weekday, routine] of schedule.workouts.entries()) {
+      imported.program_days.push({ programId, weekday, routineId: id('routine', routine.id) });
+    }
+  }
   const sourceExercises = new Map<string, SourceExercise>();
   const register = (lift: SourceLift) => {
     const ex = lift.exercise;

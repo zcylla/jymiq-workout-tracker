@@ -2,10 +2,15 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { convertDailyStrength } from '../src/lib/daily-strength.ts';
 
-const [source, basePath, output] = process.argv.slice(2);
-if (!source || !basePath || !output || process.argv.length !== 5) {
+const [source, basePath, output, ...flags] = process.argv.slice(2);
+if (
+  !source ||
+  !basePath ||
+  !output ||
+  flags.some((flag) => !['--source-only', '--weekly-order'].includes(flag))
+) {
   console.error(
-    'Usage: node --experimental-strip-types scripts/import-daily-strength.mjs source.zip current-jymiq.json jymiq-import.json\nCreates a merged backup; does not modify the phone. Requires Python 3. Copy jymiq-import.json into the backup folder (usually Documents), then restore through Account → Restore from a backup. Set weight units to LB in Settings. Keep your base JSON and source ZIP for rollback.',
+    'Usage: node --experimental-strip-types scripts/import-daily-strength.mjs source.zip current-jymiq.json jymiq-import.json [--source-only] [--weekly-order]\nDefault: merges existing data. --source-only: includes only source training data, discarding existing Jymiq rows. --weekly-order (requires --source-only): activates the current source program with its routine order assigned Monday first, remaining days rest. The program starts on import day.\nCreates a backup; does not modify the phone. Requires Python 3. Copy jymiq-import.json into the backup folder (usually Documents), then restore through Account → Restore from a backup. Set weight units to LB in Settings. Keep your base JSON and source ZIP for rollback.',
   );
   process.exit(1);
 }
@@ -36,6 +41,7 @@ with zipfile.ZipFile(sys.argv[1]) as archive:
   const { backup, report } = convertDailyStrength(
     archive,
     JSON.parse(readFileSync(basePath, 'utf8')),
+    { sourceOnly: flags.includes('--source-only'), weeklyOrder: flags.includes('--weekly-order') },
   );
   writeFileSync(output, JSON.stringify(backup), { flag: 'wx', mode: 0o600 });
   writeFileSync(

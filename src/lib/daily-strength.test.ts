@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { convertDailyStrength, type DailyStrengthArchive } from './daily-strength.ts';
 import { buildExport } from './export.ts';
+import { nextScheduled } from './program.ts';
 import { formatWeight } from './units.ts';
 
 function fixture() {
@@ -141,4 +142,72 @@ test('duplicate sessions, invalid timestamps and fractional reps are refused', (
   assert.throws(() => convertDailyStrength(g.archive, empty()), /Invalid reps/);
   g.session.endDate = 0;
   assert.throws(() => convertDailyStrength(g.archive, empty()), /Invalid dates/);
+});
+
+test('source-only import removes pre-import data and schedules only the current source routines', () => {
+  const f = fixture();
+  const currentSchedule = (
+    f.archive['UserPreferences.json'][0] as { currentSchedules: { id?: string; name?: string }[] }
+  ).currentSchedules[0];
+  currentSchedule.id = 'ppl';
+  currentSchedule.name = 'PPL';
+  const base = buildExport(
+    {
+      routines: [{ id: 'test-routine', name: 'Lower A' }],
+      programs: [{ id: 'test-program', name: 'PPL 3-Day', status: 'active' }],
+      program_days: [{ programId: 'test-program', weekday: 2, routineId: 'test-routine' }],
+      sessions: [{ id: 'test-session' }],
+      sets: [{ id: 'test-set' }],
+      body_weights: [{ id: 'test-weigh-in' }],
+      check_ins: [{ id: 'test-check-in' }],
+    },
+    { now: 1, appVersion: '1.0.0' },
+  );
+  const { backup } = convertDailyStrength(f.archive, base, {
+    sourceOnly: true,
+    weeklyOrder: true,
+    now: 100000,
+  });
+  assert.equal(backup.counts.sessions, 1);
+  assert.equal(backup.counts.sets, 3);
+  assert.equal(backup.counts.body_weights, 0);
+  assert.equal(backup.counts.check_ins, 0);
+  assert.ok(!JSON.stringify(backup.tables).includes('test-'));
+  const program = rows(backup, 'programs')[0];
+  assert.equal(program.name, 'PPL');
+  assert.equal(program.status, 'active');
+  assert.equal(program.startedAt, 100000);
+  assert.deepEqual(backup.tables.program_days, [
+    {
+      programId: 'daily-strength:program:ppl',
+      weekday: 0,
+      routineId: 'daily-strength:routine:routine',
+    },
+  ]);
+  assert.throws(
+    () => convertDailyStrength(f.archive, base, { weeklyOrder: true }),
+    /requires source-only/,
+  );
+});
+
+test('weekly order picks Wednesdays routine from the source program and leaves Sunday as rest', () => {
+  const f = fixture();
+  const names = ['Pull 1', 'Legs 1', 'Push 2', 'Push 1', 'Pull 2', 'Legs 2'];
+  const workouts = names.map((name, i) => ({ ...f.session.workout, id: `w${i}`, name }));
+  f.archive['UserPreferences.json'] = [
+    { currentSchedules: [{ id: 'ppl', name: 'PPL', workouts }] },
+  ];
+  const { backup } = convertDailyStrength(f.archive, empty(), {
+    sourceOnly: true,
+    weeklyOrder: true,
+  });
+  const routines = new Map(rows(backup, 'routines').map((r) => [r.id, r.name]));
+  const days = new Map(
+    rows(backup, 'program_days').map((d) => [Number(d.weekday), routines.get(d.routineId)]),
+  );
+  assert.deepEqual([...days.values()], names);
+  assert.equal(days.has(6), false);
+  const next = nextScheduled({ days, since: null }, new Date(2026, 8, 30));
+  assert.equal(next?.routine, 'Push 2');
+  assert.equal(next?.daysAway, 0);
 });
