@@ -376,10 +376,10 @@ test('the hand-matched map decides a name before the matcher, and null keeps it 
   ]);
 
   const custom = fixture();
-  custom.exercise.name = 'Pull over';
+  custom.exercise.name = 'Triceps Extension Machine';
   const result = convertDailyStrength(custom.archive, empty(), { libraryIds: ['ez-bar-curl'] });
   assert.equal(rows(result.backup, 'exercises')[0].id, 'daily-strength:exercise:ex');
-  assert.deepEqual(result.report.unmatchedExercises, ['Pull over']);
+  assert.deepEqual(result.report.unmatchedExercises, ['Triceps Extension Machine']);
 });
 
 test('a mapped library id missing from the library is an error, not a silent custom exercise', () => {
