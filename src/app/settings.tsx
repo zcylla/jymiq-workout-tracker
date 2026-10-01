@@ -14,6 +14,7 @@ import {
   Toggle,
 } from '@/components';
 import { ReadinessPill } from '@/components/pill';
+import { askNotificationPermission } from '@/data/live-notification';
 import { useRows } from '@/data/live';
 import { latestCheckInQuery } from '@/data/queries/readiness';
 import { setSettings, useSettings } from '@/data/settings';
@@ -144,8 +145,14 @@ export default function SettingsScreen() {
             <RowPlate>
               <Toggle
                 label="Workout notification"
-                on={settings.liveNotification}
-                onToggle={(liveNotification) => setSettings({ liveNotification })}
+                on={settings.liveNotification === true}
+                onToggle={(on) =>
+                  on
+                    ? askNotificationPermission().then((granted) =>
+                        setSettings({ liveNotification: granted }),
+                      )
+                    : setSettings({ liveNotification: false })
+                }
               />
             </RowPlate>
           </RowPlates>

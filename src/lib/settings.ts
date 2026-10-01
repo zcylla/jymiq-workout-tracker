@@ -33,8 +33,11 @@ export interface Settings {
   defaultSets: number;
   /** Hold the screen awake while a session is live. */
   keepScreenOn: boolean;
-  /** An ongoing notification while a live session runs. */
-  liveNotification: boolean;
+  /**
+   * An ongoing notification while a live session runs. Null until the first launch
+   * has asked for notification permission; that answer becomes the value.
+   */
+  liveNotification: boolean | null;
 }
 
 /**
@@ -51,7 +54,7 @@ export const DEFAULT_SETTINGS: Settings = {
   weightIncrementKg: 2.5,
   defaultSets: 3,
   keepScreenOn: false,
-  liveNotification: true,
+  liveNotification: null,
 };
 
 export const DEFAULT_SETS_MAX = 10;
@@ -90,6 +93,6 @@ export function coerceSettings(raw: unknown): Settings {
       : DEFAULT_SETTINGS.weightIncrementKg,
     defaultSets: isSetCount(o.defaultSets) ? o.defaultSets : DEFAULT_SETTINGS.defaultSets,
     keepScreenOn: o.keepScreenOn === true,
-    liveNotification: o.liveNotification !== false,
+    liveNotification: typeof o.liveNotification === 'boolean' ? o.liveNotification : null,
   };
 }

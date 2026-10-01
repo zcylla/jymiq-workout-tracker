@@ -5,9 +5,13 @@ import { AppState, Platform } from 'react-native';
 import { liveNotificationContent, liveNotificationState } from '@/lib/live-notification';
 
 import { useRows } from './live';
-import { listenForLiveNotification, updateLiveNotification } from './live-notification';
+import {
+  askNotificationPermission,
+  listenForLiveNotification,
+  updateLiveNotification,
+} from './live-notification';
 import { activeSessionQuery, sessionExercisesQuery, sessionSetsQuery } from './queries/sessions';
-import { useSettings } from './settings';
+import { setSettings, useSettings } from './settings';
 
 type Session = Awaited<ReturnType<typeof activeSessionQuery>>[number];
 
@@ -62,7 +66,12 @@ function ActiveNotification({ session }: { session: Session }) {
 }
 
 function NotificationObserver() {
-  const { liveNotification } = useSettings();
+  const { liveNotification: setting } = useSettings();
+  const liveNotification = setting === true;
+  useEffect(() => {
+    if (setting !== null) return;
+    void askNotificationPermission().then((granted) => setSettings({ liveNotification: granted }));
+  }, [setting]);
   const sessions = useRows(
     useMemo(() => activeSessionQuery(), []),
     [],

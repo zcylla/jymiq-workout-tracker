@@ -5,27 +5,41 @@ import { type LiveNotificationState, liveNotificationContent } from '@/lib/live-
 
 const IDENTIFIER = 'live-workout';
 const CHANNEL = 'session';
-let permission: Promise<boolean> | undefined;
 let pending = Promise.resolve();
 let revision = 0;
 let active = false;
 
-async function allowNotifications(): Promise<boolean> {
+async function ensureChannel(): Promise<void> {
+  await Notifications.setNotificationChannelAsync(CHANNEL, {
+    name: 'Workout in progress',
+    importance: Notifications.AndroidImportance.LOW,
+    sound: null,
+    enableVibrate: false,
+    vibrationPattern: [0],
+    enableLights: false,
+    showBadge: false,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+  });
+}
+
+/** Asks for notification permission if it can still be asked; false when denied or unavailable. */
+export async function askNotificationPermission(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
   try {
-    await Notifications.setNotificationChannelAsync(CHANNEL, {
-      name: 'Workout in progress',
-      importance: Notifications.AndroidImportance.LOW,
-      sound: null,
-      enableVibrate: false,
-      vibrationPattern: [0],
-      enableLights: false,
-      showBadge: false,
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-    });
+    await ensureChannel();
     const status = await Notifications.getPermissionsAsync();
     if (status.granted) return true;
     if (!status.canAskAgain) return false;
     return (await Notifications.requestPermissionsAsync()).granted;
+  } catch {
+    return false;
+  }
+}
+
+async function canNotify(): Promise<boolean> {
+  try {
+    await ensureChannel();
+    return (await Notifications.getPermissionsAsync()).granted;
   } catch {
     return false;
   }
@@ -70,8 +84,7 @@ export function updateLiveNotification(state: LiveNotificationState | null): Pro
         await dismiss();
         return;
       }
-      permission ??= allowNotifications();
-      if (!(await permission) || requestedRevision !== revision) return;
+      if (!(await canNotify()) || requestedRevision !== revision) return;
       await cancelRestEnd();
       if (requestedRevision !== revision) return;
       await Notifications.scheduleNotificationAsync({
