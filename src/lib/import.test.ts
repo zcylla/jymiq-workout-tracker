@@ -2,7 +2,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { EXPORT_VERSION, buildExport } from './export.ts';
-import { KNOWN_TABLES, backupFiles, describeBackup, parseBackup } from './import.ts';
+import {
+  KNOWN_TABLES,
+  backupFiles,
+  describeBackup,
+  parseBackup,
+  rowsForRestore,
+} from './import.ts';
 
 const meta = { now: Date.UTC(2026, 8, 13, 10, 42), appVersion: '1.0.0' };
 
@@ -211,4 +217,36 @@ test('body weights are a known table', () => {
 
 test('check-ins are a known table', () => {
   assert.ok((KNOWN_TABLES as readonly string[]).includes('check_ins'));
+});
+
+test('restore ignores library exercise collisions even when the backup labels them custom', () => {
+  const custom = { id: 'custom', isCustom: true };
+  const incoming = [
+    { id: 'bench-press', isCustom: false, description: 'Old library text' },
+    { id: 'bench-press', isCustom: true },
+    custom,
+  ];
+  assert.deepEqual(rowsForRestore('exercises', incoming, new Set(['bench-press'])), [custom]);
+  assert.equal(incoming.length, 3);
+});
+
+test('restore excludes incoming library muscle rows while retaining custom muscle links', () => {
+  const custom = { exerciseId: 'custom', muscle: 'chest', role: 'prime' };
+  const incoming = [
+    { exerciseId: 'bench-press', muscle: 'chest', role: 'assist' },
+    { exerciseId: 'bench-press', muscle: 'chest', role: 'prime' },
+    custom,
+  ];
+  assert.deepEqual(rowsForRestore('exercise_muscles', incoming, new Set(['bench-press'])), [
+    custom,
+  ]);
+});
+
+test('restore keeps training references to library ids and accepts backups omitting the library', () => {
+  const incoming = [{ id: 'sx', exerciseId: 'bench-press' }];
+  assert.deepEqual(
+    rowsForRestore('session_exercises', incoming, new Set(['bench-press'])),
+    incoming,
+  );
+  assert.deepEqual(rowsForRestore('exercises', [], new Set(['bench-press'])), []);
 });

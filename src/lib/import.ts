@@ -139,6 +139,16 @@ export function describeBackup(b: ParsedBackup): string {
  */
 export const RESTORE_ORDER = KNOWN_TABLES;
 
+export function rowsForRestore(
+  table: (typeof RESTORE_ORDER)[number],
+  rows: readonly unknown[],
+  libraryIds: ReadonlySet<string>,
+): readonly unknown[] {
+  if (table !== 'exercises' && table !== 'exercise_muscles') return rows;
+  const key = table === 'exercises' ? 'id' : 'exerciseId';
+  return rows.filter((row) => !libraryIds.has((row as Record<string, string>)[key]));
+}
+
 export interface BackupFile {
   uri: string;
   name: string;

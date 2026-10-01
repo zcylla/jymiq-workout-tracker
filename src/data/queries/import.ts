@@ -1,10 +1,12 @@
+import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { requireNativeModule } from 'expo';
 import { type DatabaseChangeEvent, openDatabaseSync } from 'expo-sqlite';
 
 import type { ExportTables } from '@/lib/export';
-import { RESTORE_ORDER } from '@/lib/import';
+import { RESTORE_ORDER, rowsForRestore } from '@/lib/import';
 
+import migrations from '../../../drizzle/migrations';
 import { sqlite } from '../db';
 import {
   bodyWeights,
@@ -22,12 +24,7 @@ import {
 } from '../schema';
 
 /**
- * Writing a backup back in. Restore **replaces**: every row in every table
- * is deleted and the file's rows take their place. Merging was rejected — the
- * ids are the same on both sides, so a merge is either a no-op or a silent
- * pick-a-winner, and neither is something you can reason about at the moment
- * you most need to.
- *
+ * Restore replaces user data, preserves the built-in library and reseeds missing library rows.
  * The caller writes a rollback export before calling this. That is the undo.
  */
 
@@ -53,7 +50,7 @@ const TABLES = {
  */
 const CHUNK = 60;
 
-/** Total rows written. Compare it against the file's own counts. */
+/** Backup rows written, excluding preserved library rows and the seed repair. */
 export function restoreBackup(tables: ExportTables): number {
   const events = requireNativeModule<{
     emit: (name: 'onDatabaseChange', event: DatabaseChangeEvent) => void;
@@ -70,12 +67,32 @@ export function restoreBackup(tables: ExportTables): number {
       // Children first: foreign keys are ON, and `exercise_muscles` has a
       // composite primary key, so a half-applied restore is a real failure mode.
       for (const name of [...RESTORE_ORDER].reverse()) {
-        tx.delete(TABLES[name]).run();
+        if (name === 'exercises') {
+          tx.delete(exercises).where(eq(exercises.isCustom, true)).run();
+        } else if (name === 'exercise_muscles') {
+          tx.delete(exerciseMuscles)
+            .where(
+              inArray(
+                exerciseMuscles.exerciseId,
+                tx.select({ id: exercises.id }).from(exercises).where(eq(exercises.isCustom, true)),
+              ),
+            )
+            .run();
+        } else tx.delete(TABLES[name]).run();
       }
 
+      connection.execSync(migrations.migrations.m0001);
+      const libraryIds = new Set(
+        tx
+          .select({ id: exercises.id })
+          .from(exercises)
+          .where(eq(exercises.isCustom, false))
+          .all()
+          .map((row) => row.id),
+      );
       let written = 0;
       for (const name of RESTORE_ORDER) {
-        const rows = tables[name] ?? [];
+        const rows = rowsForRestore(name, tables[name] ?? [], libraryIds);
         for (let i = 0; i < rows.length; i += CHUNK) {
           tx.insert(TABLES[name])
             .values(rows.slice(i, i + CHUNK) as never)
