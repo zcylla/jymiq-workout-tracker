@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import {
   ActionBar,
   Field,
   ListRow,
   NumberSheet,
+  PrimaryButton,
   RowPlate,
   RowPlates,
   Screen,
@@ -33,7 +34,7 @@ import {
 } from '@/lib/bodyweight';
 import { dateLabel, timeLabel } from '@/lib/time';
 import { formatWeight, fromDisplay, toDisplay, toKg } from '@/lib/units';
-import { color, hairline, radius, space, text, wash } from '@/theme';
+import { color, space, text } from '@/theme';
 
 const MONTHS = [
   'January',
@@ -223,24 +224,9 @@ export default function BodyweightScreen() {
           autoFocus
         />
         {error ? <Text style={[text.meta, { color: color.live }]}>{error}</Text> : null}
-        <Pressable
-          accessibilityRole="button"
-          onPress={save}
-          style={({ pressed }) => ({
-            minHeight: 44,
-            marginTop: space.within,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: radius.row,
-            borderCurve: 'continuous',
-            backgroundColor: wash.field,
-            borderWidth: 1,
-            borderColor: hairline.onPlate,
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text style={text.rowName}>Save</Text>
-        </Pressable>
+        <View style={{ marginTop: space.within }}>
+          <PrimaryButton label="Save" onPress={save} />
+        </View>
       </Sheet>
     </>
   );

@@ -26,6 +26,7 @@ export { LoadRing, type LoadRingCore } from './load-ring';
 export { ParamSelector, type WorkoutParameter } from './param-selector';
 export { Pill } from './pill';
 export { Plate } from './plate';
+export { PrimaryButton } from './primary-button';
 export { ProgramWeek } from './program-week';
 export { Rail, type RailItem } from './rail';
 export { RollingNumber } from './rolling-number';

@@ -1,10 +1,11 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, Pressable, Text, View } from 'react-native';
+import { BackHandler, Pressable, View } from 'react-native';
 
 import {
   ActionBar,
+  PrimaryButton,
   DropdownMenu,
   type DropdownAnchor,
   ExerciseStill,
@@ -40,7 +41,7 @@ import { useSettings } from '@/data/settings';
 import { formatRest, formatSessionDuration, sessionDotTone } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
 import { formatTonnage, topSet } from '@/lib/volume';
-import { color, radius, size, space, text, wash } from '@/theme';
+import { size, space } from '@/theme';
 
 const STILL = 44;
 /** The still plus the 7pt a `ListRow` pads above and below it: the plate's exact height, which the drag slots by. */
@@ -320,8 +321,8 @@ export default function RoutineScreen() {
       <Sheet open={menu === 'rename'} onClose={() => setMenu(null)}>
         <View style={{ gap: space.within }}>
           <Field label="RENAME ROUTINE" value={name} onChangeText={setName} autoFocus />
-          <RoutineAction
-            label="SAVE"
+          <PrimaryButton
+            label="Save"
             disabled={!name.trim()}
             onPress={() =>
               perform(() => {
@@ -349,35 +350,4 @@ function liftMeta(lift: Lift, unit: Unit): string {
   }
   if (lift.restSec != null) parts.push(`REST ${formatRest(lift.restSec)}`);
   return parts.join(' · ');
-}
-
-function RoutineAction({
-  label,
-  onPress,
-  destructive = false,
-  disabled = false,
-}: {
-  label: string;
-  onPress: () => void;
-  destructive?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: size.hit,
-        justifyContent: 'center',
-        paddingHorizontal: space.within,
-        borderRadius: radius.row,
-        backgroundColor: wash.field,
-        opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
-      })}
-    >
-      <Text style={[text.rowName, { color: destructive ? color.live : color.hi }]}>{label}</Text>
-    </Pressable>
-  );
 }
