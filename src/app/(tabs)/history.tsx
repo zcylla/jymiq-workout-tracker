@@ -182,7 +182,7 @@ export default function HistoryScreen() {
 
         {fresh ? (
           <Section label="SESSIONS" plated={false}>
-            <RowPlates>
+            <RowPlates tinted>
               {active?.program ? null : (
                 <RowPlate onPress={() => router.push('/program/new')}>
                   <ListRow
@@ -205,7 +205,7 @@ export default function HistoryScreen() {
 
         {logged === null || fresh ? null : (
           <Section plated={false}>
-            <RowPlates>
+            <RowPlates tinted>
               <RowPlate onPress={() => router.push('/records')}>
                 <ListRow
                   title="Records"

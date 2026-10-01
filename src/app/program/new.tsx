@@ -33,7 +33,7 @@ export default function NewProgramScreen() {
       <Screen bottomInset={actionBar}>
         <ScreenHeader title="New program" onBack={() => router.back()} />
         <Section first plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate>
               <Field
                 label="NAME"

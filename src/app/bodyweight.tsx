@@ -149,7 +149,7 @@ export default function BodyweightScreen() {
 
         {recent.length ? (
           <Section label="READINGS" plated={false}>
-            <RowPlates>
+            <RowPlates tinted>
               {recent.map((r) => (
                 <SwipeRow key={r.id} onDelete={() => remove(r.id, r.weightKg, r.measuredAt)}>
                   <RowPlate

@@ -29,7 +29,7 @@ export default function NewRoutineScreen() {
       <Screen bottomInset={actionBar}>
         <ScreenHeader title="New routine" onBack={() => router.back()} />
         <Section first plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate>
               <Field label="NAME" value={name} onChangeText={setName} prompt="Upper A" autoFocus />
             </RowPlate>

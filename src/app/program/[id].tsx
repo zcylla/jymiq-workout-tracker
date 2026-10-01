@@ -182,7 +182,7 @@ export default function ProgramScreen() {
         ) : null}
 
         <Section label="SCHEDULE" plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             {week.map((day) => (
               <RowPlate key={day.weekday}>
                 <Field

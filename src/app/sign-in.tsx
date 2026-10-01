@@ -207,7 +207,7 @@ function SyncSection() {
 
   return (
     <Section label="SYNC" plated={false}>
-      <RowPlates>
+      <RowPlates tinted>
         <RowPlate onPress={backUp} disabled={busy}>
           <ListRow
             quiet
@@ -332,7 +332,7 @@ function DataSection({ first = false }: { first?: boolean }) {
 
   return (
     <Section first={first} label="YOUR DATA" plated={false}>
-      <RowPlates>
+      <RowPlates tinted>
         <RowPlate onPress={runExport}>
           <ListRow quiet title={busy ? 'Working…' : 'Export everything'} />
         </RowPlate>
@@ -347,7 +347,7 @@ function DataSection({ first = false }: { first?: boolean }) {
       {/* Above the file list, not under it: a tall list pushes the status off screen. */}
       {note ? <Note>{note}</Note> : null}
       {files && files.length > 0 ? (
-        <RowPlates>
+        <RowPlates tinted>
           {files.map((file) => (
             <RowPlate key={file.uri} onPress={() => confirmRestore(file)}>
               <ListRow quiet title={file.name} />
@@ -424,7 +424,7 @@ export default function SignInScreen() {
       <Screen>
         <ScreenHeader title="Account" onBack={() => router.back()} />
         <Section first plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate>
               <ListRow chevron={false} quiet title={session.user.email ?? 'Signed in'} />
             </RowPlate>
@@ -452,7 +452,7 @@ export default function SignInScreen() {
         <ScreenHeader title="Account" onBack={() => router.back()} />
 
         <Section first plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate onPress={signInWithGoogle}>
               <ListRow quiet title="Continue with Google" />
             </RowPlate>
@@ -460,7 +460,7 @@ export default function SignInScreen() {
         </Section>
 
         <Section label="OR" plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate>
               <Field
                 label="EMAIL"

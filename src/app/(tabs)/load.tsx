@@ -193,7 +193,7 @@ export default function LoadScreen() {
       ) : null}
 
       <Section plated={false}>
-        <RowPlates>
+        <RowPlates tinted>
           <RowPlate onPress={() => router.push('/bodyweight')}>
             <ListRow title="Bodyweight" meta={weighInMeta} />
           </RowPlate>

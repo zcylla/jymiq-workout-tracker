@@ -89,7 +89,7 @@ function RoutineForm({ routine, rows }: { routine: Routine; rows: Lift[] }) {
       <Screen bottomInset={actionBar}>
         <ScreenHeader title="Edit routine" onBack={() => router.back()} />
         <Section first plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate>
               <Field label="NAME" value={name} onChangeText={setName} prompt="Upper A" />
             </RowPlate>

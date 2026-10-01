@@ -75,7 +75,7 @@ export default function NewExerciseScreen() {
         <ScreenHeader title="New exercise" onBack={() => router.back()} />
 
         <Section first plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate>
               <Field label="NAME" value={name} onChangeText={setName} prompt="Pause Front Squat" />
             </RowPlate>

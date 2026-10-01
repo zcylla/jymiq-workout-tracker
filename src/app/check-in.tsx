@@ -113,7 +113,7 @@ export default function CheckInScreen() {
         <ScreenHeader title="Check-in" onBack={() => router.back()} />
 
         <Section first plated={false}>
-          <RowPlates>
+          <RowPlates tinted>
             <RowPlate>
               <Scale
                 label="SLEEP"
