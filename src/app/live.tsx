@@ -13,6 +13,7 @@ import {
   Icon,
   KeypadSheet,
   ListRow,
+  PlateSheet,
   RowPlate,
   RowPlates,
   Screen,
@@ -138,12 +139,14 @@ function LiveMenu({
   onClose,
   onDiscard,
   onFinish,
+  onPlates,
 }: {
   open: boolean;
   anchor: DropdownAnchor | null;
   onClose: () => void;
   onDiscard: () => void;
   onFinish?: () => void;
+  onPlates?: () => void;
 }) {
   return (
     <DropdownMenu
@@ -152,6 +155,7 @@ function LiveMenu({
       anchor={anchor}
       items={[
         ...(onFinish ? [{ label: 'Finish', onPress: onFinish }] : []),
+        ...(onPlates ? [{ label: 'Plate calculator', onPress: onPlates }] : []),
         { label: 'Discard', tone: 'destructive' as const, onPress: onDiscard },
       ]}
     />
@@ -193,7 +197,7 @@ export default function LiveScreen() {
 
 function LiveSession({ sessionId }: { sessionId: string }) {
   const [editing, setEditing] = useState<WorkoutParameter | null>(null);
-  const [sheet, setSheet] = useState<'sets' | 'exercises' | 'notes' | null>(null);
+  const [sheet, setSheet] = useState<'sets' | 'exercises' | 'notes' | 'plates' | null>(null);
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [pulse, setPulse] = useState(0);
@@ -645,7 +649,9 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         onClose={closeMenu}
         onDiscard={discard}
         onFinish={finish}
+        onPlates={() => setSheet('plates')}
       />
+      <PlateSheet open={sheet === 'plates'} onClose={() => setSheet(null)} loadKg={load} />
     </View>
   );
 }
