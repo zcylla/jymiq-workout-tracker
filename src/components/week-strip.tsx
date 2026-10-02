@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Pressable, type ScrollView as RNScrollView, ScrollView, Text, View } from 'react-native';
 
+import type { DayMark } from '@/lib/day-state';
 import type { StripDay } from '@/lib/week';
 import { color, radius, size, text, wash } from '@/theme';
 
@@ -13,7 +14,7 @@ const RING_AIR = 6;
 
 /**
  * lab45 W3 — "the calendar and the graph are one element" — in Lab 49's day-state
- * grammar, with no key. Every cell reserves a bar-height box, so the strip is a
+ * grammar, with a quiet legend. Every cell reserves a bar-height box, so the strip is a
  * bar chart before it is a set of dates.
  */
 export function WeekStrip({
@@ -33,21 +34,24 @@ export function WeekStrip({
   const scroll = useRef<RNScrollView>(null);
 
   return (
-    <ScrollView
-      ref={scroll}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      // The strip ends on this week's Sunday, so the right-hand end always has
-      // today in view — six cells at most, inside a 411pt screen. That makes
-      // "scroll to the end" the whole of the scroll-to-today logic.
-      onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
-      style={{ marginHorizontal: -bleed }}
-      contentContainerStyle={{ gap: 5, paddingHorizontal: bleed, paddingVertical: RING_AIR }}
-    >
-      {days.map((day) => (
-        <DayCell key={day.key} day={day} maxVolumeKg={maxVolumeKg} onPress={onPressDay} />
-      ))}
-    </ScrollView>
+    <View style={{ gap: 4 }}>
+      <ScrollView
+        ref={scroll}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        // The strip ends on this week's Sunday, so the right-hand end always has
+        // today in view — six cells at most, inside a 411pt screen. That makes
+        // "scroll to the end" the whole of the scroll-to-today logic.
+        onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
+        style={{ marginHorizontal: -bleed }}
+        contentContainerStyle={{ gap: 5, paddingHorizontal: bleed, paddingVertical: RING_AIR }}
+      >
+        {days.map((day) => (
+          <DayCell key={day.key} day={day} maxVolumeKg={maxVolumeKg} onPress={onPressDay} />
+        ))}
+      </ScrollView>
+      <WeekLegend />
+    </View>
   );
 }
 
@@ -88,18 +92,7 @@ function DayCell({
       {/* The mark is the calendar's grammar in one 14pt slot:
           solid bar is trained, dashed is planned, hatched is missed, a stub is rest. */}
       <View style={{ width: 14, height: BAR_MAX, justifyContent: 'flex-end' }}>
-        {mark === 'planned' || mark === 'missed' ? (
-          <DayMarkGlyph mark={mark} width={14} height={MARK_HEIGHT} corner={3} />
-        ) : (
-          <View
-            style={{
-              width: 14,
-              height: mark === 'done' ? barHeight : 4,
-              borderRadius: mark === 'done' ? 3 : 2,
-              backgroundColor: mark === 'done' ? (today ? color.accent : color.done) : wash.track,
-            }}
-          />
-        )}
+        <WeekMark mark={mark} barHeight={barHeight} today={today} />
       </View>
     </View>
   );
@@ -110,5 +103,48 @@ function DayCell({
     <Pressable onPress={() => onPress(day)} accessibilityRole="button">
       {content}
     </Pressable>
+  );
+}
+
+function WeekMark({
+  mark,
+  barHeight = MARK_HEIGHT,
+  today = false,
+}: {
+  mark: DayMark;
+  barHeight?: number;
+  today?: boolean;
+}) {
+  return mark === 'planned' || mark === 'missed' ? (
+    <DayMarkGlyph mark={mark} width={14} height={MARK_HEIGHT} corner={3} />
+  ) : (
+    <View
+      style={{
+        width: 14,
+        height: mark === 'done' ? barHeight : 4,
+        borderRadius: mark === 'done' ? 3 : 2,
+        backgroundColor: mark === 'done' ? (today ? color.accent : color.done) : wash.track,
+      }}
+    />
+  );
+}
+
+function WeekLegend() {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 4 }}>
+      {(['done', 'planned', 'missed', 'rest'] as const).map((mark) => (
+        <View
+          key={mark}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: '100%' }}
+        >
+          <View style={{ width: 14, height: MARK_HEIGHT, justifyContent: 'center', flexShrink: 0 }}>
+            <WeekMark mark={mark} />
+          </View>
+          <Text style={[text.meta, { color: color.dim, flexShrink: 1 }]}>
+            {mark === 'done' ? 'trained' : mark}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 }

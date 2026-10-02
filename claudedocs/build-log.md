@@ -98,9 +98,9 @@ phone (Today, History, Load, Session, Settings, Account, Records, routine, progr
 live).** Owner-approved via Lab 49 (`design-labs/lab49.py`, §0 updated): **History replaces
 Strength** (month page: ‹ › header, session count + weekly-tonnes chart, the calendar, one line per
 session opening its detail, a Records row → `/records`); **Load opens on the body figure** with a
-deload chip and Records at the foot (`/body` is gone); **day states with no key** on the calendar and
-Today's strip (trained fill, planned dashed, missed hatched, rest empty, today the only solid ring —
-`src/lib/day-state.ts`); **readiness and deload are chips**; **Settings and Account rows are one
+deload chip and Records at the foot (`/body` is gone); **day states** on the calendar and
+Today's strip (trained fill/bar, planned dashed, missed hatched, rest empty/stub, today the only solid ring —
+`src/lib/day-state.ts`), now with the calendar's explicit legend and the strip's quiet trained / planned / missed / rest legend (owner request, 2026-10-02); **readiness and deload are chips**; **Settings and Account rows are one
 line**; **empty states are actions only**; guard dialogs became dim/Resume buttons; both bloom
 orbs are now the same gold. The text audit is `claudedocs/text-audit.md`. Four defects found on the device were fixed (chart axis unit, Load record tags, a stray check-in
 chip, a repeated Today kicker). See "Pick this up here".
