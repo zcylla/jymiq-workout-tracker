@@ -8,6 +8,7 @@ import { color, hairline, type Ink, ls, radius, sans, size, space, text, wash } 
 
 import { Chevron } from './icon';
 import { ReorderList } from './reorder-list';
+import { RowPlate } from './row-plate';
 import { Sheet } from './sheet';
 import { SwipeRow } from './swipe-row';
 
@@ -61,38 +62,28 @@ function ExerciseRow({
   const still = exerciseStillFor(exercise.exerciseId, exercise.name);
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        height: size.hit,
-        gap: 9,
-        paddingHorizontal: 8,
-        borderRadius: radius.row,
-        backgroundColor: state === 'current' ? wash.accent : undefined,
-        opacity: pressed ? 0.7 : state === 'ahead' ? 0.6 : 1,
-      })}
-    >
-      {handle}
-      {still != null ? (
-        <Image
-          source={still}
-          style={{ width: STILL, height: STILL }}
-          contentFit="contain"
-          tintColor={color.mid}
-          cachePolicy="memory-disk"
-          transition={0}
-        />
-      ) : null}
-      <View style={{ flex: 1 }}>
-        <Text style={{ ...sans(400), fontSize: 14, color: nameColor }} numberOfLines={1}>
-          {exercise.name}
-        </Text>
+    <RowPlate selected={isCurrent} onPress={onPress}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', height: size.hit, gap: 9 }}>
+        {handle}
+        {still != null ? (
+          <Image
+            source={still}
+            style={{ width: STILL, height: STILL }}
+            contentFit="contain"
+            tintColor={color.mid}
+            cachePolicy="memory-disk"
+            transition={0}
+          />
+        ) : null}
+        <View style={{ flex: 1 }}>
+          <Text style={{ ...sans(400), fontSize: 14, color: nameColor }} numberOfLines={1}>
+            {exercise.name}
+          </Text>
+        </View>
+        {meta ? <Text style={text.label}>{meta}</Text> : null}
+        <Chevron />
       </View>
-      {meta ? <Text style={text.label}>{meta}</Text> : null}
-      <Chevron />
-    </Pressable>
+    </RowPlate>
   );
 }
 
@@ -137,11 +128,12 @@ export function ExercisesSheet({
       <ReorderList
         items={exercises}
         rowHeight={size.hit}
+        gap={space.row}
         onReorder={onReorder}
         renderRow={(e, i, handle) => (
           <SwipeRow
             key={e.id}
-            surface="transparent"
+            surface={color.raised}
             onDelete={onDelete ? () => onDelete(e.id) : undefined}
             onSwap={onReplace ? () => onReplace(e.id) : undefined}
           >

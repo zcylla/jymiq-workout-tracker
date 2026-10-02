@@ -12,6 +12,7 @@ import { disabledControl } from '@/theme/tokens';
 import { Chevron } from './icon';
 import { ReorderList } from './reorder-list';
 import { PrimaryButton } from './primary-button';
+import { RowPlate } from './row-plate';
 import { Sheet } from './sheet';
 import { SwipeRow } from './swipe-row';
 
@@ -62,36 +63,30 @@ function SetRow({
   const valueColor = isCurrent ? color.accent : done ? color.hi : color.mid;
   const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} × ${set.reps ?? '—'}`;
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. Edit set`}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        height: ROW_HEIGHT,
-        gap: 9,
-        paddingHorizontal: 8,
-        marginLeft: linked ? space.within : 0,
-        borderRadius: radius.row,
-        backgroundColor: isCurrent ? wash.accent : undefined,
-        opacity: pressed ? 0.7 : isCurrent || done ? 1 : 0.6,
-      })}
-    >
-      {handle}
-      <Text style={[text.numSm, { color: indexColor }]}>
-        {String(set.position).padStart(2, '0')}
-      </Text>
-      {set.kind === 'working' ? null : (
-        <Text style={[text.meta, { color: color.lo }]}>{typeLabel.toUpperCase()}</Text>
-      )}
-      <View style={{ flex: 1 }} />
-      <Text style={[text.numSm, { color: valueColor }]} numberOfLines={1}>
-        {values}
-        {set.rpe == null ? '' : ` @${set.rpe}`}
-      </Text>
-      {isCurrent ? null : <Chevron />}
-    </Pressable>
+    <View style={{ paddingLeft: linked ? space.within : 0 }}>
+      <RowPlate selected={isCurrent} onPress={onPress}>
+        <View
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. Edit set`}
+          style={{ flexDirection: 'row', alignItems: 'center', height: ROW_HEIGHT, gap: 9 }}
+        >
+          {handle}
+          <Text style={[text.numSm, { color: indexColor }]}>
+            {String(set.position).padStart(2, '0')}
+          </Text>
+          {set.kind === 'working' ? null : (
+            <Text style={[text.meta, { color: color.lo }]}>{typeLabel.toUpperCase()}</Text>
+          )}
+          <View style={{ flex: 1 }} />
+          <Text style={[text.numSm, { color: valueColor }]} numberOfLines={1}>
+            {values}
+            {set.rpe == null ? '' : ` @${set.rpe}`}
+          </Text>
+          {isCurrent ? null : <Chevron />}
+        </View>
+      </RowPlate>
+    </View>
   );
 }
 
@@ -147,7 +142,7 @@ export function SetsSheet({
         renderRow={(s, _i, handle) => (
           <SwipeRow
             key={s.id}
-            surface="transparent"
+            surface={color.raised}
             onDelete={onDelete ? () => onDelete(s.id) : undefined}
           >
             <SetRow
