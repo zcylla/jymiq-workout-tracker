@@ -119,7 +119,8 @@ internal object LiveRestNotification {
     val icon = metadata?.getInt("expo.modules.notifications.default_notification_icon", 0)
       ?.takeIf { it != 0 } ?: context.applicationInfo.icon
     val color = metadata?.getInt("expo.modules.notifications.default_notification_color", 0) ?: 0
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("jymiq:///live"))
+    val scheme = if (context.packageName.endsWith(".dev")) "jymiqdev" else "jymiq"
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("$scheme:///live"))
       .setPackage(context.packageName)
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
     val tap = PendingIntent.getActivity(
