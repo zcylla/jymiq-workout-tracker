@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { type IntensityStep, type MonthCell, type TrainedDay } from '@/lib/calendar';
 import { type DayMark, dayState } from '@/lib/day-state';
 import { NO_SCHEDULE, type Schedule } from '@/lib/program';
-import { color, dayMark, type Ink, radius, text } from '@/theme';
+import { color, dayMark, hairline, type Ink, radius, text } from '@/theme';
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -47,7 +47,7 @@ export type CalendarProps = {
 };
 
 /**
- * lab49.py's `month()`, with no key: solid is trained, dashed is planned,
+ * lab49.py's `month()`, with the owner's legend: solid is trained, dashed is planned,
  * hatched is missed, empty is rest, and the ring is today's alone.
  *
  * A day you trained is a target that opens that session; a day you did not is
@@ -113,6 +113,81 @@ export function Calendar({
           </View>
         ))}
       </View>
+      <CalendarLegend />
+    </View>
+  );
+}
+
+function calendarCellStyle(today = false, adjacent = false) {
+  return {
+    aspectRatio: 1,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderRadius: radius.cell,
+    borderCurve: 'continuous' as const,
+    opacity: adjacent ? 0.4 : 1,
+    boxShadow: today ? `0 0 0 1.5px ${color.accent}` : undefined,
+  };
+}
+
+function trainedFillStyle(step: IntensityStep) {
+  return { borderRadius: radius.cell, backgroundColor: color.accent, opacity: FILL[step] };
+}
+
+function CalendarLegend() {
+  return (
+    <View
+      style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 8, marginTop: 12 }}
+    >
+      <View
+        accessible
+        accessibilityLabel="Trained. Volume increases from left to right, relative to this month."
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}
+      >
+        <Text style={text.meta}>Trained</Text>
+        <View style={{ flexDirection: 'row', gap: 3 }}>
+          {([1, 2, 3] as const).map((step) => (
+            <LegendSwatch key={step} step={step} />
+          ))}
+        </View>
+        <Text style={text.meta}>Volume: less → more</Text>
+      </View>
+      {(['planned', 'missed', 'rest', 'today'] as const).map((mark) => (
+        <View key={mark} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <LegendSwatch mark={mark === 'today' ? 'rest' : mark} today={mark === 'today'} />
+          <Text style={text.meta}>
+            {mark[0]?.toUpperCase()}
+            {mark.slice(1)}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function LegendSwatch({
+  mark = 'done',
+  step,
+  today = false,
+}: {
+  mark?: DayMark;
+  step?: IntensityStep;
+  today?: boolean;
+}) {
+  return (
+    <View
+      style={[
+        calendarCellStyle(today),
+        { width: 18, height: 18 },
+        mark === 'rest' && !today && { borderWidth: 0.5, borderColor: hairline.onPlate },
+      ]}
+    >
+      {step ? <View style={[StyleSheet.absoluteFill, trainedFillStyle(step)]} /> : null}
+      {mark === 'planned' || mark === 'missed' ? (
+        <Canvas style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+          {markAt(mark, 0, 0, 18)}
+        </Canvas>
+      ) : null}
     </View>
   );
 }
@@ -177,25 +252,8 @@ function DayCell({
         : color.lo;
 
   const face = (
-    <View
-      style={{
-        aspectRatio: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: radius.cell,
-        borderCurve: 'continuous',
-        opacity: cell.adjacent ? 0.4 : 1,
-        boxShadow: today ? `0 0 0 1.5px ${color.accent}` : undefined,
-      }}
-    >
-      {day ? (
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            { borderRadius: radius.cell, backgroundColor: color.accent, opacity: FILL[day.step] },
-          ]}
-        />
-      ) : null}
+    <View style={calendarCellStyle(today, cell.adjacent)}>
+      {day ? <View style={[StyleSheet.absoluteFill, trainedFillStyle(day.step)]} /> : null}
       <Text style={[text.numSm, { color: ink }]}>{cell.day}</Text>
     </View>
   );
