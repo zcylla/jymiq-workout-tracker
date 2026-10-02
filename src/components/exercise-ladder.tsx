@@ -1,20 +1,25 @@
 import { useEffect } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   type SharedValue,
   useAnimatedStyle,
   useReducedMotion,
+  useAnimatedReaction,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { closestExerciseRung } from '@/lib/exercise-ladder';
-import { color, motion, radius, size, text } from '@/theme';
+import { color, motion, radius, sans, size, text } from '@/theme';
 
 const LADDER_EDGE = 10;
 const HOLD_MS = 350;
+/** Names end in an ellipsis here; the live screen's fade covers what lies beyond. */
+export const LABEL_WIDTH = 124;
 const POP = { duration: 180, dampingRatio: 0.85 };
 
 type Rung = { id: string; name: string; done: boolean };
@@ -24,6 +29,8 @@ type Props = {
   dimmed: boolean;
   onPress: () => void;
   onSelect: (id: string) => void;
+  /** 0 at rest, 1 while scrubbing: the live screen displaces its ring by it. */
+  progressSV: SharedValue<number>;
 };
 
 function ExerciseRung({
@@ -56,50 +63,60 @@ function ExerciseRung({
     color: scrubbingSV.get() ? (selectedSV.get() === index ? color.hi : color.dim) : restingColor,
   }));
   const labelStyle = useAnimatedStyle(() => {
-    const selected = selectedSV.get() === index;
+    const distance = Math.abs(selectedSV.get() - index);
     return {
-      opacity: scrubbingSV.get() ? 1 : 0,
-      backgroundColor: selected ? color.accent : color.raised,
-      color: selected ? color.ink : color.mid,
+      opacity: scrubbingSV.get() ? Math.max(0.3, 1 - 0.22 * distance) : 0,
+      color: selectedSV.get() === index ? color.hi : color.mid,
     };
   });
+  const washStyle = useAnimatedStyle(() => ({
+    opacity: scrubbingSV.get() && selectedSV.get() === index ? 1 : 0,
+  }));
 
   return (
     <View style={{ minHeight: 25, justifyContent: 'center', paddingVertical: 4 }}>
       <Animated.View pointerEvents="none" style={popStyle}>
         <Animated.Text style={[text.meta, numberStyle]}>{index + 1}</Animated.Text>
-        <Animated.Text
-          numberOfLines={1}
-          ellipsizeMode="tail"
-          style={[
-            text.meta,
-            {
-              position: 'absolute',
-              left: 30,
-              top: -4,
-              width: labelWidth,
-              paddingHorizontal: 9,
-              paddingVertical: 4,
-              borderRadius: radius.pill,
-            },
-            labelStyle,
-          ]}
-        >
-          {rung.name}
-        </Animated.Text>
+        <View style={{ position: 'absolute', left: 24, top: -5, width: labelWidth, height: 28 }}>
+          <Animated.View style={[StyleSheet.absoluteFill, washStyle]}>
+            <LinearGradient
+              colors={['rgba(228,198,140,0.18)', 'rgba(228,198,140,0)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                flex: 1,
+                borderTopLeftRadius: radius.row,
+                borderBottomLeftRadius: radius.row,
+              }}
+            />
+          </Animated.View>
+          <Animated.Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[sans(400), { fontSize: 14, lineHeight: 28, paddingHorizontal: 8 }, labelStyle]}
+          >
+            {rung.name}
+          </Animated.Text>
+        </View>
       </Animated.View>
     </View>
   );
 }
 
-export function ExerciseLadder({ rungs, currentId, dimmed, onPress, onSelect }: Props) {
-  const { width } = useWindowDimensions();
+export function ExerciseLadder({ rungs, currentId, dimmed, onPress, onSelect, progressSV }: Props) {
   const rowHeightSV = useSharedValue(0);
   const selectedSV = useSharedValue(-1);
   const scrubbingSV = useSharedValue(false);
   const count = rungs.length;
   const currentIndex = rungs.findIndex((rung) => rung.id === currentId);
   const rungOrder = rungs.map((rung) => rung.id).join(',');
+
+  useAnimatedReaction(
+    () => scrubbingSV.get(),
+    (scrubbing) => {
+      progressSV.set(withTiming(scrubbing ? 1 : 0, { duration: motion.fast }));
+    },
+  );
 
   useEffect(() => {
     scrubbingSV.set(false);
@@ -186,7 +203,7 @@ export function ExerciseLadder({ rungs, currentId, dimmed, onPress, onSelect }: 
               current={rung.id === currentId}
               selectedSV={selectedSV}
               scrubbingSV={scrubbingSV}
-              labelWidth={Math.min(230, Math.max(0, width - LADDER_EDGE - 64))}
+              labelWidth={LABEL_WIDTH}
             />
           ))}
         </View>

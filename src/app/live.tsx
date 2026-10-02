@@ -1,7 +1,9 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { BackHandler, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import {
@@ -60,7 +62,7 @@ import type { SetKind } from '@/lib/volume';
 import { elapsedSec, formatClock, restRemainingSec } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
 import { countLoggedSets, formatTonnage, totalVolume } from '@/lib/volume';
-import { ExerciseLadder } from '@/components/exercise-ladder';
+import { ExerciseLadder, LABEL_WIDTH } from '@/components/exercise-ladder';
 import { LiveDeck } from '@/components/live-deck';
 import { LiveInstrument } from '@/components/live-instrument';
 import { LivePager } from '@/components/live-pager';
@@ -213,6 +215,12 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [pulse, setPulse] = useState(0);
+  const ladderSV = useSharedValue(0);
+  const wheelStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: ladderSV.get() * LABEL_WIDTH }],
+    opacity: 1 - 0.5 * ladderSV.get(),
+  }));
+  const wheelFadeStyle = useAnimatedStyle(() => ({ opacity: ladderSV.get() }));
   const [menu, setMenu] = useState<{ open: boolean; anchor: DropdownAnchor | null }>({
     open: false,
     anchor: null,
@@ -537,31 +545,49 @@ function LiveSession({ sessionId }: { sessionId: string }) {
             onType={() => chooseType(set.id)}
           />
 
-          <LiveInstrument
-            key={set.id}
-            editing={editing}
-            load={load}
-            reps={reps}
-            rpe={set.rpe}
-            oneRm={oneRm}
-            showRpe={showRpe}
-            onEdit={(p) => setEditing((current) => (current === p ? null : p))}
-            pulse={pulse}
-            onDetent={onDetent}
-            // Lab 32's switch: one route or the other opens the keypad, and
-            // the tape is always reachable by the one it is not on.
-            onSelect={(p) =>
-              settings.tapOpensKeypad
-                ? setKeypadParam(p)
-                : setEditing((current) => (current === p ? null : p))
-            }
-            onType={setKeypadParam}
-            onLongPress={(p) =>
-              settings.tapOpensKeypad
-                ? setEditing((current) => (current === p ? null : p))
-                : setKeypadParam(p)
-            }
-          />
+          <View style={{ flex: 1 }}>
+            <Animated.View style={[{ flex: 1 }, wheelStyle]}>
+              <LiveInstrument
+                key={set.id}
+                editing={editing}
+                load={load}
+                reps={reps}
+                rpe={set.rpe}
+                oneRm={oneRm}
+                showRpe={showRpe}
+                onEdit={(p) => setEditing((current) => (current === p ? null : p))}
+                pulse={pulse}
+                onDetent={onDetent}
+                // Lab 32's switch: one route or the other opens the keypad, and
+                // the tape is always reachable by the one it is not on.
+                onSelect={(p) =>
+                  settings.tapOpensKeypad
+                    ? setKeypadParam(p)
+                    : setEditing((current) => (current === p ? null : p))
+                }
+                onType={setKeypadParam}
+                onLongPress={(p) =>
+                  settings.tapOpensKeypad
+                    ? setEditing((current) => (current === p ? null : p))
+                    : setKeypadParam(p)
+                }
+              />
+            </Animated.View>
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                { position: 'absolute', top: 0, bottom: 0, right: -space.pad, width: 96 },
+                wheelFadeStyle,
+              ]}
+            >
+              <LinearGradient
+                colors={['rgba(10,9,8,0)', color.ground]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ flex: 1 }}
+              />
+            </Animated.View>
+          </View>
         </LivePager>
 
         <View style={{ paddingTop: space.within }}>
@@ -613,6 +639,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         }))}
         currentId={exercise.id}
         dimmed={editing !== null}
+        progressSV={ladderSV}
         onPress={() => setSheet('exercises')}
         onSelect={(id) => {
           const targetSets = allSets.filter((s) => s.sessionExerciseId === id);
