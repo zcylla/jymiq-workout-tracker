@@ -325,7 +325,7 @@ export function StartButton({
             borderRadius: radius.full,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: running ? color.done : color.accent,
+            backgroundColor: running ? color.live : color.accent,
             boxShadow: fabShadow,
           },
           press.style,
