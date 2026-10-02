@@ -1,10 +1,12 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 
 import { estimate1RM } from '@/lib/e1rm';
 import { newId } from '@/lib/id';
 import { performAgainPlan } from '@/lib/perform-again';
 import { type PrHit, detectSessionVolumePr, detectSetPrs } from '@/lib/pr';
 import { adjustRestUntil, resolveRestSec } from '@/lib/rest';
+import { editedSetValues, editedSessionTotals, replayExerciseRecords } from '@/lib/set-edit';
+import { canCarrySetDefaults, setDefaults, type SetParameters } from '@/lib/set-defaults';
 
 import { getSettings } from '../settings';
 import { syncSoon } from '../sync';
@@ -12,7 +14,7 @@ import { resolveSessionDurationSec } from '@/lib/time';
 import { countWorkingSets, type SetLike, totalVolume } from '@/lib/volume';
 
 import { db } from '../db';
-import { readPrBaseline } from '../queries/sessions';
+import { readLastCompletedExerciseSets, readPrBaseline } from '../queries/sessions';
 import {
   exercises,
   personalRecords,
@@ -27,6 +29,29 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** Sets given to an exercise added with no plan behind it: Settings' default sets. */
 const defaultSets = () => getSettings().defaultSets;
+
+function previousExerciseSet(tx: Tx, sessionId: string, exerciseId: string): SetParameters | null {
+  return (
+    tx
+      .select({ loadKg: sets.weightKg, reps: sets.reps, rpe: sets.rpe })
+      .from(sets)
+      .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+      .where(
+        and(
+          eq(sessionExercises.sessionId, sessionId),
+          eq(sessionExercises.exerciseId, exerciseId),
+          isNotNull(sets.completedAt),
+        ),
+      )
+      .orderBy(desc(sets.completedAt), desc(sessionExercises.position), desc(sets.position))
+      .limit(1)
+      .all()[0] ?? null
+  );
+}
+
+function defaultValues(parameters: SetParameters) {
+  return { weightKg: parameters.loadKg, reps: parameters.reps, rpe: parameters.rpe };
+}
 
 /** The latest `completedAt` among a session's sets, or null if none logged. */
 function lastCompletedAt(rows: { completedAt: number | null }[]): number | null {
@@ -125,6 +150,8 @@ export function startSession(input: { routineId?: string | null; name?: string }
         })
         .run();
 
+      const history = readLastCompletedExerciseSets(tx, line.exerciseId, id);
+      const previous = previousExerciseSet(tx, id, line.exerciseId);
       for (let i = 0; i < line.targetSets; i++) {
         const setId = newId();
         tx.insert(sets)
@@ -135,8 +162,13 @@ export function startSession(input: { routineId?: string | null; name?: string }
             kind: 'working',
             plannedWeightKg: line.targetWeightKg,
             plannedReps: line.targetReps,
-            weightKg: line.targetWeightKg,
-            reps: line.targetReps,
+            ...defaultValues(
+              setDefaults(previous, history, i + 1, {
+                loadKg: line.targetWeightKg,
+                reps: line.targetReps,
+                rpe: null,
+              }),
+            ),
             createdAt: now,
             updatedAt: now,
           })
@@ -161,7 +193,8 @@ export function startSession(input: { routineId?: string | null; name?: string }
 
 /**
  * Opens a session from a finished one: the lifts and sets that were logged there,
- * in order, dialled in as the targets. The copied sets are drafts like a routine's —
+ * in order, with their logged load and reps as explicit targets and RPE unset.
+ * The copied sets are drafts like a routine's —
  * `completedAt` stays null, so none of them counts until it is logged.
  */
 export function startSessionFrom(sourceId: string): string {
@@ -236,8 +269,13 @@ export function startSessionFrom(sourceId: string): string {
             kind: s.kind,
             plannedWeightKg: s.weightKg,
             plannedReps: s.reps,
-            weightKg: s.weightKg,
-            reps: s.reps,
+            ...defaultValues(
+              setDefaults(null, [], i + 1, {
+                loadKg: s.weightKg,
+                reps: s.reps,
+                rpe: null,
+              }),
+            ),
             createdAt: now,
             updatedAt: now,
           })
@@ -270,10 +308,102 @@ export function updateSet(
     kind?: SetLike['kind'];
   },
 ): void {
-  db.update(sets)
-    .set({ ...patch, updatedAt: Date.now() })
-    .where(eq(sets.id, id))
-    .run();
+  db.transaction((tx) => {
+    const [row] = tx
+      .select({ set: sets, exerciseId: sessionExercises.exerciseId, session: sessions })
+      .from(sets)
+      .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+      .innerJoin(sessions, eq(sessions.id, sessionExercises.sessionId))
+      .where(eq(sets.id, id))
+      .limit(1)
+      .all();
+    if (!row) return;
+
+    tx.update(sets)
+      .set({
+        ...editedSetValues(row.set, patch),
+        updatedAt: sql`max(${Date.now()}, ${sets.createdAt} + 1)`,
+      })
+      .where(eq(sets.id, id))
+      .run();
+    if (row.set.completedAt == null) return;
+
+    const sessionRows = tx
+      .select({
+        weightKg: sets.weightKg,
+        reps: sets.reps,
+        kind: sets.kind,
+        completedAt: sets.completedAt,
+      })
+      .from(sets)
+      .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+      .where(eq(sessionExercises.sessionId, row.session.id))
+      .all();
+    tx.update(sessions)
+      .set(editedSessionTotals(row.session, sessionRows))
+      .where(eq(sessions.id, row.session.id))
+      .run();
+    if (patch.weightKg === undefined && patch.reps === undefined && patch.kind === undefined)
+      return;
+
+    const history = tx
+      .select({
+        id: sets.id,
+        sessionId: sessionExercises.sessionId,
+        weightKg: sets.weightKg,
+        reps: sets.reps,
+        rpe: sets.rpe,
+        kind: sets.kind,
+        completedAt: sets.completedAt,
+        e1rmKg: sets.e1rmKg,
+      })
+      .from(sets)
+      .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+      .where(eq(sessionExercises.exerciseId, row.exerciseId))
+      .orderBy(
+        asc(sets.completedAt),
+        asc(sessionExercises.position),
+        asc(sets.position),
+        asc(sets.id),
+      )
+      .all();
+    const exerciseSessions = tx
+      .selectDistinct({ id: sessions.id, status: sessions.status, endedAt: sessions.endedAt })
+      .from(sessions)
+      .innerJoin(sessionExercises, eq(sessionExercises.sessionId, sessions.id))
+      .where(eq(sessionExercises.exerciseId, row.exerciseId))
+      .all();
+    const existing = tx
+      .select()
+      .from(personalRecords)
+      .where(eq(personalRecords.exerciseId, row.exerciseId))
+      .all();
+    const recordKey = (r: { sessionId: string; setId: string | null; category: string }) =>
+      `${r.sessionId}:${r.setId ?? ''}:${r.category}`;
+    const remaining = new Map(existing.map((r) => [recordKey(r), r]));
+    for (const record of replayExerciseRecords(history, exerciseSessions)) {
+      const key = recordKey(record);
+      const previous = remaining.get(key);
+      remaining.delete(key);
+      if (!previous) {
+        tx.insert(personalRecords)
+          .values({ ...record, id: newId(), exerciseId: row.exerciseId })
+          .run();
+      } else if (
+        previous.value !== record.value ||
+        previous.previousValue !== record.previousValue ||
+        previous.weightKg !== record.weightKg ||
+        previous.reps !== record.reps ||
+        previous.achievedAt !== record.achievedAt
+      ) {
+        tx.update(personalRecords).set(record).where(eq(personalRecords.id, previous.id)).run();
+      }
+    }
+    for (const record of remaining.values()) {
+      tx.delete(personalRecords).where(eq(personalRecords.id, record.id)).run();
+    }
+  });
+  syncSoon();
 }
 
 /**
@@ -296,6 +426,7 @@ export function completeSet(id: string): PrHit[] {
         kind: sets.kind,
         weightKg: sets.weightKg,
         reps: sets.reps,
+        rpe: sets.rpe,
         completedAt: sets.completedAt,
         position: sets.position,
         sessionExerciseId: sets.sessionExerciseId,
@@ -346,6 +477,50 @@ export function completeSet(id: string): PrHit[] {
         .run();
     }
 
+    const [draft] = tx
+      .select({
+        id: sets.id,
+        position: sets.position,
+        plannedWeightKg: sets.plannedWeightKg,
+        plannedReps: sets.plannedReps,
+        completedAt: sets.completedAt,
+        createdAt: sets.createdAt,
+        updatedAt: sets.updatedAt,
+      })
+      .from(sets)
+      .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+      .where(
+        and(
+          eq(sessionExercises.sessionId, row.sessionId),
+          eq(sessionExercises.exerciseId, row.exerciseId),
+          isNull(sessionExercises.removedAt),
+          isNull(sets.completedAt),
+        ),
+      )
+      .orderBy(
+        desc(sql`(${sessionExercises.position} > ${row.exercisePosition} or
+          (${sessionExercises.position} = ${row.exercisePosition} and ${sets.position} > ${row.position}))`),
+        asc(sessionExercises.position),
+        asc(sets.position),
+      )
+      .limit(1)
+      .all();
+    if (draft && canCarrySetDefaults(draft)) {
+      tx.update(sets)
+        .set(
+          defaultValues(
+            setDefaults(
+              { loadKg: row.weightKg, reps: row.reps, rpe: row.rpe },
+              [],
+              draft.position,
+              { loadKg: draft.plannedWeightKg, reps: draft.plannedReps, rpe: null },
+            ),
+          ),
+        )
+        .where(eq(sets.id, draft.id))
+        .run();
+    }
+
     const next = nextIncompleteSet(tx, row.sessionId, row.exercisePosition, row.position);
     tx.update(sessions)
       .set({
@@ -376,28 +551,47 @@ export function uncompleteSet(id: string): void {
   });
 }
 
-/** Appends a set, carrying the last one's load forward — the usual next action. */
+/** Appends a set using the latest logged parameters, or completed-session history. */
 export function addSet(sessionExerciseId: string, kind: SetLike['kind'] = 'working'): string {
   const id = newId();
   const now = Date.now();
 
   db.transaction((tx) => {
-    const [last] = tx
-      .select({ position: sets.position, weightKg: sets.weightKg, reps: sets.reps })
-      .from(sets)
-      .where(eq(sets.sessionExerciseId, sessionExerciseId))
-      .orderBy(sql`${sets.position} desc`)
+    const [exercise] = tx
+      .select()
+      .from(sessionExercises)
+      .where(eq(sessionExercises.id, sessionExerciseId))
       .limit(1)
       .all();
+    if (!exercise) throw new Error(`No such session exercise: ${sessionExerciseId}`);
+    const [last] = tx
+      .select({ position: sets.position })
+      .from(sets)
+      .where(eq(sets.sessionExerciseId, sessionExerciseId))
+      .orderBy(desc(sets.position))
+      .limit(1)
+      .all();
+    const position = (last?.position ?? 0) + 1;
+    const target =
+      kind === 'working' && position <= (exercise.plannedSets ?? 0)
+        ? { loadKg: exercise.plannedWeightKg, reps: exercise.plannedReps, rpe: null }
+        : null;
+    const parameters = setDefaults(
+      previousExerciseSet(tx, exercise.sessionId, exercise.exerciseId),
+      readLastCompletedExerciseSets(tx, exercise.exerciseId, exercise.sessionId),
+      position,
+      target,
+    );
 
     tx.insert(sets)
       .values({
         id,
         sessionExerciseId,
-        position: (last?.position ?? 0) + 1,
+        position,
         kind,
-        weightKg: last?.weightKg ?? null,
-        reps: last?.reps ?? null,
+        plannedWeightKg: target?.loadKg ?? null,
+        plannedReps: target?.reps ?? null,
+        ...defaultValues(parameters),
         createdAt: now,
         updatedAt: now,
       })
@@ -449,7 +643,7 @@ export function removeSet(id: string): void {
   });
 }
 
-/** Snapshots an exercise into a session with `setCount` blank sets. */
+/** Snapshots an exercise into a session with `setCount` draft sets. */
 function insertSessionExercise(
   tx: Tx,
   input: {
@@ -483,6 +677,8 @@ function insertSessionExercise(
     })
     .run();
 
+  const history = readLastCompletedExerciseSets(tx, input.exerciseId, input.sessionId);
+  const previous = previousExerciseSet(tx, input.sessionId, input.exerciseId);
   let firstSetId: string | null = null;
   for (let i = 0; i < input.setCount; i++) {
     const setId = newId();
@@ -493,6 +689,7 @@ function insertSessionExercise(
         sessionExerciseId: sxId,
         position: i + 1,
         kind: 'working',
+        ...defaultValues(setDefaults(previous, history, i + 1, null)),
         createdAt: now,
         updatedAt: now,
       })

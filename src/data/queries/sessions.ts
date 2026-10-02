@@ -242,9 +242,42 @@ export function lastCompletedExerciseSetQuery(
   currentSessionId: string,
   position: number,
 ) {
-  return db
+  return completedExerciseSets(db, exerciseId, currentSessionId)
+    .orderBy(desc(sql`${sets.position} = ${position}`), desc(sets.position))
+    .limit(1);
+}
+
+export function readLastCompletedExerciseSets(
+  reader: Reader,
+  exerciseId: string,
+  currentSessionId: string,
+) {
+  return completedExerciseSets(reader, exerciseId, currentSessionId)
+    .orderBy(asc(sets.position), asc(sessionExercises.position))
+    .all();
+}
+
+function completedExerciseSets(reader: Reader, exerciseId: string, currentSessionId: string) {
+  const logged = and(
+    eq(sessionExercises.exerciseId, exerciseId),
+    ne(sessionExercises.sessionId, currentSessionId),
+    eq(sessions.status, 'completed'),
+    isNotNull(sets.completedAt),
+  );
+  const latestSession = reader
+    .select({ id: sessions.id })
+    .from(sets)
+    .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+    .innerJoin(sessions, eq(sessions.id, sessionExercises.sessionId))
+    .where(logged)
+    .orderBy(desc(sessions.startedAt), desc(sessions.id))
+    .limit(1);
+
+  return reader
     .select({
+      position: sets.position,
       weightKg: sets.weightKg,
+      loadKg: sets.weightKg,
       reps: sets.reps,
       rpe: sets.rpe,
       e1rmKg: sets.e1rmKg,
@@ -253,19 +286,7 @@ export function lastCompletedExerciseSetQuery(
     .from(sets)
     .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
     .innerJoin(sessions, eq(sessions.id, sessionExercises.sessionId))
-    .where(
-      and(
-        eq(sessionExercises.exerciseId, exerciseId),
-        ne(sessionExercises.sessionId, currentSessionId),
-        isNotNull(sets.completedAt),
-      ),
-    )
-    .orderBy(
-      desc(sessions.startedAt),
-      desc(sql`${sets.position} = ${position}`),
-      desc(sets.position),
-    )
-    .limit(1);
+    .where(and(logged, eq(sessions.id, latestSession)));
 }
 
 /**
