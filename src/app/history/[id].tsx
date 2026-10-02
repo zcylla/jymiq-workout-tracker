@@ -27,6 +27,8 @@ import { formatWeight } from '@/lib/units';
 import { wasPerformed } from '@/lib/volume';
 import { color, size, text } from '@/theme';
 
+const HISTORY_STILL = 64;
+
 const DASH = '—';
 
 /** Lab 36 C3 value columns, right-anchored as a group behind a flex spacer. */
@@ -164,7 +166,9 @@ function ExerciseSection({
   return (
     <Section
       label={exercise.name.toUpperCase()}
-      lead={<ExerciseStill exerciseId={exercise.exerciseId} name={exercise.name} size={28} />}
+      lead={
+        <ExerciseStill exerciseId={exercise.exerciseId} name={exercise.name} size={HISTORY_STILL} />
+      }
       plated={false}
       first={first}
       right={right}
