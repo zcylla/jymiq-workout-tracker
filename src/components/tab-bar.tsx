@@ -331,7 +331,11 @@ export function StartButton({
           press.style,
         ]}
       >
-        <Icon name="start" size={minimised ? 20 : undefined} tone={color.ink} />
+        <Icon
+          name={running ? 'resume' : 'start'}
+          size={minimised ? 20 : undefined}
+          tone={color.ink}
+        />
       </AnimatedPressable>
     </View>
   );

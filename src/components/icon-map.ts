@@ -10,6 +10,7 @@ import Dumbbell01Icon from '@hugeicons/core-free-icons/Dumbbell01Icon';
 import FileTextIcon from '@hugeicons/core-free-icons/FileTextIcon';
 import HistoryIcon from '@hugeicons/core-free-icons/HistoryIcon';
 import MoreVerticalCircle01Icon from '@hugeicons/core-free-icons/MoreVerticalCircle01Icon';
+import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
 import PlusSignIcon from '@hugeicons/core-free-icons/PlusSignIcon';
 import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
 import Settings01Icon from '@hugeicons/core-free-icons/Settings01Icon';
@@ -30,6 +31,7 @@ export const ICON_MAP = {
   cal: Calendar04Icon,
   dots: MoreVerticalCircle01Icon,
   start: PlusSignIcon,
+  resume: PlayIcon,
   hist: HistoryIcon,
   stat: ChartColumnIcon,
   note: FileTextIcon,

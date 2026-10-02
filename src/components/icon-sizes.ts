@@ -10,6 +10,7 @@ export const ICON_NAMES = [
   'cal',
   'dots',
   'start',
+  'resume',
   'hist',
   'stat',
   'note',
@@ -35,6 +36,8 @@ export const ICON_SIZE = {
   dots: 22,
   /** Inside the tab bar's start button, on the accent fill. */
   start: 22,
+  /** The same button while a session runs. */
+  resume: 22,
 
   /** Lab 28's four live destinations, over their mono labels. */
   hist: 19,
@@ -68,6 +71,7 @@ export const ICON_STROKE_WIDTH = {
   cal: NAV_STROKE,
   dots: NAV_STROKE,
   start: (1.9 * 24) / 22,
+  resume: (1.9 * 24) / 22,
   hist: NAV_STROKE,
   stat: NAV_STROKE,
   note: NAV_STROKE,
