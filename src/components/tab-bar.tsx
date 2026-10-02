@@ -31,7 +31,7 @@ import { GlassUnder, glassStyle } from './glass';
 import { tick } from './haptics';
 import { Icon, type IconName } from './icon';
 import { AnimatedPressable, usePressFeel } from './press';
-import { useScreenBlurTarget } from './screen-blur';
+import { useScreenBlurTarget, useSheetOpen } from './screen-blur';
 
 /**
  * W2 (Lab 23) — four labelled tabs on one plane with an inset circular start
@@ -94,6 +94,12 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
   const insets = useSafeAreaInsets();
   const minimisedSV = useContext(MinimisedContext);
   const target = useScreenBlurTarget();
+  const sheetOpen = useSheetOpen();
+  const visibilitySV = useSharedValue(sheetOpen ? 0 : 1);
+  useEffect(() => {
+    visibilitySV.set(withTiming(sheetOpen ? 0 : 1, { duration: motion.fast }));
+  }, [sheetOpen, visibilitySV]);
+  const visibility = useAnimatedStyle(() => ({ opacity: visibilitySV.get() }));
   if (!minimisedSV) throw new Error('TabBar must be inside <TabBarProvider>');
   const surface = target
     ? {
@@ -133,14 +139,20 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
   }));
 
   return (
-    <View
-      style={{
-        position: 'absolute',
-        left: 16,
-        right: 16,
-        bottom: Math.max(insets.bottom + 8, 30),
-        height: 60,
-      }}
+    <Animated.View
+      pointerEvents={sheetOpen ? 'none' : 'auto'}
+      importantForAccessibility={sheetOpen ? 'no-hide-descendants' : 'auto'}
+      accessibilityElementsHidden={sheetOpen}
+      style={[
+        {
+          position: 'absolute',
+          left: 16,
+          right: 16,
+          bottom: Math.max(insets.bottom + 8, 30),
+          height: 60,
+        },
+        visibility,
+      ]}
     >
       <Animated.View
         pointerEvents={minimised ? 'none' : 'auto'}
@@ -214,7 +226,7 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
         </Pressable>
         <StartButton minimised onPress={onStart} />
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 
