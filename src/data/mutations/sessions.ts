@@ -67,9 +67,9 @@ function lastCompletedAt(rows: { completedAt: number | null }[]): number | null 
  *
  * The snapshot is the point: `session_exercises` and `sets` are copies, so
  * editing the routine tomorrow never rewrites what happened today. The set rows
- * are created up front with the plan already dialled into `weightKg`/`reps`,
- * which is what makes the row the draft — the tape writes to a row that exists,
- * and a force-stop loses nothing.
+ * are created up front with logged same-session parameters or completed-session
+ * history, preserving nulls; routine targets apply only without either baseline.
+ * The tape writes to a draft row that exists, and a force-stop loses nothing.
  */
 /** Settings' per-kind rest, read at the moment a session is built from the plan. */
 const restDefaults = () => {

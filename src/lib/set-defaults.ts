@@ -12,10 +12,11 @@ export function setDefaults(
 ): SetParameters {
   const baseline =
     previous ?? lastSession.find((s) => s.position === position) ?? lastSession.at(-1);
+  const defaults = baseline ?? target;
   return {
-    loadKg: target?.loadKg ?? baseline?.loadKg ?? null,
-    reps: target?.reps ?? baseline?.reps ?? null,
-    rpe: target?.rpe ?? baseline?.rpe ?? null,
+    loadKg: defaults?.loadKg ?? null,
+    reps: defaults?.reps ?? null,
+    rpe: defaults?.rpe ?? null,
   };
 }
 

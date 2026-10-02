@@ -1255,9 +1255,7 @@ about the plan.
 
 ### The trap that would have shipped a third
 
-**`startSession` pre-fills every set with the routine's targets** (`mutations/sessions.ts:112-113`
-writes `weightKg: line.targetWeightKg, reps: line.targetReps` at creation), and `sessionSetsQuery`
-has no `completedAt` filter. A routine planned 5×8 @ 102.5 where three sets were logged returns
+**`startSession` pre-fills draft sets from logged same-session parameters, then completed-session history (nulls preserved), using routine targets only without a baseline; planned columns still record the routine targets**, and `sessionSetsQuery` has no `completedAt` filter. A routine planned 5×8 @ 102.5 where three sets were logged returns
 **five fully-populated rows**. C3 built on that query renders plan as performance — beside a history
 row that says `3 SETS`, because `sessions.totalSets` is `countWorkingSets`.
 

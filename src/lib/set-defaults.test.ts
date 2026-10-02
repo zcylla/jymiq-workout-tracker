@@ -41,26 +41,26 @@ test('no history leaves every parameter unset', () => {
   assert.deepEqual(setDefaults(null, [], 1, null), unset);
 });
 
-test('explicit targets override previous parameters per field', () => {
+test('same-session carry overrides history and targets', () => {
   assert.deepEqual(setDefaults(last, history, 3, { loadKg: 50, reps: 10, rpe: null }), {
-    loadKg: 50,
-    reps: 10,
+    loadKg: 45,
+    reps: 6,
     rpe: null,
   });
 });
 
-test('null target fields inherit history', () => {
+test('history overrides targets entirely, including a null target load', () => {
   assert.deepEqual(setDefaults(null, history, 1, { loadKg: null, reps: 12, rpe: null }), {
     loadKg: 42.5,
-    reps: 12,
+    reps: 8,
     rpe: 7,
   });
 });
 
-test('null target fields inherit same-session nulls as-is', () => {
+test('same-session nulls stay unset even with non-null targets', () => {
   assert.deepEqual(setDefaults(unset, history, 2, { loadKg: null, reps: 12, rpe: null }), {
     loadKg: null,
-    reps: 12,
+    reps: null,
     rpe: null,
   });
 });
@@ -73,17 +73,37 @@ test('partial history preserves known reps and unset load and RPE', () => {
   });
 });
 
-test('zero load is an explicit target and kilograms are never converted', () => {
-  assert.deepEqual(setDefaults(null, history, 1, { loadKg: 0, reps: null, rpe: null }), {
+test('zero load is an explicit target without history and kilograms are never converted', () => {
+  assert.deepEqual(setDefaults(null, [], 1, { loadKg: 0, reps: null, rpe: null }), {
     loadKg: 0,
-    reps: 8,
-    rpe: 7,
+    reps: null,
+    rpe: null,
   });
   assert.equal(setDefaults(null, history, 1, null).loadKg, 42.5);
 });
 
-test('a non-null RPE target overrides history', () => {
-  assert.equal(setDefaults(null, history, 1, { ...unset, rpe: 8 }).rpe, 8);
+test('history null RPE stays unset even with a non-null RPE target', () => {
+  assert.equal(setDefaults(null, history, 2, { ...unset, rpe: 8 }).rpe, null);
+});
+
+test('history of 6 reps overrides a routine target of 8 reps', () => {
+  assert.deepEqual(setDefaults(null, history, 2, { ...unset, reps: 8 }), {
+    loadKg: 45,
+    reps: 6,
+    rpe: null,
+  });
+});
+
+test('targets supply starting parameters when there is no history or previous set', () => {
+  const target = { loadKg: 77.11, reps: 8, rpe: 9 };
+  assert.deepEqual(setDefaults(null, [], 1, target), target);
+});
+
+test('an entirely unset historical baseline still overrides targets', () => {
+  assert.deepEqual(
+    setDefaults(null, [{ ...unset, position: 1 }], 1, { loadKg: 50, reps: 8, rpe: 9 }),
+    unset,
+  );
 });
 
 test('an untouched draft can receive repeated automatic carries', () => {
