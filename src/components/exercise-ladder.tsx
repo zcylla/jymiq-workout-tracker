@@ -66,7 +66,7 @@ function ExerciseRung({
     const distance = Math.abs(selectedSV.get() - index);
     return {
       opacity: scrubbingSV.get() ? Math.max(0.3, 1 - 0.22 * distance) : 0,
-      color: selectedSV.get() === index ? color.hi : color.mid,
+      color: selectedSV.get() === index ? color.hi : current ? color.accent : color.mid,
     };
   });
   const washStyle = useAnimatedStyle(() => ({
@@ -76,8 +76,20 @@ function ExerciseRung({
   return (
     <View style={{ minHeight: 25, justifyContent: 'center', paddingVertical: 4 }}>
       <Animated.View pointerEvents="none" style={popStyle}>
-        <Animated.Text style={[text.meta, numberStyle]}>{index + 1}</Animated.Text>
-        <View style={{ position: 'absolute', left: 24, top: -5, width: labelWidth, height: 28 }}>
+        <View
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: current ? color.accent : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Animated.Text style={[text.meta, numberStyle]}>{index + 1}</Animated.Text>
+        </View>
+        <View style={{ position: 'absolute', left: 26, top: -4, width: labelWidth, height: 28 }}>
           <Animated.View style={[StyleSheet.absoluteFill, washStyle]}>
             <LinearGradient
               colors={['rgba(228,198,140,0.18)', 'rgba(228,198,140,0)']}
