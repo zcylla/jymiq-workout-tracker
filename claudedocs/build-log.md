@@ -3,6 +3,40 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
+**START HERE (2026-10-02, warmup/drop sets and ladder scrub).** Implementation,
+installed on **Jymiq Dev** (`com.zcylla.jymiq.dev`) at 13:47 on the connected Android phone.
+Production (`com.zcylla.jymiq`) remains unchanged, last installed 2026-10-01 17:00.
+This supersedes the set-management and ladder behavior described below.
+- **Owner’s chosen design:** linked drops (C) plus a current-set type selector (B) **below** the counter.
+  Warmup is explicit in the Sets sheet and counter. The type sheet chooses a working-set parent for
+  each drop; existing values and completion survive reclassification. New warmup/drop values start
+  unset; working defaults cannot overwrite them or inherit their loads.
+- **Link representation:** a working/failure set plus its contiguous drops is one ordered sequence,
+  persisted using the existing `kind` and `position` fields. `src/lib/set-groups.ts` owns insertion,
+  reclassification, parent lookup, group movement, removal and rest transitions. All set mutations
+  preserve these groups; backups already preserve their order and types, so no schema migration is
+  needed. A parent with drops cannot become Warmup or Drop until its drops are handled. Deleting
+  the parent confirms deleting its drops. Performing again retains a required parent even if only
+  its drop was logged. Rest is skipped between members of the same drop sequence.
+- **Ladder scrub:** hold 350ms, slide to preview the nearest exercise, release to navigate once.
+  All names appear with ellipsis; the candidate pops and highlights. Preview uses shared values on
+  the UI thread, with no React state changes or JS callbacks per drag frame. Cancellation, editing,
+  cursor changes and exercise reorder clear the preview. Tap still opens the exercise sheet.
+- **Verified:** `pnpm check` passed (567 tests, three pre-existing lint warnings). Actual Drizzle
+  mutations exercised on disposable in-memory SQLite: typed insertion, invalid-parent rollback,
+  rest skipping, protected defaults and carry past drops, linked reorder, logged-type totals,
+  grouped deletion/cursor recovery, and LAST TIME comparisons by matching type and ordinal. **Not device-verified:** gesture feel, type controls/row readability at large text, and
+  overlay layout. No cloud mutation or push was performed. The features and these notes are committed separately.
+- **Dev rebuild (owner requested):** `pnpm build:dev` with JDK 21 / Android SDK succeeded;
+  APK package and arm64 ABI verified before `adb install -r`. SQLite and settings files were
+  byte-for-byte identical before/after installation (764 sessions, 16,084 sets, 11 routines).
+  `pnpm start:dev --clear` is running on 8081 with both Supabase variables blank; USB reverse is
+  active. Opened explicitly through `jymiqdev://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081`
+  with `-p com.zcylla.jymiq.dev`; Today rendered with the existing data. Feature interaction QA
+  remains for the owner. Backup and build/Metro logs: `~/.gstack/projects/zcylla-jymiq-workout-tracker/builds/dev-20261002/`.
+- **Design artifacts:** `~/.gstack/projects/zcylla-jymiq-workout-tracker/designs/warmup-drop-sets-20261002/`;
+  `approved-design.html` shows the combined direction. These working artifacts stay outside git.
+
 **START HERE (2026-10-02, end of session).** Newest state; where it conflicts with the 2026-10-01 block below, this
 one wins. `main` is clean and green (`pnpm check` exit 0, 548 tests, 3 old lint warnings), nothing is pushed.
 - **On the phone.** *Production* `com.zcylla.jymiq` is a **release build with Sentry**, installed 2026-10-01 17:00 in
