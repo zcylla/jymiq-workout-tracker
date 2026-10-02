@@ -6,6 +6,7 @@ import { loadScale, REPS_SCALE, RPE_SCALE } from '@/lib/scale';
 import { formatWeight, toDisplay, toKg } from '@/lib/units';
 import { percentOf1RM } from '@/lib/e1rm';
 import { size } from '@/theme';
+import { disabledControl } from '@/theme/tokens';
 
 import { LoadRing } from './load-ring';
 import { ParamSelector, type WorkoutParameter } from './param-selector';
@@ -103,6 +104,10 @@ export function LiveInstrument({
             disabled={editing !== null && editing !== 'load'}
             accessibilityRole="button"
             accessibilityLabel="Edit load"
+            accessibilityState={{ disabled: editing !== null && editing !== 'load' }}
+            style={{
+              opacity: editing !== null && editing !== 'load' ? disabledControl.contentOpacity : 1,
+            }}
           >
             <LoadRing
               size={ring}

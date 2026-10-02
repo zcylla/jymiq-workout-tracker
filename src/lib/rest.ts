@@ -16,6 +16,35 @@ export interface RestDefaults {
   isolation: number;
 }
 
+export interface RestSweep {
+  restUntil: number;
+  loggedSets: number;
+  spanMs: number;
+}
+
+export function updateRestSweep(
+  previous: RestSweep | null,
+  restUntil: number,
+  loggedSets: number,
+  nowMs: number,
+): RestSweep {
+  const remaining = Math.max(0, restUntil - nowMs);
+  const startsNew =
+    previous == null ||
+    loggedSets > previous.loggedSets ||
+    (previous.restUntil <= nowMs && restUntil !== previous.restUntil);
+  const spanMs = startsNew
+    ? remaining
+    : Math.max(0, previous.spanMs + restUntil - previous.restUntil);
+  return { restUntil, loggedSets, spanMs };
+}
+
+export function restProgress(sweep: RestSweep | null, nowMs: number): number {
+  'worklet';
+  if (sweep == null || sweep.spanMs <= 0) return 0;
+  return Math.max(0, Math.min(1, (sweep.restUntil - nowMs) / sweep.spanMs));
+}
+
 export function adjustRestUntil(
   restUntil: number | null,
   nowMs: number,

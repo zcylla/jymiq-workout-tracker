@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { router, useIsFocused } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect, useIsFocused } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import {
@@ -71,6 +71,69 @@ const SHORT_DP = 700;
 const DECK_GAP = 9;
 
 const KEEP_AWAKE_TAG = 'live-session';
+
+function minimise() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
+}
+
+function LiveHeader({
+  name,
+  elapsed,
+  onDiscard,
+  onFinish,
+}: {
+  name?: string;
+  elapsed: number;
+  onDiscard: () => void;
+  onFinish?: () => void;
+}) {
+  return (
+    <View style={{ paddingTop: 6, gap: 9 }}>
+      <View style={{ minHeight: size.hit, flexDirection: 'row', alignItems: 'center' }}>
+        <Pressable
+          onPress={minimise}
+          accessibilityRole="button"
+          accessibilityLabel="Minimise workout"
+          style={{ minWidth: size.hit, minHeight: size.hit, justifyContent: 'center' }}
+        >
+          <Icon name="down" tone={color.mid} />
+        </Pressable>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={text.numSm}>{formatClock(elapsed)}</Text>
+        </View>
+        <Pressable
+          onPress={onDiscard}
+          accessibilityRole="button"
+          style={({ pressed }) => ({
+            minHeight: size.hit,
+            minWidth: size.hit,
+            justifyContent: 'center',
+            marginRight: onFinish ? space.within : 0,
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Text style={[text.body, { color: color.lo }]}>Discard</Text>
+        </Pressable>
+        {onFinish ? (
+          <Pressable
+            onPress={onFinish}
+            accessibilityRole="button"
+            style={({ pressed }) => ({
+              minHeight: size.hit,
+              minWidth: size.hit,
+              justifyContent: 'center',
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={text.body}>Finish</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      {name ? <Text style={text.h1}>{name}</Text> : null}
+    </View>
+  );
+}
 
 /** A record is named, never counted — "2 PRs" tells you nothing. */
 function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: string) {
@@ -153,7 +216,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     return () => clearInterval(id);
   }, []);
 
-  const keepAwake = settings.keepScreenOn && session !== undefined;
+  const keepAwake = focused && settings.keepScreenOn && session !== undefined;
   useEffect(() => {
     if (!keepAwake) return;
     activateKeepAwakeAsync(KEEP_AWAKE_TAG);
@@ -167,98 +230,51 @@ function LiveSession({ sessionId }: { sessionId: string }) {
    *  only believes because the query has not answered yet. */
   const tally = setsLoaded ? `${logged} ${logged === 1 ? 'set' : 'sets'}` : 'Your sets';
 
-  /**
-   * Leaving the session, from the back chevron and from Finish alike.
-   *
-   * **Nothing logged means nothing to decide.** Every planned set exists as a
-   * row from the moment the session starts, so a session you opened by mistake
-   * looks identical to one you are three sets into until you read `completedAt`.
-   * With none of them logged there is nothing to keep, nothing to summarise and
-   * nothing to ask about, so it is deleted outright — otherwise a mis-tap leaves
-   * a permanent trained day on the calendar that only a database restore can
-   * remove.
-   *
-   * **One logged set and it becomes the user's call**, because now both answers
-   * are defensible: it happened and belongs in history, or it was a false start
-   * you would rather not see again. The dialog names the count, since discarding
-   * here really does delete those sets and the records they set.
-   *
-   * Leaving goes to Today rather than `back()`: every route into the live screen
-   * uses `replace`, so there is no entry behind it and `back()` strands you on
-   * the empty state with a "GO_BACK was not handled" warning.
-   *
-   * **The zero branch waits for the sets to load.** `useLiveQuery` hands back an
-   * empty array while the query is still in flight, which is indistinguishable
-   * from a session nobody has logged a set in — and taking the delete branch on
-   * that would destroy a real session's worth of work on an early tap. Until
-   * `updatedAt` arrives, leaving is treated as the decision it might be.
-   */
-  const leave = (intent: 'discard' | 'finish') => {
-    if (!session) return false;
-
-    if (setsLoaded && logged === 0) {
-      discardSession(session.id);
-      router.replace('/');
-      return true;
-    }
-
-    if (intent === 'discard') {
-      show({
-        title: 'Discard session?',
-        message: `Deletes ${tally.toLowerCase()} and any records.`,
-        actions: [
-          {
-            label: 'Discard',
-            tone: 'destructive',
-            onPress: () => {
-              discardSession(session.id);
-              router.replace('/');
-            },
+  const discard = () => {
+    if (!session) return;
+    show({
+      title: 'Discard session?',
+      message: `Deletes ${tally.toLowerCase()} and any records.`,
+      actions: [
+        {
+          label: 'Discard',
+          tone: 'destructive',
+          onPress: () => {
+            discardSession(session.id);
+            router.replace('/');
           },
-          { label: 'Keep', tone: 'cancel' },
-        ],
-      });
-      return true;
-    }
-
-    finishSession(session.id);
-    router.replace(`/summary/${session.id}`);
-    return true;
+        },
+        { label: 'Keep', tone: 'cancel' },
+      ],
+    });
   };
-
-  const discard = () => leave('discard');
 
   const pick = (params: { sessionId: string } | { replace: string }) => {
     setSheet(null);
     router.push({ pathname: '/pick-exercise', params });
   };
 
-  // Only while focused: /live stays mounted under the exercise page and the
-  // picker, and a handler left registered there would discard the session from
-  // their back press.
-  useEffect(() => {
-    if (!focused) return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (keypadParam !== null) {
-        setKeypadParam(null);
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (keypadParam !== null) {
+          setKeypadParam(null);
+          return true;
+        }
+        if (sheet !== null) {
+          setSheet(null);
+          return true;
+        }
+        if (editing !== null) {
+          setEditing(null);
+          return true;
+        }
+        minimise();
         return true;
-      }
-      if (sheet !== null) {
-        setSheet(null);
-        return true;
-      }
-      if (editing !== null) {
-        setEditing(null);
-        return true;
-      }
-      if (!session) return false;
-      // Back never leaves a live session silently — the confirm is the whole
-      // reason the handler exists, and it must claim the event to show one.
-      discard();
-      return true;
-    });
-    return () => sub.remove();
-  });
+      });
+      return () => sub.remove();
+    }, [keypadParam, sheet, editing]),
+  );
 
   if (!session) {
     return (
@@ -271,7 +287,11 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   if (exercisesLoaded && exercises.length === 0) {
     return (
       <Screen>
-        <ScreenHeader title={session.name} onBack={discard} />
+        <LiveHeader
+          name={session.name}
+          elapsed={elapsedSec(session.startedAt, session.pausedMs, now)}
+          onDiscard={discard}
+        />
         <Section first plated={false}>
           <RowPlates>
             <RowPlate onPress={() => pick({ sessionId: session.id })}>
@@ -287,7 +307,11 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     // Both queries are still in flight on the frame this screen takes over.
     return (
       <Screen>
-        <ScreenHeader title={session.name} onBack={() => router.replace('/')} />
+        <LiveHeader
+          name={session.name}
+          elapsed={elapsedSec(session.startedAt, session.pausedMs, now)}
+          onDiscard={discard}
+        />
       </Screen>
     );
   }
@@ -345,7 +369,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     else if (editing === 'rpe') updateSet(set.id, { rpe: value });
   };
 
-  const ready = set.weightKg != null && set.reps != null;
+  const ready = set.completedAt == null && set.weightKg != null && set.reps != null && set.reps > 0;
 
   const log = () => {
     if (!ready) return;
@@ -356,7 +380,16 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     announce(show, hits, 'Record');
   };
 
-  const finish = () => leave('finish');
+  const finish = () => {
+    if (!setsLoaded) return;
+    if (logged === 0) {
+      discardSession(session.id);
+      router.replace('/');
+    } else {
+      finishSession(session.id);
+      router.replace(`/summary/${session.id}`);
+    }
+  };
 
   const openExercise = (focus?: 'stats') =>
     router.push({
@@ -371,53 +404,11 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
       <Screen bottomInset={barHeight + DECK_GAP} scroll={false}>
-        {/* The back row stays put, and carries the clock and Finish the deck has no room for. */}
-        <View
-          style={{
-            paddingTop: 6,
-            minHeight: size.hit,
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}
-        >
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              top: 6,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={text.numSm}>
-              {formatClock(elapsedSec(session.startedAt, session.pausedMs, now))}
-            </Text>
-          </View>
-          <Pressable
-            onPress={discard}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-          >
-            <Icon name="back" tone={color.mid} />
-          </Pressable>
-          <View style={{ flex: 1 }} />
-          <Pressable
-            onPress={finish}
-            hitSlop={{ left: 12, right: 12 }}
-            accessibilityRole="button"
-            style={({ pressed }) => ({
-              minHeight: size.hit,
-              justifyContent: 'center',
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={text.body}>Finish</Text>
-          </Pressable>
-        </View>
+        <LiveHeader
+          elapsed={elapsedSec(session.startedAt, session.pausedMs, now)}
+          onDiscard={discard}
+          onFinish={finish}
+        />
 
         <LivePager
           pageKey={`${exercise.id}:${set.id}`}
@@ -473,6 +464,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
           )}
 
           <LiveInstrument
+            key={set.id}
             editing={editing}
             load={load}
             reps={reps}
@@ -548,7 +540,9 @@ function LiveSession({ sessionId }: { sessionId: string }) {
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
         <ActionBar
-          primary={`Log set ${setIndex + 1}`}
+          primary={
+            set.completedAt == null ? `Log set ${setIndex + 1}` : `Set ${setIndex + 1} logged`
+          }
           onPrimary={log}
           disabled={!ready}
           secondary="SETS"

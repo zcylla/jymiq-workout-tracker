@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { stepBar } from '@/lib/tab-bar';
+import { useSessionRunning } from '@/data/running';
 import {
   color,
   controlBarBlur,
@@ -294,6 +295,7 @@ export function StartButton({
   minimised?: boolean;
 }) {
   const press = usePressFeel(0.15);
+  const running = useSessionRunning() === true;
   const diameter = minimised ? 46 : 52;
   return (
     <View style={{ width: minimised ? diameter : 66, alignItems: 'center' }}>
@@ -305,7 +307,7 @@ export function StartButton({
         }}
         onPressOut={press.handlers.onPressOut}
         accessibilityRole="button"
-        accessibilityLabel="Start a workout"
+        accessibilityLabel={running ? 'Resume workout' : 'Start a workout'}
         style={[
           {
             width: diameter,
@@ -313,7 +315,7 @@ export function StartButton({
             borderRadius: radius.full,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: color.accent,
+            backgroundColor: running ? color.done : color.accent,
             boxShadow: fabShadow,
           },
           press.style,

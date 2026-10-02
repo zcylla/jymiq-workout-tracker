@@ -10,6 +10,13 @@ const ex = (logged: boolean[], removed = false): NavExercise => ({
 
 const at = (exerciseIndex: number, setIndex: number) => ({ exerciseIndex, setIndex });
 
+test('logged sets remain reachable in both directions for editing', () => {
+  const list = [ex([true, true, false])];
+  assert.deepEqual(prevSet(list, at(0, 2)), at(0, 1));
+  assert.deepEqual(prevSet(list, at(0, 1)), at(0, 0));
+  assert.deepEqual(nextSet(list, at(0, 0)), at(0, 1));
+});
+
 test('sets step within an exercise and clamp at both ends', () => {
   const list = [ex([false, false, false]), ex([false])];
   assert.deepEqual(nextSet(list, at(0, 0)), at(0, 1));

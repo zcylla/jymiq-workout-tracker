@@ -170,6 +170,7 @@ export function LiveDeck({
         {restUntil != null && restLeftSec > 0 ? (
           <RestTimer
             restUntil={restUntil}
+            loggedSets={Number(sets)}
             leftSec={restLeftSec}
             onExtend={onExtendRest}
             onSkip={onSkipRest}

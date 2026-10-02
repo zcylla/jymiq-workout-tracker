@@ -33,7 +33,11 @@ import { exerciseCountQuery } from '@/data/queries/exercises';
 import { loggedSessionIdsQuery } from '@/data/queries/load';
 import { useSettings } from '@/data/settings';
 import { routineExercisesQuery, routineListQuery } from '@/data/queries/routines';
-import { recentSessionsQuery, sessionsWithRecordsQuery } from '@/data/queries/sessions';
+import {
+  activeSessionQuery,
+  recentSessionsQuery,
+  sessionsWithRecordsQuery,
+} from '@/data/queries/sessions';
 import { lastRunPerRoutineQuery } from '@/data/queries/today';
 import { useSessionRunning } from '@/data/running';
 import { useActiveSchedule } from '@/data/schedule';
@@ -45,6 +49,7 @@ import { dateLabel, sessionDotTone } from '@/lib/time';
 import { formatTonnage } from '@/lib/volume';
 import { type StripDay, sessionsMeter, weekStrip } from '@/lib/week';
 import { color, fabShadow, hairline, motion, radius, size, space, text } from '@/theme';
+import { disabledControl } from '@/theme/tokens';
 
 /**
  * Today — Lab 45 W3. The next routine on a quiet raised card with a full-width
@@ -69,6 +74,11 @@ export default function TodayScreen() {
   // Empty first, only for its range and its clock.
   const strip = useMemo(() => weekStrip(new Map()), []);
   const active = useActiveSchedule();
+  const liveSessions = useRows(
+    useMemo(() => activeSessionQuery(), []),
+    [],
+  );
+  const liveSession = liveSessions?.[0];
 
   const rangeRows = useRows(
     useMemo(() => sessionsInRangeQuery(strip.from, strip.to), [strip.from, strip.to]),
@@ -121,11 +131,19 @@ export default function TodayScreen() {
         }
       />
 
-      {fresh ? (
+      {liveSession ? (
+        <View style={{ paddingTop: space.pad }}>
+          <ResumeCard name={liveSession.name} />
+        </View>
+      ) : fresh && liveSessions !== null ? (
         <FirstSteps />
       ) : (
         <View style={{ paddingTop: space.pad }}>
-          <NextCard next={next} lastRunAt={lastRunAt} loading={active === null} />
+          <NextCard
+            next={next}
+            lastRunAt={lastRunAt}
+            loading={active === null || liveSessions === null}
+          />
         </View>
       )}
 
@@ -144,6 +162,40 @@ export default function TodayScreen() {
 
       {__DEV__ ? <DevLinks /> : null}
     </Screen>
+  );
+}
+
+function ResumeCard({ name }: { name: string }) {
+  const resume = useStartSession();
+  const running = useSessionRunning();
+  const disabled = running === null;
+  return (
+    <Section first hero pad={15}>
+      <Text style={text.label}>IN PROGRESS</Text>
+      <Text style={text.lead}>{name}</Text>
+      <Pressable
+        onPress={resume}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        accessibilityLabel={`Resume ${name}`}
+        style={({ pressed }) => [
+          {
+            minHeight: 50,
+            borderRadius: radius.plate,
+            borderCurve: 'continuous',
+            backgroundColor: color.accent,
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: fabShadow,
+            opacity: pressed && !disabled ? 0.85 : 1,
+          },
+          disabled && disabledControl.surface,
+        ]}
+      >
+        <Text style={[text.action, disabled && { color: disabledControl.label }]}>Resume</Text>
+      </Pressable>
+    </Section>
   );
 }
 
@@ -223,12 +275,15 @@ function NextCard({
       <Pressable
         onPress={() => rows.length > 0 && setOpen((v) => !v)}
         accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
+        disabled={rows.length === 0}
+        accessibilityState={{ disabled: rows.length === 0, expanded: open }}
         accessibilityLabel={`${next.routine.name}, ${open ? 'hide' : 'show'} exercises`}
-        style={{ gap: space.within }}
+        style={{ minHeight: size.hit, gap: space.within }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={[text.label, { flex: 1 }]}>
+          <Text
+            style={[text.label, { flex: 1 }, rows.length === 0 && { color: disabledControl.label }]}
+          >
             {nextKicker(next.daysAway, next.at, lastRunAt)}
           </Text>
           {rows.length > 0 ? (
@@ -237,8 +292,12 @@ function NextCard({
             </Animated.View>
           ) : null}
         </View>
-        <Text style={text.lead}>{next.routine.name}</Text>
-        <Text style={text.meta}>{meta.join(' · ')}</Text>
+        <Text style={[text.lead, rows.length === 0 && { color: disabledControl.label }]}>
+          {next.routine.name}
+        </Text>
+        <Text style={[text.meta, rows.length === 0 && { color: disabledControl.label }]}>
+          {meta.join(' · ')}
+        </Text>
 
         <Animated.View style={[{ overflow: 'hidden' }, listStyle]} pointerEvents="none">
           <View
@@ -274,18 +333,22 @@ function NextCard({
         disabled={disabled}
         accessibilityRole="button"
         accessibilityState={{ disabled }}
-        style={{
-          minHeight: 50,
-          borderRadius: radius.plate,
-          borderCurve: 'continuous',
-          backgroundColor: resume ? color.done : color.accent,
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: fabShadow,
-          opacity: disabled ? 0.4 : 1,
-        }}
+        style={[
+          {
+            minHeight: 50,
+            borderRadius: radius.plate,
+            borderCurve: 'continuous',
+            backgroundColor: resume ? color.done : color.accent,
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: fabShadow,
+          },
+          disabled && disabledControl.surface,
+        ]}
       >
-        <Text style={text.action}>{resume ? 'Resume' : 'Start'}</Text>
+        <Text style={[text.action, disabled && { color: disabledControl.label }]}>
+          {resume ? 'Resume' : 'Start'}
+        </Text>
       </Pressable>
     </Section>
   );
@@ -295,6 +358,8 @@ function NextCard({
 function FirstSteps() {
   const start = useStartSession();
   const running = useSessionRunning();
+  const active = useActiveSchedule();
+  const disabled = running === null || (running === false && active === null);
   const count = useRows(
     useMemo(() => exerciseCountQuery(), []),
     [],
@@ -310,7 +375,7 @@ function FirstSteps() {
         <RowPlate onPress={() => router.push('/session/library')}>
           <ListRow title="Browse the library" meta={exercises ? String(exercises) : undefined} />
         </RowPlate>
-        <RowPlate onPress={start}>
+        <RowPlate onPress={start} disabled={disabled}>
           <ListRow title={running ? 'Resume' : 'Empty session'} />
         </RowPlate>
       </RowPlates>

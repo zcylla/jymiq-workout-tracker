@@ -1,13 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
+  useFrameCallback,
   useSharedValue,
-  withSequence,
-  withTiming,
 } from 'react-native-reanimated';
 
+import { restProgress, type RestSweep, updateRestSweep } from '@/lib/rest';
 import { formatRest } from '@/lib/time';
 import { color, hairline, size, text } from '@/theme';
 
@@ -17,6 +16,7 @@ import { Waiting } from './waiting';
 type Props = {
   /** The wall-clock target, the only truth; the countdown is derived from it. */
   restUntil: number;
+  loggedSets: number;
   /** Whole seconds left, from the screen's one clock. */
   leftSec: number;
   onExtend: () => void;
@@ -45,25 +45,23 @@ function TextButton({ label, onPress }: { label: string; onPress: () => void }) 
  * app cannot drift it. The line is the share of this rest still to go; +30s
  * grows the span rather than restarting it.
  */
-export function RestTimer({ restUntil, leftSec, onExtend, onSkip }: Props) {
+export function RestTimer({ restUntil, loggedSets, leftSec, onExtend, onSkip }: Props) {
   const progressSV = useSharedValue(1);
-  const spanSV = useSharedValue(0);
+  const sweepSV = useSharedValue<RestSweep | null>(null);
+  const sweep = useRef<RestSweep | null>(null);
 
   useEffect(() => {
-    const remaining = restUntil - Date.now();
-    if (remaining <= 0) return;
-    // ponytail: the span starts when this mounts, so a rest resumed after a relaunch reads full.
-    const span = Math.max(spanSV.get(), remaining);
-    spanSV.set(span);
-    progressSV.set(
-      withSequence(
-        withTiming(remaining / span, { duration: 0 }),
-        withTiming(0, { duration: remaining, easing: Easing.linear }),
-      ),
-    );
-  }, [restUntil, progressSV, spanSV]);
+    const nowMs = Date.now();
+    sweep.current = updateRestSweep(sweep.current, restUntil, loggedSets, nowMs);
+    sweepSV.set(sweep.current);
+    progressSV.set(restProgress(sweep.current, nowMs));
+  }, [restUntil, loggedSets, progressSV, sweepSV]);
 
-  const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: progressSV.get() }] }));
+  useFrameCallback(() => {
+    progressSV.set(restProgress(sweepSV.get(), Date.now()));
+  });
+
+  const fill = useAnimatedStyle(() => ({ width: `${progressSV.get() * 100}%` as const }));
 
   return (
     <View style={{ flex: 1 }}>
@@ -77,7 +75,10 @@ export function RestTimer({ restUntil, leftSec, onExtend, onSkip }: Props) {
       </View>
       <View style={{ height: 2, backgroundColor: hairline.onGround }}>
         <Animated.View
-          style={[{ flex: 1, backgroundColor: color.accent, transformOrigin: 'left' }, fill]}
+          style={[
+            { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: color.accent },
+            fill,
+          ]}
         />
       </View>
     </View>
