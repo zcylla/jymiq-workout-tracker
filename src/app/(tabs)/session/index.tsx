@@ -4,7 +4,6 @@ import { View } from 'react-native';
 
 import {
   Icon,
-  Listed,
   ListRow,
   RowPlate,
   RowPlates,
@@ -42,12 +41,10 @@ export default function RoutinesScreen() {
 
       <Section first plated={false}>
         <RowPlates tinted>
-          {routines?.map((r, i) => (
-            <Listed key={r.id} index={i}>
-              <RowPlate onPress={() => router.push(`/routine/${r.id}`)}>
-                <ListRow title={r.name} />
-              </RowPlate>
-            </Listed>
+          {routines?.map((r) => (
+            <RowPlate key={r.id} onPress={() => router.push(`/routine/${r.id}`)}>
+              <ListRow title={r.name} />
+            </RowPlate>
           ))}
           {routines?.length === 0 ? (
             <RowPlate onPress={() => router.push('/routine/new')}>
