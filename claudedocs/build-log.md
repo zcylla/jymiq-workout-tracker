@@ -28,6 +28,13 @@ one wins. `main` is clean and green (`pnpm check` exit 0, 548 tests, 3 old lint 
   builds and `.dev` ids); app variants (`app.config.ts`, `APP_VARIANT`); the Jymiq logo assets
   (`claudedocs/design-labs/brand.py` generates `assets/brand/*` and the PNGs in `assets/images/`); **Hugeicons
   replaced the custom icon font** (details below; the mapping lives in `src/components/icon-map.ts`).
+- **Added later on 2026-10-02 (owner requests, verified on the dev app, commits `4bca687`..`d7f2122`).** Live header:
+  `<` back arrow (minimise) and one three-dot menu (Finish, Plate calculator, Discard; `LiveMenu` renders last in the
+  screen so the panel paints over the title). Discarding a session with zero logged sets skips the confirm. The centre
+  tab button is live red while a session runs and shows a play icon (`resume` in `icon-map.ts`). The Today in-progress
+  card has a live-red IN PROGRESS label, a red Resume and a Discard button with a confirm. **Plate calculator**
+  (`src/components/plate-sheet.tsx`, opens from the live menu): to-scale plates per side from `solvePlates`, 20 / 15 kg
+  bar toggle held in sheet state; kg only (no lb inventory), no Settings row yet (Settings still has no PLATES section).
 - **Open items.** (1) **Production release with all of the above is not built.** It needs a native rebuild
   (`react-native-svg`, the Kotlin notification fix). Recipe: `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
   ANDROID_HOME=$HOME/Android/Sdk SENTRY_AUTH_TOKEN="$(grep -m1 '^SENTRY_AUTH_TOKEN=' .env.local | cut -d= -f2-)"`
@@ -35,12 +42,9 @@ one wins. `main` is clean and green (`pnpm check` exit 0, 548 tests, 3 old lint 
   the build fails at the source-map upload). Install with `adb install -r` **only on the owner's go-ahead**, with an
   idle phone, no live workout and cloud counts at least 764 / 16,084 / 1,439 / 4,651; never uninstall or
   `pm clear` the production package (same debug keystore signs both builds, so an in-place update keeps data).
-  (2) The owner has not yet said which Hugeicons they want swapped (mapping page in the 2026-10-02 session; the
-  alternatives per icon are in the report: edit one line in `icon-map.ts` plus the stroke width). (3) Unverified on
+  (2) The owner chose to keep all 18 original Hugeicons (no swaps). (3) Unverified on
   a device: the notification tap target, SVG icon cost on tab switching, the legend at 360dp / large text, the
-  tab-bar fade, bodyweight (0 kg) logging on a never-done exercise needs a tape nudge. (4) Small UX nit: the live
-  header's Discard asks "Deletes 0 sets and any records." even when nothing is logged. (5) The green centre tab
-  button while a session runs is the owner's call (red is the "live" colour). (6) Untracked `claudedocs/research_notes/`
+  tab-bar fade, bodyweight (0 kg) logging on a never-done exercise needs a tape nudge. (4) Untracked `claudedocs/research_notes/`
   and `claudedocs/reports/` are not from this session's work; do not commit them without asking.
 - **Working agreements that held this session.** The owner tests on the dev app first; implementation goes to
   Codex through `harness-dispatch` with `hints.safetyProfile: "full_auto"` (the config now maps it to
