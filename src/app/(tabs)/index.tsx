@@ -25,9 +25,11 @@ import {
   StatTiles,
   type Tile,
   WeekStrip,
+  useDialog,
   useTabBarHeight,
 } from '@/components';
 import { useRows } from '@/data/live';
+import { discardSession } from '@/data/mutations/sessions';
 import { sessionsInRangeQuery } from '@/data/queries/calendar';
 import { exerciseCountQuery } from '@/data/queries/exercises';
 import { loggedSessionIdsQuery } from '@/data/queries/load';
@@ -133,7 +135,7 @@ export default function TodayScreen() {
 
       {liveSession ? (
         <View style={{ paddingTop: space.pad }}>
-          <ResumeCard name={liveSession.name} />
+          <ResumeCard id={liveSession.id} name={liveSession.name} />
         </View>
       ) : fresh && liveSessions !== null ? (
         <FirstSteps />
@@ -165,36 +167,69 @@ export default function TodayScreen() {
   );
 }
 
-function ResumeCard({ name }: { name: string }) {
+function ResumeCard({ id, name }: { id: string; name: string }) {
   const resume = useStartSession();
   const running = useSessionRunning();
+  const show = useDialog();
   const disabled = running === null;
+
+  const discard = () =>
+    show({
+      title: 'Discard session?',
+      message: 'Deletes its logged sets and any records.',
+      actions: [
+        { label: 'Discard', tone: 'destructive', onPress: () => discardSession(id) },
+        { label: 'Keep', tone: 'cancel' },
+      ],
+    });
+
   return (
     <Section first hero pad={15}>
-      <Text style={text.label}>IN PROGRESS</Text>
+      <Text style={[text.label, { color: color.live }]}>IN PROGRESS</Text>
       <Text style={text.lead}>{name}</Text>
-      <Pressable
-        onPress={resume}
-        disabled={disabled}
-        accessibilityRole="button"
-        accessibilityState={{ disabled }}
-        accessibilityLabel={`Resume ${name}`}
-        style={({ pressed }) => [
-          {
+      <View style={{ flexDirection: 'row', gap: space.within }}>
+        <Pressable
+          onPress={resume}
+          disabled={disabled}
+          accessibilityRole="button"
+          accessibilityState={{ disabled }}
+          accessibilityLabel={`Resume ${name}`}
+          style={({ pressed }) => [
+            {
+              flex: 1,
+              minHeight: 50,
+              borderRadius: radius.plate,
+              borderCurve: 'continuous',
+              backgroundColor: color.live,
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: fabShadow,
+              opacity: pressed && !disabled ? 0.85 : 1,
+            },
+            disabled && disabledControl.surface,
+          ]}
+        >
+          <Text style={[text.action, disabled && { color: disabledControl.label }]}>Resume</Text>
+        </Pressable>
+        <Pressable
+          onPress={discard}
+          accessibilityRole="button"
+          accessibilityLabel={`Discard ${name}`}
+          style={({ pressed }) => ({
             minHeight: 50,
+            paddingHorizontal: 18,
             borderRadius: radius.plate,
             borderCurve: 'continuous',
-            backgroundColor: color.accent,
+            borderWidth: 1,
+            borderColor: hairline.onPlate,
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: fabShadow,
-            opacity: pressed && !disabled ? 0.85 : 1,
-          },
-          disabled && disabledControl.surface,
-        ]}
-      >
-        <Text style={[text.action, disabled && { color: disabledControl.label }]}>Resume</Text>
-      </Pressable>
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Text style={[text.action, { color: color.lo }]}>Discard</Text>
+        </Pressable>
+      </View>
     </Section>
   );
 }
