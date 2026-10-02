@@ -38,18 +38,24 @@ export function Chevron({ tone = color.lo }: { tone?: Ink }) {
 }
 
 const grip = StyleSheet.create({
-  column: { width: 16, alignItems: 'center', gap: 3 },
-  bar: { width: 13, height: 1.5, borderRadius: 1 },
+  grid: { width: 16, flexDirection: 'row', justifyContent: 'center', gap: 3 },
+  column: { gap: 3 },
+  dot: { width: 2.5, height: 2.5, borderRadius: 1.25 },
 });
 
 /**
- * The reorder handle remains kit's two plain Views.
+ * The reorder handle: six plain Views in two columns of three.
  */
 export function Grip({ tone = color.dim }: { tone?: Ink }) {
   return (
-    <View style={grip.column}>
-      <View style={[grip.bar, { backgroundColor: tone }]} />
-      <View style={[grip.bar, { backgroundColor: tone }]} />
+    <View style={grip.grid}>
+      {[0, 1].map((column) => (
+        <View key={column} style={grip.column}>
+          {[0, 1, 2].map((row) => (
+            <View key={row} style={[grip.dot, { backgroundColor: tone }]} />
+          ))}
+        </View>
+      ))}
     </View>
   );
 }
