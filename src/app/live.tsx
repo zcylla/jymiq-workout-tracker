@@ -1,11 +1,13 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import {
   ActionBar,
+  type DropdownAnchor,
+  DropdownMenu,
   ExercisesSheet,
   ExerciseStill,
   Icon,
@@ -19,8 +21,8 @@ import {
   SetsSheet,
   useActionBarHeight,
   useDialog,
+  type WorkoutParameter,
 } from '@/components';
-import type { WorkoutParameter } from '@/components';
 import {
   discardSession,
   clearRest,
@@ -80,14 +82,15 @@ function minimise() {
 function LiveHeader({
   name,
   elapsed,
-  onDiscard,
-  onFinish,
+  menuOpen,
+  onMenu,
 }: {
   name?: string;
   elapsed: number;
-  onDiscard: () => void;
-  onFinish?: () => void;
+  menuOpen: boolean;
+  onMenu: (anchor: DropdownAnchor) => void;
 }) {
+  const menuButtonRef = useRef<View>(null);
   return (
     <View style={{ paddingTop: 6, gap: 9 }}>
       <View style={{ minHeight: size.hit, flexDirection: 'row', alignItems: 'center' }}>
@@ -97,45 +100,64 @@ function LiveHeader({
           accessibilityLabel="Minimise workout"
           style={{ minWidth: size.hit, minHeight: size.hit, justifyContent: 'center' }}
         >
-          <Icon name="down" tone={color.mid} />
+          <Icon name="back" tone={color.mid} />
         </Pressable>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={text.numSm}>{formatClock(elapsed)}</Text>
         </View>
         <Pressable
-          onPress={onDiscard}
+          ref={menuButtonRef}
+          collapsable={false}
           accessibilityRole="button"
-          style={({ pressed }) => ({
-            minHeight: size.hit,
-            minWidth: size.hit,
+          accessibilityLabel="Workout actions"
+          accessibilityState={{ expanded: menuOpen }}
+          onPress={() =>
+            menuButtonRef.current?.measureInWindow((x, y, width, height) =>
+              onMenu({ x, y, width, height }),
+            )
+          }
+          style={{
+            width: size.hit,
+            height: size.hit,
+            alignItems: 'center',
             justifyContent: 'center',
-            marginRight: onFinish ? space.within : 0,
-            opacity: pressed ? 0.6 : 1,
-          })}
+          }}
         >
-          <Text style={[text.body, { color: color.lo }]}>Discard</Text>
+          <Icon name="dots" />
         </Pressable>
-        {onFinish ? (
-          <Pressable
-            onPress={onFinish}
-            accessibilityRole="button"
-            style={({ pressed }) => ({
-              minHeight: size.hit,
-              minWidth: size.hit,
-              justifyContent: 'center',
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={text.body}>Finish</Text>
-          </Pressable>
-        ) : null}
       </View>
       {name ? <Text style={text.h1}>{name}</Text> : null}
     </View>
   );
 }
 
-/** A record is named, never counted — "2 PRs" tells you nothing. */
+/** Rendered last in the screen so the panel paints over the title and still behind nothing. */
+function LiveMenu({
+  open,
+  anchor,
+  onClose,
+  onDiscard,
+  onFinish,
+}: {
+  open: boolean;
+  anchor: DropdownAnchor | null;
+  onClose: () => void;
+  onDiscard: () => void;
+  onFinish?: () => void;
+}) {
+  return (
+    <DropdownMenu
+      open={open}
+      onClose={onClose}
+      anchor={anchor}
+      items={[
+        ...(onFinish ? [{ label: 'Finish', onPress: onFinish }] : []),
+        { label: 'Discard', tone: 'destructive' as const, onPress: onDiscard },
+      ]}
+    />
+  );
+}
+
 function announce(show: ReturnType<typeof useDialog>, hits: PrHit[], title: string) {
   if (hits.length === 0) return;
   show({
@@ -175,6 +197,12 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [pulse, setPulse] = useState(0);
+  const [menu, setMenu] = useState<{ open: boolean; anchor: DropdownAnchor | null }>({
+    open: false,
+    anchor: null,
+  });
+  const openMenu = (anchor: DropdownAnchor) => setMenu({ open: true, anchor });
+  const closeMenu = () => setMenu((m) => ({ ...m, open: false }));
   const barHeight = useActionBarHeight();
   const show = useDialog();
   const settings = useSettings();
@@ -295,7 +323,8 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         <LiveHeader
           name={session.name}
           elapsed={elapsedSec(session.startedAt, session.pausedMs, now)}
-          onDiscard={discard}
+          menuOpen={menu.open}
+          onMenu={openMenu}
         />
         <Section first plated={false}>
           <RowPlates>
@@ -304,6 +333,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
             </RowPlate>
           </RowPlates>
         </Section>
+        <LiveMenu open={menu.open} anchor={menu.anchor} onClose={closeMenu} onDiscard={discard} />
       </Screen>
     );
   }
@@ -315,8 +345,10 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         <LiveHeader
           name={session.name}
           elapsed={elapsedSec(session.startedAt, session.pausedMs, now)}
-          onDiscard={discard}
+          menuOpen={menu.open}
+          onMenu={openMenu}
         />
+        <LiveMenu open={menu.open} anchor={menu.anchor} onClose={closeMenu} onDiscard={discard} />
       </Screen>
     );
   }
@@ -411,8 +443,8 @@ function LiveSession({ sessionId }: { sessionId: string }) {
       <Screen bottomInset={barHeight + DECK_GAP} scroll={false}>
         <LiveHeader
           elapsed={elapsedSec(session.startedAt, session.pausedMs, now)}
-          onDiscard={discard}
-          onFinish={finish}
+          menuOpen={menu.open}
+          onMenu={openMenu}
         />
 
         <LivePager
@@ -606,6 +638,13 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         currentValue={
           keypadParam === 'load' ? load : keypadParam === 'reps' ? reps : (set.rpe ?? null)
         }
+      />
+      <LiveMenu
+        open={menu.open}
+        anchor={menu.anchor}
+        onClose={closeMenu}
+        onDiscard={discard}
+        onFinish={finish}
       />
     </View>
   );
