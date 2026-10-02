@@ -1,19 +1,23 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { addSet, setSessionCursor } from '@/data/mutations/sessions';
-import { formatWeight, type Unit } from '@/lib/units';
 import { useSettings } from '@/data/settings';
-import { color, hairline, type Ink, radius, size, space, text, wash } from '@/theme';
+import { dropParent, isWorkingSet, setTypeLabel } from '@/lib/set-groups';
+import { formatWeight, type Unit } from '@/lib/units';
+import type { SetKind } from '@/lib/volume';
+import { color, size, space, text } from '@/theme';
 
-import { Chevron } from './icon';
-import { HANDLE_WIDTH, ReorderList } from './reorder-list';
+import { Chevron, Icon } from './icon';
+import { ReorderList } from './reorder-list';
+import { RowPlate } from './row-plate';
 import { Sheet } from './sheet';
 import { SwipeRow } from './swipe-row';
 
 type SheetSet = {
   id: string;
   position: number;
+  kind: SetKind;
   weightKg: number | null;
   reps: number | null;
   rpe: number | null;
@@ -27,92 +31,89 @@ type Props = {
   sessionId: string;
   sessionExerciseId: string;
   sets: SheetSet[];
-  /** The screen's resolved current set — not necessarily `session.currentSetId`
-   *  verbatim, since the screen falls back to the first open set. */
   currentSetId: string | null;
-  /** Drop on a new slot. Omitted, rows have no grip. */
   onReorder?: (fromIndex: number, toIndex: number) => void;
-  /** Swipe left past the threshold, with the set's id. Omitted, the swipe is inert. */
   onDelete?: (setId: string) => void;
+  onType: (setId: string) => void;
+  onAddDrop: () => void;
 };
 
-const dash = (v: string | null) => v ?? '—';
-
-/** kit's mono value column — right-aligned, a fixed width so numbers line up. */
-function Col({ w, color: c, children }: { w: number; color: Ink; children: string }) {
-  return <Text style={{ ...text.numSm, width: w, textAlign: 'right', color: c }}>{children}</Text>;
-}
+const ROW_HEIGHT = 72;
 
 function SetRow({
   set,
+  typeLabel,
+  linked,
   isCurrent,
   handle,
   onPress,
+  onType,
   unit,
 }: {
   set: SheetSet;
+  typeLabel: string;
+  linked: boolean;
   isCurrent: boolean;
   handle: ReactNode;
   onPress: () => void;
+  onType: () => void;
   unit: Unit;
 }) {
   const done = set.completedAt != null;
-  const state = isCurrent ? 'current' : done ? 'done' : 'ahead';
-
-  const indexColor = state === 'done' ? color.done : state === 'current' ? color.accent : color.dim;
-  const weightColor = state === 'done' ? color.hi : state === 'current' ? color.accent : color.mid;
-  const repsColor = state === 'done' ? color.mid : state === 'current' ? color.accent : color.mid;
-  const rpeColor = state === 'done' ? color.mid : color.dim;
-
-  const weightText = dash(set.weightKg == null ? null : formatWeight(set.weightKg, unit));
-  const repsText = dash(set.reps == null ? null : `×${set.reps}`);
-  const rpeText = state === 'done' ? dash(set.rpe == null ? null : String(set.rpe)) : '—';
-
+  const indexColor = isCurrent ? color.accent : done ? color.done : color.dim;
+  const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} ${unit.toUpperCase()} × ${set.reps ?? '—'}${set.rpe == null ? '' : ` · RPE ${set.rpe}`}`;
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        {
-          flexDirection: 'row',
-          alignItems: 'center',
-          height: size.hit,
-          gap: 4,
-          paddingHorizontal: 8,
-          borderBottomWidth: 0.5,
-          borderBottomColor: hairline.inset,
-          opacity: pressed ? 0.7 : state === 'ahead' ? 0.5 : 1,
-        },
-      ]}
-    >
-      {handle}
-      <Text style={{ ...text.numSm, width: 20, color: indexColor }}>
-        {String(set.position).padStart(2, '0')}
-      </Text>
-      <View style={{ flex: 1 }} />
-      <Col w={48} color={weightColor}>
-        {weightText}
-      </Col>
-      <Col w={28} color={repsColor}>
-        {repsText}
-      </Col>
-      <Col w={28} color={rpeColor}>
-        {rpeText}
-      </Col>
-      <View style={{ width: 16, alignItems: 'flex-end' }}>
-        {state === 'current' ? null : <Chevron />}
-      </View>
-    </Pressable>
+    <View style={{ paddingLeft: linked ? space.within : 0 }}>
+      <RowPlate selected={isCurrent}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', height: ROW_HEIGHT, gap: space.row }}
+        >
+          {handle}
+          <Text style={[text.numSm, { color: indexColor }]}>
+            {String(set.position).padStart(2, '0')}
+          </Text>
+          <Pressable
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values}${done ? ', logged' : ''}. Edit set`}
+            style={({ pressed }) => ({
+              flex: 1,
+              minHeight: size.hit,
+              justifyContent: 'center',
+              gap: 4,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Text
+              style={[text.rowName, { color: isCurrent ? color.accent : color.hi }]}
+              numberOfLines={1}
+            >
+              {typeLabel}
+            </Text>
+            <Text style={text.numSm} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {values}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={onType}
+            accessibilityRole="button"
+            accessibilityLabel={`Change type of set ${set.position}`}
+            style={{
+              width: size.hit,
+              height: size.hit,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon name="dots" tone={color.mid} />
+          </Pressable>
+          <Chevron />
+        </View>
+      </RowPlate>
+    </View>
   );
 }
 
-/**
- * The SETS sheet: one row per set on the current exercise. Tapping a row
- * moves the cursor there — there is deliberately no edit button, since you
- * edit a set with the ring on the live screen itself.
- *
- * The grip and the left swipe are drawn only when `onReorder` / `onDelete` are
- * passed — an inert control is worse than an absent one.
- */
 export function SetsSheet({
   open,
   onClose,
@@ -123,10 +124,12 @@ export function SetsSheet({
   currentSetId,
   onReorder,
   onDelete,
+  onType,
+  onAddDrop,
 }: Props) {
   const { weightUnit } = useSettings();
+  const [reorderEpoch, setReorderEpoch] = useState(0);
   const done = sets.filter((s) => s.completedAt != null).length;
-
   const selectSet = (id: string) => {
     setSessionCursor(sessionId, { setId: id });
     onClose();
@@ -134,78 +137,75 @@ export function SetsSheet({
 
   return (
     <Sheet open={open} onClose={onClose}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.within }}>
-        <Text style={[text.label, { flexShrink: 1 }]} numberOfLines={1}>
-          {exerciseName.toUpperCase()}
-        </Text>
-        <View style={{ flex: 1 }} />
-        <Text style={[text.label, { flexShrink: 0 }]}>{`${done}/${sets.length}`}</Text>
-      </View>
-      <View
-        style={{ height: 1, backgroundColor: hairline.onPlate, marginVertical: space.within }}
-      />
-
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          height: 18,
-          gap: 4,
-          paddingHorizontal: 8,
+          gap: space.within,
+          marginBottom: space.within,
         }}
       >
-        {onReorder ? <View style={{ width: HANDLE_WIDTH }} /> : null}
-        <Text style={text.label} numberOfLines={1}>
-          SET
+        <Text style={[text.label, { flex: 1 }]} numberOfLines={1}>
+          {exerciseName.toUpperCase()}
         </Text>
-        <View style={{ flex: 1 }} />
-        <Text style={[text.label, { width: 48, textAlign: 'right' }]}>
-          {weightUnit.toUpperCase()}
-        </Text>
-        <Text style={[text.label, { width: 28, textAlign: 'right' }]}>REP</Text>
-        <Text style={[text.label, { width: 28, textAlign: 'right' }]}>RPE</Text>
-        <View style={{ width: 16 }} />
+        <Text style={text.label}>{`${done}/${sets.length}`}</Text>
       </View>
-
       <ReorderList
+        key={reorderEpoch}
         quiet
         items={sets}
-        rowHeight={size.hit}
-        onReorder={onReorder}
+        rowHeight={ROW_HEIGHT}
+        gap={space.row}
+        onReorder={
+          onReorder
+            ? (from, to) => {
+                onReorder(from, to);
+                setReorderEpoch((value) => value + 1);
+              }
+            : undefined
+        }
         renderRow={(s, _i, handle) => (
           <SwipeRow
             key={s.id}
-            surface="transparent"
+            surface={color.raised}
             onDelete={onDelete ? () => onDelete(s.id) : undefined}
           >
             <SetRow
-              unit={weightUnit}
               set={s}
+              typeLabel={setTypeLabel(sets, s.id)}
+              linked={dropParent(sets, s.id) != null}
               isCurrent={s.id === currentSetId}
               handle={handle}
               onPress={() => selectSet(s.id)}
+              onType={() => onType(s.id)}
+              unit={weightUnit}
             />
           </SwipeRow>
         )}
       />
-
-      <Pressable
-        onPress={() => addSet(sessionExerciseId)}
-        style={({ pressed }) => ({
-          minHeight: 44,
-          marginTop: space.within,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: radius.row,
-          borderCurve: 'continuous',
-          backgroundColor: wash.field,
-          borderWidth: 1,
-          borderColor: hairline.onPlate,
-          opacity: pressed ? 0.7 : 1,
-        })}
-      >
-        <Text style={text.rowName}>+ Set</Text>
-      </Pressable>
+      <View style={{ gap: space.row, marginTop: space.within }}>
+        <RowPlate onPress={() => selectSet(addSet(sessionExerciseId, 'warmup'))}>
+          <View style={{ minHeight: size.hit, justifyContent: 'center' }}>
+            <Text style={text.rowName}>+ Warmup</Text>
+          </View>
+        </RowPlate>
+        <View style={{ flexDirection: 'row', gap: space.row }}>
+          <View style={{ flex: 1 }}>
+            <RowPlate onPress={() => selectSet(addSet(sessionExerciseId))}>
+              <View style={{ minHeight: size.hit, justifyContent: 'center' }}>
+                <Text style={text.rowName}>+ Working</Text>
+              </View>
+            </RowPlate>
+          </View>
+          <View style={{ flex: 1 }}>
+            <RowPlate disabled={!sets.some(isWorkingSet)} onPress={onAddDrop}>
+              <View style={{ minHeight: size.hit, justifyContent: 'center' }}>
+                <Text style={text.rowName}>+ Drop</Text>
+              </View>
+            </RowPlate>
+          </View>
+        </View>
+      </View>
     </Sheet>
   );
 }

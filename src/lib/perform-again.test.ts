@@ -3,6 +3,43 @@ import { test } from 'node:test';
 
 import { performAgainPlan } from './perform-again.ts';
 
+test('repeating a logged drop retains its unlogged parent so it cannot attach to another set', () => {
+  const sets = [
+    {
+      sessionExerciseId: 'a',
+      position: 1,
+      kind: 'working' as const,
+      weightKg: 90,
+      reps: 8,
+      completedAt: 1,
+    },
+    {
+      sessionExerciseId: 'a',
+      position: 2,
+      kind: 'working' as const,
+      weightKg: 80,
+      reps: 8,
+      completedAt: null,
+    },
+    {
+      sessionExerciseId: 'a',
+      position: 3,
+      kind: 'drop' as const,
+      weightKg: 60,
+      reps: 10,
+      completedAt: 2,
+    },
+  ];
+  assert.deepEqual(
+    performAgainPlan([{ id: 'a', exerciseId: 'bench', position: 0 }], sets)[0]?.sets,
+    [
+      { kind: 'working', weightKg: 90, reps: 8 },
+      { kind: 'working', weightKg: 80, reps: 8 },
+      { kind: 'drop', weightKg: 60, reps: 10 },
+    ],
+  );
+});
+
 const set = (
   sessionExerciseId: string,
   position: number,

@@ -25,6 +25,7 @@ import {
   type WorkoutParameter,
 } from '@/components';
 import {
+  addSet,
   discardSession,
   clearRest,
   completeSet,
@@ -54,6 +55,8 @@ import { nextExercise, nextSet, prevExercise, prevSet } from '@/lib/live-nav';
 import type { Swipe } from '@/lib/pager';
 import { formatPrValue, type PrHit, PR_LABELS } from '@/lib/pr';
 import { moved } from '@/lib/reorder';
+import { moveSetGroup, removalSetIds, setTypeLabel, setTypeOrdinal } from '@/lib/set-groups';
+import type { SetKind } from '@/lib/volume';
 import { elapsedSec, formatClock, restRemainingSec } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
 import { countLoggedSets, formatTonnage, totalVolume } from '@/lib/volume';
@@ -62,8 +65,10 @@ import { LiveDeck } from '@/components/live-deck';
 import { LiveInstrument } from '@/components/live-instrument';
 import { LivePager } from '@/components/live-pager';
 import { NoteSheet } from '@/components/note-sheet';
+import { SetCounter } from '@/components/set-counter';
+import { SetTypeSheet } from '@/components/set-type-sheet';
 import { pop } from '@/components/haptics';
-import { color, hairline, size, space, text } from '@/theme';
+import { color, size, space, text } from '@/theme';
 
 /** The still beside the title; a short phone gives the ring the difference. */
 const STILL = 92;
@@ -197,7 +202,14 @@ export default function LiveScreen() {
 
 function LiveSession({ sessionId }: { sessionId: string }) {
   const [editing, setEditing] = useState<WorkoutParameter | null>(null);
-  const [sheet, setSheet] = useState<'sets' | 'exercises' | 'notes' | 'plates' | null>(null);
+  const [sheet, setSheet] = useState<'sets' | 'exercises' | 'notes' | 'plates' | 'type' | null>(
+    null,
+  );
+  const [typeRequest, setTypeRequest] = useState<{
+    setId: string;
+    addingDrop: boolean;
+    returnToSets: boolean;
+  } | null>(null);
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [pulse, setPulse] = useState(0);
@@ -236,9 +248,15 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     sets.find((s) => s.completedAt == null) ??
     sets[0];
 
+  const historyOrdinal = set ? setTypeOrdinal(sets, set.id) : 1;
   const previous = useLiveQuery(
-    lastCompletedExerciseSetQuery(exercise?.exerciseId ?? '', sessionId, set?.position ?? 1),
-    [exercise?.exerciseId, sessionId, set?.position],
+    lastCompletedExerciseSetQuery(
+      exercise?.exerciseId ?? '',
+      sessionId,
+      historyOrdinal,
+      set?.kind ?? 'working',
+    ),
+    [exercise?.exerciseId, sessionId, historyOrdinal, set?.kind],
   ).data?.[0];
 
   // The clock is derived from the wall clock, never counted, so a suspended app
@@ -441,6 +459,30 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   const still = exerciseStillFor(exercise.exerciseId, exercise.name);
   const compact = windowHeight < SHORT_DP;
   const stillSize = compact ? STILL_SHORT : STILL;
+  const chooseType = (setId: string, addingDrop = false, returnToSets = false) => {
+    setEditing(null);
+    setTypeRequest({ setId, addingDrop, returnToSets });
+    setSheet('type');
+  };
+  const closeType = () => setSheet(typeRequest?.returnToSets ? 'sets' : null);
+  const changeType = (kind: SetKind, parentId?: string) => {
+    if (!typeRequest) return;
+    try {
+      if (typeRequest.addingDrop) {
+        const id = addSet(exercise.id, kind, parentId);
+        setSessionCursor(session.id, { setId: id });
+        setSheet(null);
+      } else {
+        updateSet(typeRequest.setId, { kind }, parentId);
+        closeType();
+      }
+    } catch (error) {
+      show({
+        title: 'Could not change set',
+        message: error instanceof Error ? error.message : 'Try again.',
+      });
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
@@ -466,7 +508,6 @@ function LiveSession({ sessionId }: { sessionId: string }) {
             <View style={{ flex: 1, gap: 5 }}>
               <Text style={text.label}>
                 EXERCISE {exerciseIndex + 1} OF {exercises.length}
-                {compact ? ` · SET ${setIndex + 1} OF ${sets.length}` : ''}
               </Text>
               <Text style={text.h1} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {exercise.name}
@@ -487,22 +528,14 @@ function LiveSession({ sessionId }: { sessionId: string }) {
             ) : null}
           </Pressable>
 
-          {/* Written, between two hairlines. A set strip was proposed and rejected. */}
-          {compact ? null : (
-            <Pressable
-              onPress={() => setSheet('sets')}
-              accessibilityRole="button"
-              accessibilityLabel="Sets"
-            >
-              <View style={{ marginTop: space.within }}>
-                <View style={{ height: 1, backgroundColor: hairline.onGround }} />
-                <Text style={[text.label, { paddingVertical: 9, textAlign: 'center' }]}>
-                  SET {setIndex + 1} OF {sets.length}
-                </Text>
-                <View style={{ height: 1, backgroundColor: hairline.onGround }} />
-              </View>
-            </Pressable>
-          )}
+          <SetCounter
+            index={setIndex + 1}
+            total={sets.length}
+            typeLabel={setTypeLabel(sets, set.id)}
+            compact={compact}
+            onSets={() => setSheet('sets')}
+            onType={() => chooseType(set.id)}
+          />
 
           <LiveInstrument
             key={set.id}
@@ -606,14 +639,39 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         sessionExerciseId={exercise.id}
         sets={sets}
         currentSetId={set.id}
-        onReorder={(from, to) => reorderSets(moved(sets, from, to).map((s) => s.id))}
+        onType={(id) => chooseType(id, false, true)}
+        onAddDrop={() => chooseType(set.id, true, true)}
+        onReorder={(from, to) => reorderSets(moveSetGroup(sets, from, to).map((s) => s.id))}
         onDelete={(id) => {
-          if (sets.length > 1) removeSet(id);
-          else {
-            setSheet(null);
-            removeSessionExercise(exercise.id);
-          }
+          const removed = removalSetIds(sets, id);
+          const remove = () => {
+            if (sets.length > removed.length) removeSet(id);
+            else {
+              setSheet(null);
+              removeSessionExercise(exercise.id);
+            }
+          };
+          if (removed.length > 1) {
+            show({
+              title: 'Remove working set and drops?',
+              message: `Removes this set and its ${removed.length - 1} linked drop ${removed.length === 2 ? 'set' : 'sets'}.`,
+              actions: [
+                { label: 'Remove', tone: 'destructive', onPress: remove },
+                { label: 'Keep', tone: 'cancel' },
+              ],
+            });
+          } else remove();
         }}
+      />
+      <SetTypeSheet
+        key={`${typeRequest?.setId}-${typeRequest?.addingDrop}-${sheet === 'type'}`}
+        open={sheet === 'type'}
+        onClose={closeType}
+        sets={sets}
+        setId={typeRequest?.setId ?? set.id}
+        addingDrop={typeRequest?.addingDrop}
+        unit={settings.weightUnit}
+        onChoose={changeType}
       />
       <ExercisesSheet
         open={sheet === 'exercises'}

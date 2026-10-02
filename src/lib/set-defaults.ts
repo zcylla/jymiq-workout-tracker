@@ -1,3 +1,5 @@
+import type { SetKind } from './volume.ts';
+
 export interface SetParameters {
   loadKg: number | null;
   reps: number | null;
@@ -20,10 +22,21 @@ export function setDefaults(
   };
 }
 
-export function canCarrySetDefaults(set: {
-  completedAt: number | null;
-  createdAt: number;
-  updatedAt: number;
-}): boolean {
-  return set.completedAt == null && set.updatedAt === set.createdAt;
+export function canCarrySetDefaults(
+  set: {
+    completedAt: number | null;
+    createdAt: number;
+    updatedAt: number;
+    kind?: SetKind;
+  },
+  sourceKind: SetKind = 'working',
+): boolean {
+  return (
+    sourceKind !== 'warmup' &&
+    sourceKind !== 'drop' &&
+    set.kind !== 'warmup' &&
+    set.kind !== 'drop' &&
+    set.completedAt == null &&
+    set.updatedAt === set.createdAt
+  );
 }

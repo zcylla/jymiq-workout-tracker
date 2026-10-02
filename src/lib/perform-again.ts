@@ -1,4 +1,5 @@
 import type { Kg } from './units.ts';
+import { isWorkingSet } from './set-groups.ts';
 import { type SetKind, wasPerformed } from './volume.ts';
 
 export interface AgainPlanLine {
@@ -27,9 +28,18 @@ export function performAgainPlan(
 ): AgainPlanLine[] {
   const plan: AgainPlanLine[] = [];
   for (const ex of [...exercises].sort((a, b) => a.position - b.position)) {
-    const done = sets
-      .filter((s) => s.sessionExerciseId === ex.id && wasPerformed(s))
-      .sort((a, b) => a.position - b.position)
+    const ordered = sets
+      .filter((s) => s.sessionExerciseId === ex.id)
+      .sort((a, b) => a.position - b.position);
+    const parents = new Set<number>();
+    let parent: number | null = null;
+    ordered.forEach((s, i) => {
+      if (isWorkingSet(s)) parent = i;
+      else if (s.kind !== 'drop') parent = null;
+      if (s.kind === 'drop' && wasPerformed(s) && parent != null) parents.add(parent);
+    });
+    const done = ordered
+      .filter((s, i) => wasPerformed(s) || parents.has(i))
       .map(({ kind, weightKg, reps }) => ({ kind, weightKg, reps }));
     if (done.length) plan.push({ exerciseId: ex.exerciseId, sets: done });
   }

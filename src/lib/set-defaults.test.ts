@@ -13,6 +13,15 @@ test('same-session parameters override history', () => {
   assert.deepEqual(setDefaults(previous, history, 2, null), previous);
 });
 
+test('working-set defaults never overwrite a warmup or drop draft', () => {
+  const draft = { completedAt: null, createdAt: 1, updatedAt: 1 };
+  assert.equal(canCarrySetDefaults({ ...draft, kind: 'warmup' }), false);
+  assert.equal(canCarrySetDefaults({ ...draft, kind: 'drop' }), false);
+  assert.equal(canCarrySetDefaults({ ...draft, kind: 'working' }, 'warmup'), false);
+  assert.equal(canCarrySetDefaults({ ...draft, kind: 'working' }, 'drop'), false);
+  assert.equal(canCarrySetDefaults({ ...draft, kind: 'working' }, 'working'), true);
+});
+
 test('same-session nulls stay unset rather than falling through to history', () => {
   assert.deepEqual(setDefaults(unset, history, 2, null), unset);
 });

@@ -15,6 +15,7 @@ import {
 
 import type { PrBaseline } from '@/lib/pr';
 import { weightKey } from '@/lib/units';
+import type { SetKind } from '@/lib/volume';
 
 import type { Db } from '../db';
 import { db } from '../db';
@@ -240,10 +241,18 @@ export function sessionsWithRecordsQuery(sessionIds: readonly string[]) {
 export function lastCompletedExerciseSetQuery(
   exerciseId: string,
   currentSessionId: string,
-  position: number,
+  ordinal: number,
+  kind: SetKind = 'working',
 ) {
-  return completedExerciseSets(db, exerciseId, currentSessionId)
-    .orderBy(desc(sql`${sets.position} = ${position}`), desc(sets.position))
+  const kinds: SetKind[] =
+    kind === 'working' || kind === 'failure' ? ['working', 'failure'] : [kind];
+  return completedExerciseSets(db, exerciseId, currentSessionId, kinds)
+    .orderBy(
+      desc(
+        sql`row_number() over (order by ${sets.position}, ${sessionExercises.position}) = ${ordinal}`,
+      ),
+      desc(sets.position),
+    )
     .limit(1);
 }
 
@@ -254,10 +263,17 @@ export function readLastCompletedExerciseSets(
 ) {
   return completedExerciseSets(reader, exerciseId, currentSessionId)
     .orderBy(asc(sets.position), asc(sessionExercises.position))
-    .all();
+    .all()
+    .filter((s) => s.kind === 'working' || s.kind === 'failure')
+    .map((s, i) => ({ ...s, position: i + 1 }));
 }
 
-function completedExerciseSets(reader: Reader, exerciseId: string, currentSessionId: string) {
+function completedExerciseSets(
+  reader: Reader,
+  exerciseId: string,
+  currentSessionId: string,
+  kinds?: SetKind[],
+) {
   const logged = and(
     eq(sessionExercises.exerciseId, exerciseId),
     ne(sessionExercises.sessionId, currentSessionId),
@@ -276,6 +292,7 @@ function completedExerciseSets(reader: Reader, exerciseId: string, currentSessio
   return reader
     .select({
       position: sets.position,
+      kind: sets.kind,
       weightKg: sets.weightKg,
       loadKg: sets.weightKg,
       reps: sets.reps,
@@ -286,7 +303,9 @@ function completedExerciseSets(reader: Reader, exerciseId: string, currentSessio
     .from(sets)
     .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
     .innerJoin(sessions, eq(sessions.id, sessionExercises.sessionId))
-    .where(and(logged, eq(sessions.id, latestSession)));
+    .where(
+      and(logged, eq(sessions.id, latestSession), kinds ? inArray(sets.kind, kinds) : undefined),
+    );
 }
 
 /**

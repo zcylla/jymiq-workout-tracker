@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 
 import { estimate1RM } from '@/lib/e1rm';
 import { newId } from '@/lib/id';
@@ -7,6 +7,14 @@ import { type PrHit, detectSessionVolumePr, detectSetPrs } from '@/lib/pr';
 import { adjustRestUntil, resolveRestSec } from '@/lib/rest';
 import { editedSetValues, editedSessionTotals, replayExerciseRecords } from '@/lib/set-edit';
 import { canCarrySetDefaults, setDefaults, type SetParameters } from '@/lib/set-defaults';
+import {
+  changeSetKind,
+  continuesDropGroup,
+  insertTypedSet,
+  isWorkingSet,
+  removalSetIds,
+  validateSetOrder,
+} from '@/lib/set-groups';
 
 import { getSettings } from '../settings';
 import { syncSoon } from '../sync';
@@ -27,6 +35,25 @@ import {
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+function exerciseSets(tx: Tx, sessionExerciseId: string) {
+  return tx
+    .select()
+    .from(sets)
+    .where(eq(sets.sessionExerciseId, sessionExerciseId))
+    .orderBy(asc(sets.position))
+    .all();
+}
+
+function writeSetOrder(tx: Tx, rows: readonly { id: string; position: number }[]) {
+  rows.forEach((row, i) => {
+    if (row.position === i + 1) return;
+    tx.update(sets)
+      .set({ position: i + 1 })
+      .where(eq(sets.id, row.id))
+      .run();
+  });
+}
+
 /** Sets given to an exercise added with no plan behind it: Settings' default sets. */
 const defaultSets = () => getSettings().defaultSets;
 
@@ -41,6 +68,7 @@ function previousExerciseSet(tx: Tx, sessionId: string, exerciseId: string): Set
           eq(sessionExercises.sessionId, sessionId),
           eq(sessionExercises.exerciseId, exerciseId),
           isNotNull(sets.completedAt),
+          inArray(sets.kind, ['working', 'failure']),
         ),
       )
       .orderBy(desc(sets.completedAt), desc(sessionExercises.position), desc(sets.position))
@@ -307,6 +335,7 @@ export function updateSet(
     rpe?: number | null;
     kind?: SetLike['kind'];
   },
+  dropParentId?: string,
 ): void {
   db.transaction((tx) => {
     const [row] = tx
@@ -318,6 +347,16 @@ export function updateSet(
       .limit(1)
       .all();
     if (!row) return;
+
+    if (patch.kind !== undefined) {
+      const ordered = changeSetKind(
+        exerciseSets(tx, row.set.sessionExerciseId),
+        id,
+        patch.kind,
+        dropParentId,
+      );
+      writeSetOrder(tx, ordered);
+    }
 
     tx.update(sets)
       .set({
@@ -480,6 +519,7 @@ export function completeSet(id: string): PrHit[] {
     const [draft] = tx
       .select({
         id: sets.id,
+        kind: sets.kind,
         position: sets.position,
         plannedWeightKg: sets.plannedWeightKg,
         plannedReps: sets.plannedReps,
@@ -495,6 +535,7 @@ export function completeSet(id: string): PrHit[] {
           eq(sessionExercises.exerciseId, row.exerciseId),
           isNull(sessionExercises.removedAt),
           isNull(sets.completedAt),
+          inArray(sets.kind, ['working', 'failure']),
         ),
       )
       .orderBy(
@@ -505,7 +546,7 @@ export function completeSet(id: string): PrHit[] {
       )
       .limit(1)
       .all();
-    if (draft && canCarrySetDefaults(draft)) {
+    if (draft && canCarrySetDefaults(draft, row.kind)) {
       tx.update(sets)
         .set(
           defaultValues(
@@ -522,9 +563,12 @@ export function completeSet(id: string): PrHit[] {
     }
 
     const next = nextIncompleteSet(tx, row.sessionId, row.exercisePosition, row.position);
+    const intoDrop =
+      next?.sessionExerciseId === row.sessionExerciseId &&
+      continuesDropGroup(exerciseSets(tx, row.sessionExerciseId), row.id, next.id);
     tx.update(sessions)
       .set({
-        restUntil: now + row.restSec * 1000,
+        restUntil: intoDrop ? null : now + row.restSec * 1000,
         currentSessionExerciseId: next?.sessionExerciseId ?? row.sessionExerciseId,
         currentSetId: next?.id ?? row.id,
       })
@@ -552,7 +596,11 @@ export function uncompleteSet(id: string): void {
 }
 
 /** Appends a set using the latest logged parameters, or completed-session history. */
-export function addSet(sessionExerciseId: string, kind: SetLike['kind'] = 'working'): string {
+export function addSet(
+  sessionExerciseId: string,
+  kind: SetLike['kind'] = 'working',
+  dropParentId?: string,
+): string {
   const id = newId();
   const now = Date.now();
 
@@ -564,23 +612,26 @@ export function addSet(sessionExerciseId: string, kind: SetLike['kind'] = 'worki
       .limit(1)
       .all();
     if (!exercise) throw new Error(`No such session exercise: ${sessionExerciseId}`);
-    const [last] = tx
-      .select({ position: sets.position })
-      .from(sets)
-      .where(eq(sets.sessionExerciseId, sessionExerciseId))
-      .orderBy(desc(sets.position))
-      .limit(1)
-      .all();
-    const position = (last?.position ?? 0) + 1;
+    const before = exerciseSets(tx, sessionExerciseId);
+    const position = before.length + 1;
+    const workingPosition = before.filter(isWorkingSet).length + 1;
     const target =
-      kind === 'working' && position <= (exercise.plannedSets ?? 0)
+      kind === 'working' && workingPosition <= (exercise.plannedSets ?? 0)
         ? { loadKg: exercise.plannedWeightKg, reps: exercise.plannedReps, rpe: null }
         : null;
-    const parameters = setDefaults(
-      previousExerciseSet(tx, exercise.sessionId, exercise.exerciseId),
-      readLastCompletedExerciseSets(tx, exercise.exerciseId, exercise.sessionId),
-      position,
-      target,
+    const parameters =
+      kind === 'working' || kind === 'failure'
+        ? setDefaults(
+            previousExerciseSet(tx, exercise.sessionId, exercise.exerciseId),
+            readLastCompletedExerciseSets(tx, exercise.exerciseId, exercise.sessionId),
+            workingPosition,
+            target,
+          )
+        : { loadKg: null, reps: null, rpe: null };
+    const ordered = insertTypedSet(
+      before.map(({ id, kind, position }) => ({ id, kind, position })),
+      { id, kind, position },
+      dropParentId,
     );
 
     tx.insert(sets)
@@ -596,8 +647,10 @@ export function addSet(sessionExerciseId: string, kind: SetLike['kind'] = 'worki
         updatedAt: now,
       })
       .run();
+    writeSetOrder(tx, ordered);
   });
 
+  syncSoon();
   return id;
 }
 
@@ -617,30 +670,22 @@ export function removeSet(id: string): void {
       .all();
     if (!row) return;
 
-    const before = tx
-      .select({ id: sets.id })
-      .from(sets)
-      .where(eq(sets.sessionExerciseId, row.sessionExerciseId))
-      .orderBy(asc(sets.position))
-      .all();
+    const before = exerciseSets(tx, row.sessionExerciseId);
     const at = before.findIndex((s) => s.id === id);
+    const removedIds = removalSetIds(before, id);
 
-    tx.delete(sets).where(eq(sets.id, id)).run();
+    tx.delete(sets).where(inArray(sets.id, removedIds)).run();
 
-    const after = before.filter((s) => s.id !== id);
-    after.forEach((s, i) => {
-      tx.update(sets)
-        .set({ position: i + 1 })
-        .where(eq(sets.id, s.id))
-        .run();
-    });
+    const after = before.filter((s) => !removedIds.includes(s.id));
+    writeSetOrder(tx, after);
 
     const heir = after[Math.min(at, after.length - 1)];
     tx.update(sessions)
       .set({ currentSetId: heir?.id ?? null })
-      .where(and(eq(sessions.id, row.sessionId), eq(sessions.currentSetId, id)))
+      .where(and(eq(sessions.id, row.sessionId), inArray(sessions.currentSetId, removedIds)))
       .run();
   });
+  syncSoon();
 }
 
 /** Snapshots an exercise into a session with `setCount` draft sets. */
@@ -891,13 +936,17 @@ export function reorderSessionExercises(orderedIds: readonly string[]): void {
 
 export function reorderSets(orderedIds: readonly string[]): void {
   db.transaction((tx) => {
-    orderedIds.forEach((id, i) => {
-      tx.update(sets)
-        .set({ position: i + 1, updatedAt: Date.now() })
-        .where(eq(sets.id, id))
-        .run();
-    });
+    if (!orderedIds.length) return;
+    const [first] = tx.select().from(sets).where(eq(sets.id, orderedIds[0])).all();
+    if (!first) throw new Error('This set no longer exists.');
+    const before = exerciseSets(tx, first.sessionExerciseId);
+    validateSetOrder(before, orderedIds);
+    writeSetOrder(
+      tx,
+      orderedIds.map((id) => before.find((s) => s.id === id)!),
+    );
   });
+  syncSoon();
 }
 
 /** Where the two axes point. Written on navigation so a relaunch resumes in place. */
