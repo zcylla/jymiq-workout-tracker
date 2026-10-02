@@ -16,7 +16,7 @@ import { useStartSession } from '@/data/start';
  * restated here or the whole navigator collapses.
  */
 export default function TabsLayout() {
-  const start = useStartSession();
+  const start = useStartSession({ empty: true });
 
   return (
     <TabBarProvider>
@@ -38,7 +38,7 @@ export default function TabsLayout() {
             <TabItem tab="session" />
           </TabTrigger>
 
-          {/* Not a tab — it resumes or starts a session, which owns the whole plane. */}
+          {/* Not a tab — it resumes, or starts an empty session, which owns the whole plane. */}
           <StartButton onPress={start} />
 
           <TabTrigger name="history" asChild>
