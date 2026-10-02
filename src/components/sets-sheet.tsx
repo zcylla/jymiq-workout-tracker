@@ -6,11 +6,12 @@ import { useSettings } from '@/data/settings';
 import { dropParent, isWorkingSet, setTypeLabel } from '@/lib/set-groups';
 import { formatWeight, type Unit } from '@/lib/units';
 import type { SetKind } from '@/lib/volume';
-import { color, size, space, text } from '@/theme';
+import { color, hairline, ls, radius, sans, size, space, text, wash } from '@/theme';
+import { disabledControl } from '@/theme/tokens';
 
 import { Chevron } from './icon';
 import { ReorderList } from './reorder-list';
-import { RowPlate } from './row-plate';
+import { PrimaryButton } from './primary-button';
 import { Sheet } from './sheet';
 import { SwipeRow } from './swipe-row';
 
@@ -61,36 +62,36 @@ function SetRow({
   const valueColor = isCurrent ? color.accent : done ? color.hi : color.mid;
   const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} × ${set.reps ?? '—'}`;
   return (
-    <View style={{ paddingLeft: linked ? space.within : 0 }}>
-      <RowPlate selected={isCurrent}>
-        <Pressable
-          onPress={onPress}
-          accessibilityRole="button"
-          accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. Edit set`}
-          style={({ pressed }) => ({
-            flexDirection: 'row',
-            alignItems: 'center',
-            height: ROW_HEIGHT,
-            gap: space.row,
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          {handle}
-          <Text style={[text.numSm, { color: indexColor }]}>
-            {String(set.position).padStart(2, '0')}
-          </Text>
-          {set.kind === 'working' ? null : (
-            <Text style={[text.meta, { color: color.lo }]}>{typeLabel.toUpperCase()}</Text>
-          )}
-          <View style={{ flex: 1 }} />
-          <Text style={[text.numSm, { color: valueColor }]} numberOfLines={1}>
-            {values}
-            {set.rpe == null ? '' : ` @${set.rpe}`}
-          </Text>
-          {isCurrent ? null : <Chevron />}
-        </Pressable>
-      </RowPlate>
-    </View>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. Edit set`}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: ROW_HEIGHT,
+        gap: 9,
+        paddingHorizontal: 8,
+        marginLeft: linked ? space.within : 0,
+        borderRadius: radius.row,
+        backgroundColor: isCurrent ? wash.accent : undefined,
+        opacity: pressed ? 0.7 : isCurrent || done ? 1 : 0.6,
+      })}
+    >
+      {handle}
+      <Text style={[text.numSm, { color: indexColor }]}>
+        {String(set.position).padStart(2, '0')}
+      </Text>
+      {set.kind === 'working' ? null : (
+        <Text style={[text.meta, { color: color.lo }]}>{typeLabel.toUpperCase()}</Text>
+      )}
+      <View style={{ flex: 1 }} />
+      <Text style={[text.numSm, { color: valueColor }]} numberOfLines={1}>
+        {values}
+        {set.rpe == null ? '' : ` @${set.rpe}`}
+      </Text>
+      {isCurrent ? null : <Chevron />}
+    </Pressable>
   );
 }
 
@@ -146,7 +147,7 @@ export function SetsSheet({
         renderRow={(s, _i, handle) => (
           <SwipeRow
             key={s.id}
-            surface={color.raised}
+            surface="transparent"
             onDelete={onDelete ? () => onDelete(s.id) : undefined}
           >
             <SetRow
@@ -168,21 +169,44 @@ export function SetsSheet({
             disabled: false,
             onPress: () => selectSet(addSet(sessionExerciseId, 'warmup')),
           },
-          {
-            label: '+ Working',
-            disabled: false,
-            onPress: () => selectSet(addSet(sessionExerciseId)),
-          },
           { label: '+ Drop', disabled: !sets.some(isWorkingSet), onPress: onAddDrop },
         ].map((add) => (
-          <View key={add.label} style={{ flex: 1 }}>
-            <RowPlate disabled={add.disabled} onPress={add.onPress}>
-              <View style={{ minHeight: size.hit, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={text.rowName}>{add.label}</Text>
-              </View>
-            </RowPlate>
-          </View>
+          <Pressable
+            key={add.label}
+            onPress={add.onPress}
+            disabled={add.disabled}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              {
+                flex: 1,
+                minHeight: size.hit,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: radius.row,
+                borderCurve: 'continuous',
+                backgroundColor: wash.field,
+                borderWidth: 1,
+                borderColor: hairline.onPlate,
+                opacity: pressed ? 0.7 : 1,
+              },
+              add.disabled && disabledControl.surface,
+            ]}
+          >
+            <Text
+              style={{
+                ...sans(500),
+                fontSize: 14,
+                letterSpacing: ls(-0.01, 14),
+                color: add.disabled ? disabledControl.label : color.hi,
+              }}
+            >
+              {add.label}
+            </Text>
+          </Pressable>
         ))}
+      </View>
+      <View style={{ marginTop: space.row }}>
+        <PrimaryButton label="Add set" onPress={() => selectSet(addSet(sessionExerciseId))} />
       </View>
     </Sheet>
   );
