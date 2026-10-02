@@ -42,6 +42,7 @@ import { formatRest, formatSessionDuration, sessionDotTone } from '@/lib/time';
 import { formatWeight, type Unit } from '@/lib/units';
 import { formatTonnage, topSet } from '@/lib/volume';
 import { size, space } from '@/theme';
+import { disabledControl } from '@/theme/tokens';
 
 const STILL = 44;
 /** The still plus the 7pt a `ListRow` pads above and below it: the plate's exact height, which the drag slots by. */
@@ -204,14 +205,17 @@ export default function RoutineScreen() {
                   setMenu('actions');
                 })
               }
-              style={{
-                width: size.hit,
-                height: size.hit,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              style={[
+                {
+                  width: size.hit,
+                  height: size.hit,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+                !routine && disabledControl.surface,
+              ]}
             >
-              <Icon name="dots" />
+              <Icon name="dots" tone={!routine ? disabledControl.label : undefined} />
             </Pressable>
           }
         />

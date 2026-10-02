@@ -1,6 +1,7 @@
 import { Text } from 'react-native';
 
 import { color, radius, size, text } from '@/theme';
+import { disabledControl } from '@/theme/tokens';
 
 import { AnimatedPressable, usePressFeel } from './press';
 
@@ -14,7 +15,7 @@ export function PrimaryButton({
   onPress: () => void;
   disabled?: boolean;
 }) {
-  const press = usePressFeel(0.15);
+  const press = usePressFeel(0.15, disabled);
   return (
     <AnimatedPressable
       onPress={onPress}
@@ -32,10 +33,11 @@ export function PrimaryButton({
           borderCurve: 'continuous',
           backgroundColor: color.accent,
         },
-        disabled ? { opacity: 0.4 } : press.style,
+        disabled && disabledControl.surface,
+        press.style,
       ]}
     >
-      <Text style={text.action}>{label}</Text>
+      <Text style={[text.action, disabled && { color: disabledControl.label }]}>{label}</Text>
     </AnimatedPressable>
   );
 }

@@ -7,6 +7,7 @@ import { resolveKeypadValue } from '@/lib/keypad';
 import { REPS_SCALE, RPE_SCALE, type Scale, targetLoadScale } from '@/lib/scale';
 import { formatWeight, toKg, type Unit } from '@/lib/units';
 import { color, hairline, lh, ls, mono, radius, sans, text, wash } from '@/theme';
+import { disabledControl } from '@/theme/tokens';
 
 import { key, pop } from './haptics';
 import type { WorkoutParameter } from './param-selector';
@@ -217,6 +218,8 @@ export function NumberSheet({
           <Pressable
             onPress={confirm}
             disabled={resolved == null}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: resolved == null }}
             style={({ pressed }) => ({
               flex: 1.6,
               minHeight: 46,
@@ -224,11 +227,19 @@ export function NumberSheet({
               justifyContent: 'center',
               borderRadius: radius.row,
               borderCurve: 'continuous',
-              backgroundColor: color.accent,
-              opacity: resolved == null ? 0.4 : pressed ? 0.85 : 1,
+              backgroundColor:
+                resolved == null ? disabledControl.surface.backgroundColor : color.accent,
+              boxShadow: resolved == null ? disabledControl.surface.boxShadow : undefined,
+              opacity: resolved == null ? 1 : pressed ? 0.85 : 1,
             })}
           >
-            <Text style={{ ...sans(600), fontSize: 15, color: color.ink }}>
+            <Text
+              style={{
+                ...sans(600),
+                fontSize: 15,
+                color: resolved == null ? disabledControl.label : color.ink,
+              }}
+            >
               {resolved == null ? `Set ${unit}` : `Set ${resolved} ${unit}`}
             </Text>
           </Pressable>

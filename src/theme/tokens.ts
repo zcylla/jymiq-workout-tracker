@@ -32,6 +32,12 @@ export const color = {
   ink: '#15130f',
 } as const;
 
+export const disabledControl = {
+  surface: { backgroundColor: color.off, borderColor: color.off, boxShadow: 'none' },
+  label: color.dim,
+  contentOpacity: 0.4,
+} as const;
+
 /**
  * A hairline's contrast is relative to its surface (§0): 11% white reads on the
  * near-black canvas and washes out on a lifted plate. Every hairline has both.

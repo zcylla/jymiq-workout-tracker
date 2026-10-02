@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { color, controlBarBlur, controlEdgeDense, fabShadow, radius, text } from '@/theme';
+import { disabledControl } from '@/theme/tokens';
 
 import { GlassUnder, glassStyle } from './glass';
 import { tick } from './haptics';
@@ -36,7 +37,7 @@ export function ActionBar({
 }) {
   const insets = useSafeAreaInsets();
   const secondaryPress = usePressFeel();
-  const primaryPress = usePressFeel(0.15);
+  const primaryPress = usePressFeel(0.15, disabled);
   const target = useScreenBlurTarget();
   const sheetOpen = useSheetOpen();
   return (
@@ -89,11 +90,13 @@ export function ActionBar({
       <AnimatedPressable
         onPress={onPrimary}
         onPressIn={() => {
+          if (disabled) return;
           tick();
           primaryPress.handlers.onPressIn();
         }}
         onPressOut={primaryPress.handlers.onPressOut}
         disabled={disabled}
+        accessibilityRole="button"
         accessibilityState={{ disabled }}
         style={[
           {
@@ -106,10 +109,11 @@ export function ActionBar({
             backgroundColor: color.accent,
             boxShadow: fabShadow,
           },
-          disabled ? { opacity: 0.4 } : primaryPress.style,
+          disabled && disabledControl.surface,
+          primaryPress.style,
         ]}
       >
-        <Text style={text.action}>{primary}</Text>
+        <Text style={[text.action, disabled && { color: disabledControl.label }]}>{primary}</Text>
       </AnimatedPressable>
     </View>
   );

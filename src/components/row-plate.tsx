@@ -1,7 +1,8 @@
 import { createContext, type ReactNode, useContext } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { color, containment, radius, space, wash } from '@/theme';
+import { color, containment, radius, size, space, wash } from '@/theme';
+import { disabledControl } from '@/theme/tokens';
 
 import { GlassUnder, glassStyle, useControlGlass, useGlass } from './glass';
 import { AnimatedPressable, usePressFeel } from './press';
@@ -31,24 +32,25 @@ export function RowPlate({
   /** Washed and ringed in the accent, the way the week strip marks today. */
   selected?: boolean;
 }) {
-  const press = usePressFeel();
+  const press = usePressFeel(0.3, disabled);
   const groupTinted = useContext(TintedRows);
   const tinted = tintedProp ?? groupTinted;
   const control = useControlGlass();
   const row = useGlass('row');
   const { recipe, blur, target } = tinted ? control : row;
-  const glass = tone !== 'destructive' ? recipe : null;
+  const glass = !disabled && tone !== 'destructive' ? recipe : null;
   const style = [
     containment.rowPlate,
-    { paddingHorizontal: 14 },
+    { paddingHorizontal: 14, minHeight: size.hit },
     tone === 'panel' && { backgroundColor: color.panel },
     glass && glassStyle(glass, blur),
     tone === 'destructive' && { backgroundColor: color.live },
+    disabled && disabledControl.surface,
   ];
   const under = (
     <>
       {glass ? <GlassUnder recipe={glass} blur={blur} target={target} radius={radius.row} /> : null}
-      {selected ? (
+      {selected && !disabled ? (
         <View
           pointerEvents="none"
           style={[
@@ -78,11 +80,17 @@ export function RowPlate({
     <AnimatedPressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
       {...press.handlers}
-      style={[style, disabled ? { opacity: 0.7 } : press.style]}
+      style={[style, press.style]}
     >
       {under}
-      {children}
+      {disabled ? (
+        <View style={{ opacity: disabledControl.contentOpacity }}>{children}</View>
+      ) : (
+        children
+      )}
     </AnimatedPressable>
   );
 }
