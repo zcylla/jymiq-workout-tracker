@@ -606,10 +606,19 @@ function LiveSession({ sessionId }: { sessionId: string }) {
       </Screen>
 
       <ExerciseLadder
-        rungs={exerciseRows.map((e) => ({ id: e.id, done: e.setsDone === e.setsTotal }))}
+        rungs={exerciseRows.map((e) => ({
+          id: e.id,
+          name: e.name,
+          done: e.setsDone === e.setsTotal,
+        }))}
         currentId={exercise.id}
         dimmed={editing !== null}
         onPress={() => setSheet('exercises')}
+        onSelect={(id) => {
+          const targetSets = allSets.filter((s) => s.sessionExerciseId === id);
+          const target = targetSets.find((s) => s.completedAt == null) ?? targetSets[0];
+          setSessionCursor(session.id, { sessionExerciseId: id, setId: target?.id ?? null });
+        }}
       />
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
