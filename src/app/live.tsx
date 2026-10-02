@@ -232,6 +232,11 @@ function LiveSession({ sessionId }: { sessionId: string }) {
 
   const discard = () => {
     if (!session) return;
+    if (setsLoaded && logged === 0) {
+      discardSession(session.id);
+      router.replace('/');
+      return;
+    }
     show({
       title: 'Discard session?',
       message: `Deletes ${tally.toLowerCase()} and any records.`,
