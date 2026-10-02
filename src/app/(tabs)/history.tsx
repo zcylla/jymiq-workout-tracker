@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -16,6 +16,7 @@ import {
   ColumnChart,
   Icon,
   ListRow,
+  OptionSheet,
   Pill,
   Rail,
   type RailItem,
@@ -29,17 +30,25 @@ import {
   useTabBarHeight,
   Waiting,
 } from '@/components';
+import { AnimatedPressable, usePressFeel } from '@/components/press';
 import { useRows } from '@/data/live';
-import { sessionsInRangeQuery } from '@/data/queries/calendar';
+import { loggedSessionTimestampsQuery, sessionsInRangeQuery } from '@/data/queries/calendar';
 import { loggedSessionIdsQuery } from '@/data/queries/load';
 import { recordsQuery } from '@/data/queries/records';
 import { sessionsWithRecordsQuery } from '@/data/queries/sessions';
 import { useActiveSchedule } from '@/data/schedule';
 import { useSettings } from '@/data/settings';
-import { monthGrid, trainedDays, weekVolumes } from '@/lib/calendar';
+import {
+  monthGrid,
+  monthsBackForYear,
+  trainedDays,
+  weekVolumes,
+  yearsWithSessions,
+} from '@/lib/calendar';
 import { dayLabel, monthTime } from '@/lib/time';
 import { formatTonnage, formatTonnageAxis } from '@/lib/volume';
 import { color, motion, size, text } from '@/theme';
+import { disabledControl } from '@/theme/tokens';
 
 /**
  * Lab 49 H-A with B2: the month is the period. The pager, the count, the chart,
@@ -56,12 +65,26 @@ export default function HistoryScreen() {
 
   const now = useMemo(() => nowMs(), []);
   const [back, setBack] = useState(0);
+  const [pickingYear, setPickingYear] = useState(false);
   const previousMonth = () => setBack((current) => current + 1);
   const nextMonth = () => setBack((current) => Math.max(0, current - 1));
   const grid = useMemo(() => {
     const today = new Date(now);
     return monthGrid(new Date(today.getFullYear(), today.getMonth() - back, 1), now);
   }, [now, back]);
+
+  const timestamps = useRows(
+    useMemo(() => loggedSessionTimestampsQuery(), []),
+    [],
+  );
+  const years = useMemo(
+    () =>
+      yearsWithSessions(
+        (timestamps ?? []).map((s) => s.startedAt),
+        now,
+      ),
+    [timestamps, now],
+  );
 
   const active = useActiveSchedule();
   const all = useRows(
@@ -117,110 +140,121 @@ export default function HistoryScreen() {
   }));
 
   return (
-    <Screen bottomInset={tabBar}>
-      <ScreenHeader
-        title={grid.title}
-        kicker={String(grid.year)}
-        right={
-          <View style={{ flexDirection: 'row' }}>
-            <Pager label="Previous month" onPress={previousMonth} />
-            <Pager label="Next month" next disabled={back === 0} onPress={nextMonth} />
-          </View>
-        }
-      />
+    <>
+      <Screen bottomInset={tabBar}>
+        <ScreenHeader
+          title={grid.title}
+          kicker={String(grid.year)}
+          onKickerPress={years.length > 1 ? () => setPickingYear(true) : undefined}
+          right={
+            <View style={{ flexDirection: 'row' }}>
+              <Pager label="Previous month" onPress={previousMonth} />
+              <Pager label="Next month" next disabled={back === 0} onPress={nextMonth} />
+            </View>
+          }
+        />
 
-      <MonthSwap step={back} onPrevious={previousMonth} onNext={nextMonth}>
-        <Section first pad={15} tone="glass">
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
-            {all === null ? (
-              <Waiting>
-                <Text style={[text.numCore, { color: color.lo }]}>—</Text>
-              </Waiting>
-            ) : (
-              <RollingNumber
-                value={month.length}
-                style={{ ...text.numCore, color: month.length ? color.hi : color.lo }}
-              />
-            )}
-            <View style={{ paddingBottom: 6 }}>
-              <Text style={text.label}>SESSIONS</Text>
+        <MonthSwap step={back} onPrevious={previousMonth} onNext={nextMonth}>
+          <Section first pad={15} tone="glass">
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+              {all === null ? (
+                <Waiting>
+                  <Text style={[text.numCore, { color: color.lo }]}>—</Text>
+                </Waiting>
+              ) : (
+                <RollingNumber
+                  value={month.length}
+                  style={{ ...text.numCore, color: month.length ? color.hi : color.lo }}
+                />
+              )}
+              <View style={{ paddingBottom: 6 }}>
+                <Text style={text.label}>SESSIONS</Text>
+              </View>
             </View>
-          </View>
-          <StatTiles
-            surface="raised"
-            items={[
-              { label: 'TIME', value: time.total, pending: all === null },
-              { label: 'AVG', value: time.avg, pending: all === null },
-            ]}
-          />
-          {month.length && weeks.length ? (
-            <View style={{ gap: 6, paddingTop: 5 }}>
-              <Text style={text.label}>{weightUnit === 'kg' ? 'KG / WEEK' : 'LB / WEEK'}</Text>
-              <ColumnChart
-                values={weeks.map((w) => w.volumeKg)}
-                xFirst={weeks[0]?.label ?? ''}
-                xLast={weeks[weeks.length - 1]?.label ?? ''}
-                value={formatTonnage(weeks[weeks.length - 1]?.volumeKg ?? 0, weightUnit)}
-                format={(v) =>
-                  formatTonnageAxis(v, Math.max(...weeks.map((w) => w.volumeKg)), weightUnit)
-                }
-                h={58}
-              />
-            </View>
+            <StatTiles
+              surface="raised"
+              items={[
+                { label: 'TIME', value: time.total, pending: all === null },
+                { label: 'AVG', value: time.avg, pending: all === null },
+              ]}
+            />
+            {month.length && weeks.length ? (
+              <View style={{ gap: 6, paddingTop: 5 }}>
+                <Text style={text.label}>{weightUnit === 'kg' ? 'KG / WEEK' : 'LB / WEEK'}</Text>
+                <ColumnChart
+                  values={weeks.map((w) => w.volumeKg)}
+                  xFirst={weeks[0]?.label ?? ''}
+                  xLast={weeks[weeks.length - 1]?.label ?? ''}
+                  value={formatTonnage(weeks[weeks.length - 1]?.volumeKg ?? 0, weightUnit)}
+                  format={(v) =>
+                    formatTonnageAxis(v, Math.max(...weeks.map((w) => w.volumeKg)), weightUnit)
+                  }
+                  h={58}
+                />
+              </View>
+            ) : null}
+          </Section>
+
+          <Section pad={15}>
+            <Calendar
+              weeks={grid.weeks}
+              trained={trained}
+              todayKey={grid.todayKey}
+              schedule={active?.schedule}
+              onPressDay={(day) => router.push(`/history/${day.sessionId}`)}
+            />
+          </Section>
+
+          {fresh ? (
+            <Section label="SESSIONS" plated={false}>
+              <RowPlates tinted>
+                {active?.program ? null : (
+                  <RowPlate onPress={() => router.push('/program/new')}>
+                    <ListRow
+                      title="New program"
+                      right={<Icon name="plus" tone={color.accent} />}
+                      chevron={false}
+                    />
+                  </RowPlate>
+                )}
+                <RowPlate onPress={() => router.push('/sign-in')}>
+                  <ListRow title="Restore backup" />
+                </RowPlate>
+              </RowPlates>
+            </Section>
+          ) : items.length ? (
+            <Section label="SESSIONS" plated={false}>
+              <Rail items={items} air={24} animate />
+            </Section>
           ) : null}
-        </Section>
 
-        <Section pad={15}>
-          <Calendar
-            weeks={grid.weeks}
-            trained={trained}
-            todayKey={grid.todayKey}
-            schedule={active?.schedule}
-            onPressDay={(day) => router.push(`/history/${day.sessionId}`)}
-          />
-        </Section>
-
-        {fresh ? (
-          <Section label="SESSIONS" plated={false}>
-            <RowPlates tinted>
-              {active?.program ? null : (
-                <RowPlate onPress={() => router.push('/program/new')}>
+          {logged === null || fresh ? null : (
+            <Section plated={false}>
+              <RowPlates tinted>
+                <RowPlate onPress={() => router.push('/records')}>
                   <ListRow
-                    title="New program"
-                    right={<Icon name="plus" tone={color.accent} />}
-                    chevron={false}
+                    title="Records"
+                    right={
+                      records ? (
+                        <Text style={[text.num, { marginRight: 10 }]}>{records.length}</Text>
+                      ) : undefined
+                    }
                   />
                 </RowPlate>
-              )}
-              <RowPlate onPress={() => router.push('/sign-in')}>
-                <ListRow title="Restore backup" />
-              </RowPlate>
-            </RowPlates>
-          </Section>
-        ) : items.length ? (
-          <Section label="SESSIONS" plated={false}>
-            <Rail items={items} air={24} animate />
-          </Section>
-        ) : null}
-
-        {logged === null || fresh ? null : (
-          <Section plated={false}>
-            <RowPlates tinted>
-              <RowPlate onPress={() => router.push('/records')}>
-                <ListRow
-                  title="Records"
-                  right={
-                    records ? (
-                      <Text style={[text.num, { marginRight: 10 }]}>{records.length}</Text>
-                    ) : undefined
-                  }
-                />
-              </RowPlate>
-            </RowPlates>
-          </Section>
-        )}
-      </MonthSwap>
-    </Screen>
+              </RowPlates>
+            </Section>
+          )}
+        </MonthSwap>
+      </Screen>
+      <OptionSheet
+        open={pickingYear && years.length > 1}
+        title="Year"
+        options={years.map((year) => ({ value: year, label: String(year) }))}
+        value={grid.year}
+        onPick={(year) => setBack(monthsBackForYear(year, new Date(grid.from).getMonth(), now))}
+        onClose={() => setPickingYear(false)}
+      />
+    </>
   );
 }
 
@@ -300,23 +334,34 @@ function Pager({
   disabled?: boolean;
   onPress: () => void;
 }) {
+  const press = usePressFeel(0.3, disabled);
   return (
-    <Pressable
+    <AnimatedPressable
+      {...press.handlers}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
-      style={{
-        width: size.hit,
-        height: size.hit,
-        alignItems: 'center',
-        justifyContent: 'center',
-        transform: next ? [{ scaleX: -1 }] : undefined,
-      }}
+      style={[
+        {
+          width: size.hit,
+          height: size.hit,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        press.style,
+      ]}
     >
-      <Icon name="back" tone={disabled ? color.dim : color.mid} />
-    </Pressable>
+      <View
+        style={{
+          transform: next ? [{ scaleX: -1 }] : undefined,
+          opacity: disabled ? disabledControl.contentOpacity : 1,
+        }}
+      >
+        <Icon name="back" tone={disabled ? disabledControl.label : color.mid} />
+      </View>
+    </AnimatedPressable>
   );
 }
 

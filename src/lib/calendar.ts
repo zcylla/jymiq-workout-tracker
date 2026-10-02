@@ -196,3 +196,18 @@ export function weekVolumes(
   }
   return out;
 }
+
+export function yearsWithSessions(startedAtMs: readonly number[], now: number): number[] {
+  const years = new Set<number>();
+  for (const at of startedAtMs) {
+    if (!Number.isFinite(at) || at <= 0 || at > now) continue;
+    const year = new Date(at).getFullYear();
+    if (Number.isFinite(year)) years.add(year);
+  }
+  return [...years].sort((a, b) => b - a);
+}
+
+export function monthsBackForYear(year: number, displayedMonth: number, now: number): number {
+  const today = new Date(now);
+  return Math.max(0, (today.getFullYear() - year) * 12 + today.getMonth() - displayedMonth);
+}

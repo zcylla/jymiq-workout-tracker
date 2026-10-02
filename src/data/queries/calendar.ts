@@ -32,3 +32,10 @@ export function sessionsInRangeQuery(from: number, to: number) {
     )
     .orderBy(asc(sessions.startedAt));
 }
+
+export function loggedSessionTimestampsQuery() {
+  return db
+    .select({ startedAt: sessions.startedAt })
+    .from(sessions)
+    .where(ne(sessions.status, 'in_progress'));
+}

@@ -7,8 +7,10 @@ import {
   intensityStep,
   isoWeek,
   monthGrid,
+  monthsBackForYear,
   trainedDays,
   weekVolumes,
+  yearsWithSessions,
 } from './calendar.ts';
 
 /** September 2026 starts on a Tuesday — lab39.py's own month. */
@@ -151,4 +153,69 @@ test('weekVolumes drops a week that has not started, and keeps the one under way
 test('weekVolumes covers every week of a month already over', () => {
   const grid = monthGrid(new Date(2026, 7, 1), SEPT);
   assert.equal(weekVolumes(grid, new Map()).length, grid.weeks.length);
+});
+
+test('yearsWithSessions returns no years for no sessions', () => {
+  assert.deepEqual(yearsWithSessions([], SEPT.getTime()), []);
+});
+
+test('yearsWithSessions offers one year once', () => {
+  assert.deepEqual(yearsWithSessions([at(1), at(2), at(1)], SEPT.getTime()), [2026]);
+});
+
+test('yearsWithSessions sorts unsorted years newest first and removes duplicates', () => {
+  const timestamps = [2024, 2026, 2025, 2024, 2025].map((year) => new Date(year, 0, 1).getTime());
+  assert.deepEqual(yearsWithSessions(timestamps, SEPT.getTime()), [2026, 2025, 2024]);
+});
+
+test('yearsWithSessions buckets both sides of local New Year midnight', () => {
+  const december = new Date(2025, 11, 31, 23, 30).getTime();
+  const january = new Date(2026, 0, 1, 0, 5).getTime();
+  assert.deepEqual(yearsWithSessions([december], SEPT.getTime()), [2025]);
+  assert.deepEqual(yearsWithSessions([december, january], SEPT.getTime()), [2026, 2025]);
+});
+
+test('yearsWithSessions ignores future, non-finite, and non-positive timestamps', () => {
+  assert.deepEqual(
+    yearsWithSessions(
+      [
+        NaN,
+        Infinity,
+        -Infinity,
+        -1,
+        0,
+        8.64e15 + 1,
+        at(7),
+        new Date(2027, 0, 1).getTime(),
+        at(1),
+        SEPT.getTime(),
+      ],
+      SEPT.getTime(),
+    ),
+    [2026],
+  );
+});
+
+test('monthsBackForYear keeps March when jumping from 2026 to 2025', () => {
+  const now = new Date(2026, 2, 15).getTime();
+  const back = monthsBackForYear(2025, 2, now);
+  assert.equal(back, 12);
+  assert.equal(monthGrid(new Date(2026, 2 - back, 1), now).from, new Date(2025, 2, 1).getTime());
+});
+
+test('monthsBackForYear handles a past month in the current year', () => {
+  assert.equal(monthsBackForYear(2026, 2, SEPT.getTime()), 6);
+  assert.equal(monthsBackForYear(2026, 8, SEPT.getTime()), 0);
+});
+
+test('monthsBackForYear clamps a later month of the current year to now', () => {
+  const back = monthsBackForYear(2026, 11, SEPT.getTime());
+  assert.equal(back, 0);
+  assert.equal(monthGrid(new Date(2026, 8 - back, 1), SEPT).title, 'September');
+});
+
+test('monthsBackForYear handles January and December edges', () => {
+  assert.equal(monthsBackForYear(2025, 11, new Date(2026, 0, 15).getTime()), 1);
+  assert.equal(monthsBackForYear(2025, 0, new Date(2026, 11, 15).getTime()), 23);
+  assert.equal(monthsBackForYear(2026, 0, new Date(2026, 0, 15).getTime()), 0);
 });
