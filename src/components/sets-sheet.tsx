@@ -8,7 +8,7 @@ import { formatWeight, type Unit } from '@/lib/units';
 import type { SetKind } from '@/lib/volume';
 import { color, size, space, text } from '@/theme';
 
-import { Chevron, Icon } from './icon';
+import { Chevron } from './icon';
 import { ReorderList } from './reorder-list';
 import { RowPlate } from './row-plate';
 import { Sheet } from './sheet';
@@ -34,11 +34,10 @@ type Props = {
   currentSetId: string | null;
   onReorder?: (fromIndex: number, toIndex: number) => void;
   onDelete?: (setId: string) => void;
-  onType: (setId: string) => void;
   onAddDrop: () => void;
 };
 
-const ROW_HEIGHT = 72;
+const ROW_HEIGHT = size.hit;
 
 function SetRow({
   set,
@@ -47,7 +46,6 @@ function SetRow({
   isCurrent,
   handle,
   onPress,
-  onType,
   unit,
 }: {
   set: SheetSet;
@@ -56,59 +54,41 @@ function SetRow({
   isCurrent: boolean;
   handle: ReactNode;
   onPress: () => void;
-  onType: () => void;
   unit: Unit;
 }) {
   const done = set.completedAt != null;
   const indexColor = isCurrent ? color.accent : done ? color.done : color.dim;
-  const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} ${unit.toUpperCase()} × ${set.reps ?? '—'}${set.rpe == null ? '' : ` · RPE ${set.rpe}`}`;
+  const valueColor = isCurrent ? color.accent : done ? color.hi : color.mid;
+  const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} × ${set.reps ?? '—'}`;
   return (
     <View style={{ paddingLeft: linked ? space.within : 0 }}>
       <RowPlate selected={isCurrent}>
-        <View
-          style={{ flexDirection: 'row', alignItems: 'center', height: ROW_HEIGHT, gap: space.row }}
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. Edit set`}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            height: ROW_HEIGHT,
+            gap: space.row,
+            opacity: pressed ? 0.7 : 1,
+          })}
         >
           {handle}
           <Text style={[text.numSm, { color: indexColor }]}>
             {String(set.position).padStart(2, '0')}
           </Text>
-          <Pressable
-            onPress={onPress}
-            accessibilityRole="button"
-            accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values}${done ? ', logged' : ''}. Edit set`}
-            style={({ pressed }) => ({
-              flex: 1,
-              minHeight: size.hit,
-              justifyContent: 'center',
-              gap: 4,
-              opacity: pressed ? 0.7 : 1,
-            })}
-          >
-            <Text
-              style={[text.rowName, { color: isCurrent ? color.accent : color.hi }]}
-              numberOfLines={1}
-            >
-              {typeLabel}
-            </Text>
-            <Text style={text.numSm} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
-              {values}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={onType}
-            accessibilityRole="button"
-            accessibilityLabel={`Change type of set ${set.position}`}
-            style={{
-              width: size.hit,
-              height: size.hit,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Icon name="dots" tone={color.mid} />
-          </Pressable>
-          <Chevron />
-        </View>
+          {set.kind === 'working' ? null : (
+            <Text style={[text.meta, { color: color.lo }]}>{typeLabel.toUpperCase()}</Text>
+          )}
+          <View style={{ flex: 1 }} />
+          <Text style={[text.numSm, { color: valueColor }]} numberOfLines={1}>
+            {values}
+            {set.rpe == null ? '' : ` @${set.rpe}`}
+          </Text>
+          {isCurrent ? null : <Chevron />}
+        </Pressable>
       </RowPlate>
     </View>
   );
@@ -124,7 +104,6 @@ export function SetsSheet({
   currentSetId,
   onReorder,
   onDelete,
-  onType,
   onAddDrop,
 }: Props) {
   const { weightUnit } = useSettings();
@@ -177,34 +156,33 @@ export function SetsSheet({
               isCurrent={s.id === currentSetId}
               handle={handle}
               onPress={() => selectSet(s.id)}
-              onType={() => onType(s.id)}
               unit={weightUnit}
             />
           </SwipeRow>
         )}
       />
-      <View style={{ gap: space.row, marginTop: space.within }}>
-        <RowPlate onPress={() => selectSet(addSet(sessionExerciseId, 'warmup'))}>
-          <View style={{ minHeight: size.hit, justifyContent: 'center' }}>
-            <Text style={text.rowName}>+ Warmup</Text>
-          </View>
-        </RowPlate>
-        <View style={{ flexDirection: 'row', gap: space.row }}>
-          <View style={{ flex: 1 }}>
-            <RowPlate onPress={() => selectSet(addSet(sessionExerciseId))}>
-              <View style={{ minHeight: size.hit, justifyContent: 'center' }}>
-                <Text style={text.rowName}>+ Working</Text>
+      <View style={{ flexDirection: 'row', gap: space.row, marginTop: space.within }}>
+        {[
+          {
+            label: '+ Warmup',
+            disabled: false,
+            onPress: () => selectSet(addSet(sessionExerciseId, 'warmup')),
+          },
+          {
+            label: '+ Working',
+            disabled: false,
+            onPress: () => selectSet(addSet(sessionExerciseId)),
+          },
+          { label: '+ Drop', disabled: !sets.some(isWorkingSet), onPress: onAddDrop },
+        ].map((add) => (
+          <View key={add.label} style={{ flex: 1 }}>
+            <RowPlate disabled={add.disabled} onPress={add.onPress}>
+              <View style={{ minHeight: size.hit, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={text.rowName}>{add.label}</Text>
               </View>
             </RowPlate>
           </View>
-          <View style={{ flex: 1 }}>
-            <RowPlate disabled={!sets.some(isWorkingSet)} onPress={onAddDrop}>
-              <View style={{ minHeight: size.hit, justifyContent: 'center' }}>
-                <Text style={text.rowName}>+ Drop</Text>
-              </View>
-            </RowPlate>
-          </View>
-        </View>
+        ))}
       </View>
     </Sheet>
   );

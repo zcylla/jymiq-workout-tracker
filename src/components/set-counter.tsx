@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { color, hairline, radius, size, space, text, wash } from '@/theme';
+import { color, hairline, size, space, text } from '@/theme';
 
 import { Icon } from './icon';
 
@@ -19,6 +19,7 @@ export function SetCounter({
   onType: () => void;
   compact: boolean;
 }) {
+  const tone = typeLabel === 'Working' ? color.lo : color.accent;
   return (
     <View style={{ alignItems: 'center', marginTop: compact ? 0 : space.within }}>
       <Pressable
@@ -50,14 +51,11 @@ export function SetCounter({
           justifyContent: 'center',
           gap: space.row,
           paddingHorizontal: space.within,
-          marginTop: compact ? 0 : space.row,
-          borderRadius: radius.chip,
-          backgroundColor: wash.field,
           opacity: pressed ? 0.7 : 1,
         })}
       >
-        <Text style={[text.label, { color: color.accent }]}>{typeLabel.toUpperCase()}</Text>
-        <Icon name="down" tone={color.accent} />
+        <Text style={[text.label, { color: tone }]}>{typeLabel.toUpperCase()}</Text>
+        <Icon name="down" tone={tone} />
       </Pressable>
     </View>
   );

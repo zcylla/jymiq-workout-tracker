@@ -648,7 +648,6 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         sessionExerciseId={exercise.id}
         sets={sets}
         currentSetId={set.id}
-        onType={(id) => chooseType(id, false, true)}
         onAddDrop={() => chooseType(set.id, true, true)}
         onReorder={(from, to) => reorderSets(moveSetGroup(sets, from, to).map((s) => s.id))}
         onDelete={(id) => {

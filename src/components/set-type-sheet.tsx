@@ -60,10 +60,10 @@ export function SetTypeSheet({
                 disabled={hasDrops}
                 onPress={() => onChoose('warmup')}
               >
-                <ListRow title="Warmup" meta="Preparation before working sets" />
+                <ListRow title="Warmup" meta="Preparation before working sets" chevron={false} />
               </RowPlate>
               <RowPlate selected={current?.kind === 'working'} onPress={() => onChoose('working')}>
-                <ListRow title="Working" meta="Your regular training set" />
+                <ListRow title="Working" meta="Your regular training set" chevron={false} />
               </RowPlate>
               <RowPlate
                 selected={current?.kind === 'drop'}
