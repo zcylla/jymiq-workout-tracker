@@ -35,6 +35,7 @@ export { ReorderList } from './reorder-list';
 export { RowPlate, RowPlates } from './row-plate';
 export { Scale } from './scale';
 export { Screen } from './screen';
+export { PlateSheet } from './plate-sheet';
 export { Segmented } from './segmented';
 export { SearchField } from './search-field';
 export { ScreenHeader } from './screen-header';
