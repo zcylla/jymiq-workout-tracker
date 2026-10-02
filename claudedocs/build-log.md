@@ -3,6 +3,55 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
+**START HERE (2026-10-02, end of session).** Newest state; where it conflicts with the 2026-10-01 block below, this
+one wins. `main` is clean and green (`pnpm check` exit 0, 548 tests, 3 old lint warnings), nothing is pushed.
+- **On the phone.** *Production* `com.zcylla.jymiq` is a **release build with Sentry**, installed 2026-10-01 17:00 in
+  place over the old install (data kept); the owner uses it daily for real. It contains **none** of the 2026-10-02
+  work. It is not debuggable (no `adb run-as`); check its data through the cloud copy or screenshots. *Development*
+  `com.zcylla.jymiq.dev` ("Jymiq Dev", red icon, own SQLite, Supabase blanked so no cloud and no sign-in) holds a
+  **copy of the real history** (764 sessions, 16,084 sets) and is the place to test: `pnpm start:dev` +
+  `adb reverse tcp:8081 tcp:8081`, open the dev app (`exp+jymiq://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081`).
+  Reseed it: force-stop, delete `workout.db*` in its sandbox, stream the seed in with
+  `adb shell "run-as com.zcylla.jymiq.dev sh -c 'cat > files/SQLite/workout.db'" < ~/jymiq-dev-seed/workout.db`.
+  That seed is a copy of real data: keep it out of the repo.
+- **Shipped on `main` this session (all verified on the dev app unless noted).** Rest bar starts full and drains
+  right to left, built from the wall-clock deadline each frame (no stuck bar when a new rest starts mid-rest);
+  disabled buttons dim, lose their shadow and press feedback everywhere (`press.ts` + `disabledControl`); new sets
+  start from the previous logged set, else the same-position set of the last completed session, else (no history)
+  the routine target, else unset (`src/lib/set-defaults.ts`; **owner chose history first**; "Perform again" repeats
+  the chosen session's values); editing a logged set recomputes e1RM, session totals and replays personal records
+  (`src/lib/set-edit.ts`, `updateSet`); the live screen minimises (header chevron, Android Back), Today shows an
+  In progress / Resume card, the centre tab button turns green while a session runs; History year picker (only years
+  with sessions); calendar legend and a quieter legend on the Today week card (owner request, overrides §0's "no key");
+  sheets open above the tab bar (the bar fades out while any `Sheet` is mounted); the rest notification's tap link
+  follows the variant scheme (native, **unverified on a device**); Sentry `environment` tag (`development` for debug
+  builds and `.dev` ids); app variants (`app.config.ts`, `APP_VARIANT`); the Jymiq logo assets
+  (`claudedocs/design-labs/brand.py` generates `assets/brand/*` and the PNGs in `assets/images/`); **Hugeicons
+  replaced the custom icon font** (details below; the mapping lives in `src/components/icon-map.ts`).
+- **Open items.** (1) **Production release with all of the above is not built.** It needs a native rebuild
+  (`react-native-svg`, the Kotlin notification fix). Recipe: `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+  ANDROID_HOME=$HOME/Android/Sdk SENTRY_AUTH_TOKEN="$(grep -m1 '^SENTRY_AUTH_TOKEN=' .env.local | cut -d= -f2-)"`
+  then `pnpm build:prod` (never print the token; Gradle's Sentry plugin does not read `.env.local`, without the export
+  the build fails at the source-map upload). Install with `adb install -r` **only on the owner's go-ahead**, with an
+  idle phone, no live workout and cloud counts at least 764 / 16,084 / 1,439 / 4,651; never uninstall or
+  `pm clear` the production package (same debug keystore signs both builds, so an in-place update keeps data).
+  (2) The owner has not yet said which Hugeicons they want swapped (mapping page in the 2026-10-02 session; the
+  alternatives per icon are in the report: edit one line in `icon-map.ts` plus the stroke width). (3) Unverified on
+  a device: the notification tap target, SVG icon cost on tab switching, the legend at 360dp / large text, the
+  tab-bar fade, bodyweight (0 kg) logging on a never-done exercise needs a tape nudge. (4) Small UX nit: the live
+  header's Discard asks "Deletes 0 sets and any records." even when nothing is logged. (5) The green centre tab
+  button while a session runs is the owner's call (red is the "live" colour). (6) Untracked `claudedocs/research_notes/`
+  and `claudedocs/reports/` are not from this session's work; do not commit them without asking.
+- **Working agreements that held this session.** The owner tests on the dev app first; implementation goes to
+  Codex through `harness-dispatch` with `hints.safetyProfile: "full_auto"` (the config now maps it to
+  `--dangerously-bypass-approvals-and-sandbox`), models `gpt-6.1-sol` (`codex_cli`) or `codex_sol_high`; Codex
+  never commits, never touches adb/Metro/builds/Supabase unless the brief says so, and the review (read the diff, run
+  `pnpm check`, device-check on the dev app) and the commits are done by the orchestrating session. Commits are
+  single-line conventional commits (scopes `theme components icons app data lib dev design build deps`), whole-file
+  staging (lefthook typechecks the index), no trailers, never pushed. Stop the dev Metro before installing a native
+  dependency (a hot reload would crash the old dev build). Never run `pkill -f` with a pattern that appears in the
+  command itself; in zsh an unmatched glob aborts a `&&` chain.
+
 **Icon migration (2026-10-02).** Replaced the 18 Lucide-derived font icons with equivalents from
 `@hugeicons/core-free-icons` 4.3.5, rendered by `@hugeicons/react-native` 1.0.16 and SDK 57's
 `react-native-svg` 15.15.4. The `Icon` / `Chevron` / `Grip` API, tones and default sizes are preserved;
