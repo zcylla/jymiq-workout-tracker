@@ -1,91 +1,67 @@
 #!/usr/bin/env node
-/**
- * Guard the icon set's house style.
- *
- * The icons are hand-drawn (ported from claudedocs/design-labs/kit.py) rather
- * than taken from a library, so nothing outside this file enforces that a new
- * one looks like the others. This does: it is wired into `pnpm check`, so an
- * off-style icon fails the build instead of quietly shipping.
- *
- * The load-bearing rule is the last one. Every icon is authored in its own
- * square box, and the box is chosen to suit the size the icon is drawn at — so
- * the constant that has to hold is not the stroke width, and not the ratio, but
- * the width the stroke ends up being ON SCREEN.
- */
-import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+/** Guard complete free-pack mappings and the calibrated on-screen stroke weight. */
+import * as freeIcons from '@hugeicons/core-free-icons';
 
-import { ICON_SIZE as DRAWN_AT } from '../src/components/icon-sizes.ts';
+import { ICON_MAP } from '../src/components/icon-map.ts';
+import { ICON_NAMES, ICON_SIZE, ICON_STROKE_WIDTH } from '../src/components/icon-sizes.ts';
 
-const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'icons', 'ui');
-
-/** kit's on-screen stroke widths run 1.38 (chev) to 1.80 (back). */
 const MIN_PT = 1.3;
 const MAX_PT = 1.9;
-
-/**
- * Read an attribute off the ROOT <svg> tag only. Scanning the whole file would
- * let a child carrying stroke-linecap="round" satisfy the root's requirement,
- * which is exactly the shape a tool-exported icon arrives in.
- */
-const attr = (root, name) => root.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1];
 const fail = [];
+const names = new Set(ICON_NAMES);
+const freeData = new Set(
+  Object.entries(freeIcons)
+    .filter(([name]) => name.endsWith('Icon'))
+    .map(([, icon]) => JSON.stringify(icon)),
+);
 
-const files = readdirSync(dir)
-  .filter((f) => f.endsWith('.svg'))
-  .sort();
-const names = files.map((f) => f.replace(/\.svg$/, ''));
+if (names.size !== ICON_NAMES.length) fail.push('ICON_NAMES contains duplicate names');
 
-for (const missing of Object.keys(DRAWN_AT).filter((n) => !names.includes(n))) {
-  fail.push(`${missing}: listed in DRAWN_AT but has no .svg`);
+for (const [label, table] of [
+  ['ICON_SIZE', ICON_SIZE],
+  ['ICON_STROKE_WIDTH', ICON_STROKE_WIDTH],
+  ['ICON_MAP', ICON_MAP],
+]) {
+  for (const name of names) {
+    if (!Object.hasOwn(table, name)) fail.push(`${name}: missing from ${label}`);
+  }
+  for (const name of Object.keys(table)) {
+    if (!names.has(name)) fail.push(`${name}: in ${label} but not declared in ICON_NAMES`);
+  }
 }
 
 for (const name of names) {
-  const svg = readFileSync(join(dir, `${name}.svg`), 'utf8');
-  const say = (msg) => fail.push(`${name}.svg: ${msg}`);
+  const size = ICON_SIZE[name];
+  const strokeWidth = ICON_STROKE_WIDTH[name];
+  const icon = ICON_MAP[name];
+  const say = (message) => fail.push(`${name}: ${message}`);
 
-  const root = svg.match(/<svg\b[^>]*>/)?.[0];
-  if (!root) {
-    say('no <svg> element — not an SVG');
+  if (!(Number.isFinite(size) && size > 0)) say('size must be a positive finite number');
+  if (!(Number.isFinite(strokeWidth) && strokeWidth > 0))
+    say('stroke width must be a positive finite number');
+  const onScreen = (strokeWidth * size) / 24;
+  if (!(onScreen >= MIN_PT && onScreen <= MAX_PT))
+    say(`stroke reads ${onScreen.toFixed(3)}pt on screen; the set runs ${MIN_PT}–${MAX_PT}pt`);
+
+  if (!Array.isArray(icon) || !icon.length || !freeData.has(JSON.stringify(icon))) {
+    say('mapping must be an icon exported by @hugeicons/core-free-icons');
     continue;
   }
-
-  const box = attr(root, 'viewBox')?.match(/^0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)$/);
-  if (!box) say('viewBox must be "0 0 N N"');
-  else if (box[1] !== box[2]) say(`viewBox must be square, got ${box[1]}x${box[2]}`);
-
-  if (attr(root, 'fill') !== 'none') say('root needs fill="none" — icons are strokes, not shapes');
-  if (attr(root, 'stroke') !== '#000000')
-    say('root needs stroke="#000000" — one layer, recoloured at runtime');
-  if (attr(root, 'stroke-linecap') !== 'round') say('root needs stroke-linecap="round"');
-  if (attr(root, 'stroke-linejoin') !== 'round') say('root needs stroke-linejoin="round"');
-
-  const shapes = [...svg.matchAll(/<(\w+)/g)].map((m) => m[1]).filter((t) => t !== 'svg');
-  const bad = [...new Set(shapes.filter((t) => t !== 'path'))];
-  if (bad.length) say(`only <path> is allowed, found <${bad.join('>, <')}> — convert to path data`);
-  if (/fill="(?!none)/.test(svg.replace(/<svg[^>]*>/, '')))
-    say('a child carries a fill — icons are strokes');
-
-  const size = DRAWN_AT[name];
-  if (size === undefined) {
-    say('not in DRAWN_AT — add it with the size this icon is rendered at');
-  } else if (box) {
-    const width = Number(attr(root, 'stroke-width'));
-    const onScreen = (width / Number(box[1])) * size;
-    if (!(onScreen >= MIN_PT && onScreen <= MAX_PT)) {
-      say(
-        `stroke reads ${onScreen.toFixed(2)}pt on screen ` +
-          `(${width} in a ${box[1]} box, drawn at ${size}pt); the set runs ${MIN_PT}–${MAX_PT}pt`,
-      );
+  for (const [tag, attrs] of icon) {
+    if (!['path', 'circle', 'rect', 'line'].includes(tag)) say(`unsupported element: ${tag}`);
+    if (attrs.fill !== undefined && attrs.fill !== 'none') say('icons must have no fills');
+    if (attrs.stroke !== 'currentColor') say('strokes must follow the Ink tone');
+    for (const property of ['strokeLinecap', 'strokeLinejoin']) {
+      if (attrs[property] !== undefined && attrs[property] !== 'round')
+        say(`${property} must be round (or inherit the renderer's round default)`);
     }
   }
 }
 
 if (fail.length) {
   console.error(`\nicon set: ${fail.length} problem${fail.length > 1 ? 's' : ''}\n`);
-  for (const f of fail) console.error(`  ${f}`);
+  for (const problem of fail) console.error(`  ${problem}`);
   console.error('\nSee "Icons" in AGENTS.md.\n');
   process.exit(1);
 }
-console.log(`icon set: ${names.length} icons, all on style`);
+console.log(`icon set: ${names.size} free icons, complete sizes/strokes/mappings, all on style`);

@@ -36,21 +36,20 @@ next, and the environment facts that break the build if missed (Gradle needs **J
   `.value` is a mutable read React Compiler cannot see, so it caches a stale frame. An ESLint rule
   enforces the suffix convention.
 - `runOnJS` is `scheduleOnRN` from `react-native-worklets` in Reanimated 4.
-- **Icons live in `assets/icons/ui/*.svg`**, which is the source of truth — most are `kit.py`'s
-  `ICONS`, one (`gear`) is Lucide's, re-stroked. `react-native-nano-icons` compiles the folder into
-  a subsetted font at prebuild, so a glyph is one native text draw — never a Skia canvas or an SVG
-  subtree per row. To add one: draw it, or take Lucide's (ISC) and **re-stroke it to our ratio**,
-  in a square box in the same idiom (strokes only, round caps and joins, `fill="none"`,
-  `stroke="#000000"`, `<path>` only — convert `<circle>`/`<rect>` to path data). Then add it to
-  `ICON_SIZE` in `src/components/icon-sizes.ts` with the size it is rendered at, run
-  `pnpm expo prebuild` **and a native rebuild** — the plugin fingerprints the folder, so a Metro
-  reload is not enough. Skipping the rebuild fails **silently as the wrong glyphs**: codepoints are
-  assigned alphabetically, so adding one icon renumbers every later one and the stale font on the
-  device draws a clock where a chart should be. `pnpm check` runs `scripts/check-icons.mjs`, which fails on an off-style or undeclared
-  icon. **The constant is the on-screen stroke width, not the stroke value**: the box is chosen to
-  suit the render size, so a 16-box chevron drawn at 13pt carries a 1.7 stroke and a 22-box icon at
-  22pt carries 1.6, and both read as the same weight. There is no runtime weight prop —
-  `ICON_SIZE` is also each icon's default size, so `<Icon name="chev" />` is already 13.
+- **Icons use the free Hugeicons Stroke Rounded pack.** `src/components/icon-map.ts` is the
+  mapping from the existing `IconName` API to `@hugeicons/core-free-icons` exports; import individual
+  icon modules so Metro does not load the whole pack. `src/components/icon-sizes.ts` owns
+  `ICON_NAMES`, `ICON_SIZE` and `ICON_STROKE_WIDTH`. `Icon` renders `HugeiconsIcon` through
+  `react-native-svg`, using only `Ink` tones. Each icon mounts an SVG subtree; the former font
+  used one native text draw. `Grip` stays two plain Views.
+  To add an icon: pick a free, line-only icon with rounded caps/joins, add its name to `ICON_NAMES`,
+  import and map it in `ICON_MAP`, and add its default size and calibrated stroke width to the
+  two tables. **On-screen stroke = strokeWidth × size / 24**; match the existing 1.3–1.9pt range,
+  rather than using one raw width at every size. `pnpm check` rejects missing entries, icons not
+  exported by the free pack, fills, incompatible strokes and off-weight defaults. New icons need
+  no prebuild or native rebuild. **This migration does require a one-time native rebuild** to link
+  `react-native-svg` and remove the old font plugin/assets. The Python design boards' `kit.py ICONS`
+  remain the historical drawing spec and intentionally differ from the app's Hugeicons shapes.
 
 - **Weights are stored in kilograms, always.** lb is a display transform in `src/lib/units.ts`.
 - **`src/lib/**` is pure**: no React, no SQLite, no Expo imports. It is the only tested layer.

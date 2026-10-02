@@ -246,11 +246,9 @@ function CurrentTab({ name, minimisedSV }: { name: TabName; minimisedSV: SharedV
 }
 
 /**
- * One tab. Active state is carried by colour alone — the icons are font glyphs
- * with the stroke baked in, so kit's 1.9-vs-1.5 weight shift has no runtime
- * equivalent. The label changes colour with the icon, which is the louder half
- * of that signal anyway. A glyph's colour is not animatable, so the accent
- * copy sits over the dim one and only its opacity moves.
+ * One tab. Active state keeps the existing colour-only signal and fixed stroke.
+ * The accent face sits over the dim one and only its opacity moves, preserving
+ * the label and icon's shared transition without per-frame SVG prop updates.
  */
 export function TabItem({
   tab,

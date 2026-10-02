@@ -102,17 +102,6 @@
         }
       ],
       [
-        "react-native-nano-icons",
-        {
-          "iconSets": [
-            {
-              "inputDir": "./assets/icons/ui",
-              "fontFamily": "WorkoutIcons"
-            }
-          ]
-        }
-      ],
-      [
         "@sentry/react-native/expo",
         {
           "url": "https://sentry.io/",
