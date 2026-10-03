@@ -1,14 +1,4 @@
 {
-  "enabledPlugins": {
-    "expo@claude-plugins-official": true,
-    "impeccable@impeccable": false,
-    "voltagent-core-dev@voltagent-subagents": false,
-    "voltagent-dev-exp@voltagent-subagents": false,
-    "voltagent-lang@voltagent-subagents": false,
-    "voltagent-meta@voltagent-subagents": false,
-    "voltagent-qa-sec@voltagent-subagents": false,
-    "voltagent-research@voltagent-subagents": false
-  },
   "skillOverrides": {
     "baseline-ui": "on",
     "create-design-md": "on",
@@ -25,5 +15,15 @@
     "ui-ux-pro-max:brand": "off",
     "ui-ux-pro-max:design": "off",
     "ui-ux-pro-max:slides": "off"
+  },
+  "enabledPlugins": {
+    "impeccable@impeccable": false,
+    "voltagent-core-dev@voltagent-subagents": false,
+    "voltagent-dev-exp@voltagent-subagents": false,
+    "voltagent-lang@voltagent-subagents": false,
+    "voltagent-meta@voltagent-subagents": false,
+    "voltagent-qa-sec@voltagent-subagents": false,
+    "voltagent-research@voltagent-subagents": false,
+    "expo@claude-plugins-official": true
   }
 }
