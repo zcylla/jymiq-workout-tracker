@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import { DEFAULT_REST_SEC } from './rest.ts';
 import { LOAD_STEPS_KG } from './scale.ts';
+import { DEFAULT_PLATE_COUNTS } from './plates.ts';
 import { DEFAULT_SETTINGS, coerceSettings } from './settings.ts';
 
 test('the defaults are the behaviour the app already had', () => {
@@ -88,4 +89,49 @@ test('a store from before these settings reads as the old behaviour', () => {
   assert.equal(s.defaultSets, 3);
   assert.equal(s.keepScreenOn, false);
   assert.equal(s.trackRpe, true);
+});
+
+test('plate counts default to the old kg rack and a commercial lb rack', () => {
+  assert.deepEqual(DEFAULT_SETTINGS.plateCounts, DEFAULT_PLATE_COUNTS);
+  assert.deepEqual(coerceSettings({}).plateCounts, DEFAULT_PLATE_COUNTS);
+  assert.deepEqual(DEFAULT_PLATE_COUNTS.kg, { 25: 4, 20: 4, 15: 2, 10: 2, 5: 2, 2.5: 2, 1.25: 2 });
+});
+
+test('stored plate counts survive a round trip through JSON', () => {
+  const stored = JSON.parse(
+    JSON.stringify({
+      plateCounts: { kg: { 25: 0, 20: 1 }, lb: { 45: 8, 35: 0, 2.5: 3 } },
+    }),
+  );
+  const s = coerceSettings(stored);
+  assert.equal(s.plateCounts.kg[25], 0);
+  assert.equal(s.plateCounts.kg[20], 1);
+  assert.equal(s.plateCounts.lb[45], 8);
+  assert.equal(s.plateCounts.lb[35], 0);
+  assert.equal(s.plateCounts.lb[2.5], 3);
+});
+
+test('one bad plate count falls back alone and the rest survive', () => {
+  const s = coerceSettings({
+    plateCounts: { kg: { 25: 9, 20: 1.5, 15: '2', 10: -1, 5: 1, 2.5: null }, lb: 'nonsense' },
+  });
+  assert.equal(s.plateCounts.kg[25], DEFAULT_PLATE_COUNTS.kg[25]);
+  assert.equal(s.plateCounts.kg[20], DEFAULT_PLATE_COUNTS.kg[20]);
+  assert.equal(s.plateCounts.kg[15], DEFAULT_PLATE_COUNTS.kg[15]);
+  assert.equal(s.plateCounts.kg[10], DEFAULT_PLATE_COUNTS.kg[10]);
+  assert.equal(s.plateCounts.kg[5], 1);
+  assert.equal(s.plateCounts.kg[2.5], DEFAULT_PLATE_COUNTS.kg[2.5]);
+  assert.deepEqual(s.plateCounts.lb, DEFAULT_PLATE_COUNTS.lb);
+  for (const bad of [null, 'x', 7, [], { kg: null }])
+    assert.deepEqual(coerceSettings({ plateCounts: bad }).plateCounts, DEFAULT_PLATE_COUNTS);
+});
+
+test('plate counts only keep denominations the unit has', () => {
+  const s = coerceSettings({ plateCounts: { kg: { 45: 3 }, lb: { 20: 3 } } });
+  assert.deepEqual(s.plateCounts, DEFAULT_PLATE_COUNTS);
+});
+
+test('a store from before plate counts reads as the defaults', () => {
+  const s = coerceSettings({ weightUnit: 'lb', trackRpe: true });
+  assert.deepEqual(s.plateCounts, DEFAULT_PLATE_COUNTS);
 });

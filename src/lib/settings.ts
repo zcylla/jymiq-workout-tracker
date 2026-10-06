@@ -1,3 +1,9 @@
+import {
+  DEFAULT_PLATE_COUNTS,
+  PLATE_COUNT_MAX,
+  PLATE_DENOMINATIONS,
+  type PlateCounts,
+} from './plates.ts';
 import { LOAD_STEPS_KG, REST_SCALE, snapTo } from './scale.ts';
 import type { Unit } from './units.ts';
 
@@ -38,6 +44,8 @@ export interface Settings {
    * has asked for notification permission; that answer becomes the value.
    */
   liveNotification: boolean | null;
+  /** Plates the owner has PER SIDE, by denomination, kept per unit. Zero means "I don't have it". */
+  plateCounts: PlateCounts;
 }
 
 /**
@@ -55,6 +63,7 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultSets: 3,
   keepScreenOn: false,
   liveNotification: null,
+  plateCounts: DEFAULT_PLATE_COUNTS,
 };
 
 export const DEFAULT_SETS_MAX = 10;
@@ -65,8 +74,25 @@ const isSetCount = (n: unknown): n is number =>
   typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= DEFAULT_SETS_MAX;
 const isRest = (n: unknown): n is number => typeof n === 'number' && n >= 0 && n <= 3600;
 
+const isPlateCount = (n: unknown): n is number =>
+  typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= PLATE_COUNT_MAX;
+
 const isGoal = (n: unknown): n is number =>
   Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 7;
+
+const asRecord = (v: unknown): Record<string, unknown> =>
+  typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {};
+
+function coercePlateCounts(raw: unknown): PlateCounts {
+  const stored = asRecord(raw);
+  const counts: PlateCounts = { kg: {}, lb: {} };
+  for (const unit of ['kg', 'lb'] as const) {
+    const bag = asRecord(stored[unit]);
+    for (const size of PLATE_DENOMINATIONS[unit])
+      counts[unit][size] = isPlateCount(bag[size]) ? bag[size] : DEFAULT_PLATE_COUNTS[unit][size];
+  }
+  return counts;
+}
 
 /**
  * Tolerant on purpose: settings are read at launch from a store an older build
@@ -94,5 +120,6 @@ export function coerceSettings(raw: unknown): Settings {
     defaultSets: isSetCount(o.defaultSets) ? o.defaultSets : DEFAULT_SETTINGS.defaultSets,
     keepScreenOn: o.keepScreenOn === true,
     liveNotification: typeof o.liveNotification === 'boolean' ? o.liveNotification : null,
+    plateCounts: coercePlateCounts(o.plateCounts),
   };
 }
