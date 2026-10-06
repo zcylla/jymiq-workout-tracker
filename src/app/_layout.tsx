@@ -10,7 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
 import { DialogProvider } from '@/components';
-import { ScreenBlurProvider } from '@/components/screen-blur';
+import { ScreenBlurProvider, useStackBlurMotionListeners } from '@/components/screen-blur';
 import migrations from '@/../drizzle/migrations';
 import { db } from '@/data/db';
 import { authCodeFromUrl, exchangeAuthCode } from '@/data/supabase';
@@ -82,25 +82,33 @@ function RootLayout() {
         ) : (
           <ScreenBlurProvider>
             <DialogProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: color.ground },
-                  animation: 'slide_from_right',
-                }}
-              >
-                {/* Detail routes are siblings of `(tabs)` and need no options — a push
-                covers the tab shell entirely, which is how they lose the bar.
-                The live session is the exception: it takes over rather than
-                pushes, and Phase 6 owns disabling the back gesture on it. */}
-                <Stack.Screen name="live" options={{ animation: 'fade' }} />
-              </Stack>
+              <RootStack />
               <LiveNotification />
             </DialogProvider>
           </ScreenBlurProvider>
         )}
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+function RootStack() {
+  const listeners = useStackBlurMotionListeners();
+  return (
+    <Stack
+      screenListeners={listeners}
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: color.ground },
+        animation: 'slide_from_right',
+      }}
+    >
+      {/* Detail routes are siblings of `(tabs)` and need no options — a push
+          covers the tab shell entirely, which is how they lose the bar.
+          The live session is the exception: it takes over rather than
+          pushes, and Phase 6 owns disabling the back gesture on it. */}
+      <Stack.Screen name="live" options={{ animation: 'fade' }} />
+    </Stack>
   );
 }
 

@@ -1,4 +1,4 @@
-import { BlurTargetView, BlurView } from 'expo-blur';
+import { BlurTargetView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useContext, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -13,7 +13,7 @@ import {
   Section,
   Toggle,
 } from '@/components';
-import { BlurTargetContext } from '@/components/glass';
+import { BlurTargetContext, GlassUnder } from '@/components/glass';
 import {
   chromeGlass,
   color,
@@ -240,25 +240,22 @@ function ControlBlurUnder({
 }) {
   const target = useContext(BlurTargetContext);
   if (!('blur' in recipe)) return null;
-  const clip = {
-    borderRadius: cornerRadius,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
-  } as const;
-
-  return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, clip]}>
-      {target ? (
-        <BlurView
-          blurTarget={target}
-          blurMethod="dimezisBlurView"
-          intensity={recipe.blur}
-          tint={recipe.blurTint}
-          style={StyleSheet.absoluteFill}
-        />
-      ) : null}
-      <View style={[StyleSheet.absoluteFill, clip, recipe.fill]} />
-    </View>
+  return target ? (
+    <GlassUnder
+      recipe={{ ...recipe, tile: recipe.fill }}
+      blur={recipe.blur}
+      target={target}
+      radius={cornerRadius}
+    />
+  ) : (
+    <View
+      pointerEvents="none"
+      style={[
+        StyleSheet.absoluteFill,
+        { borderRadius: cornerRadius, borderCurve: 'continuous', overflow: 'hidden' },
+        recipe.fill,
+      ]}
+    />
   );
 }
 

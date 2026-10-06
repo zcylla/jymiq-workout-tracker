@@ -1,6 +1,7 @@
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
 
 import { StartButton, TabBar, TabBarProvider, TabItem } from '@/components';
+import { useTabBlurMotionListeners } from '@/components/screen-blur';
 import { useStartSession } from '@/data/start';
 
 /**
@@ -16,11 +17,15 @@ import { useStartSession } from '@/data/start';
  * restated here or the whole navigator collapses.
  */
 export default function TabsLayout() {
+  const listeners = useTabBlurMotionListeners();
   const start = useStartSession({ empty: true });
 
   return (
     <TabBarProvider>
-      <Tabs style={{ flex: 1 }} options={{ backBehavior: 'firstRoute' }}>
+      <Tabs
+        style={{ flex: 1 }}
+        options={{ backBehavior: 'firstRoute', screenListeners: listeners }}
+      >
         <TabSlot />
 
         <TabList style={{ display: 'none' }}>

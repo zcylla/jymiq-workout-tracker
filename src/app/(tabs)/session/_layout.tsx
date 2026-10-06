@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 
+import { useStackBlurMotionListeners } from '@/components/screen-blur';
 import { color } from '@/theme';
 
 /**
@@ -9,8 +10,10 @@ import { color } from '@/theme';
  * a true detail screen is a sibling of `(tabs)` instead and loses it.
  */
 export default function SessionLayout() {
+  const listeners = useStackBlurMotionListeners();
   return (
     <Stack
+      screenListeners={listeners}
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: color.ground },

@@ -76,6 +76,16 @@ export const field = {
   bloomBlur: 88,
 } as const;
 
+/** Static Android backdrop material: attenuates the 5% white dots to 1% while retaining 20% of the soft bloom. */
+export const backdropMaterial = {
+  ground: 'rgba(10,9,8,0.80)',
+  /** Expo TintStyle DARK: floor(255 * intensity / 100 * 0.69) / 255; RGB 25, including exactly 35/255 at 20. */
+  darkTint: (intensity: number) => `rgba(25,25,25,${Math.floor(255 * intensity * 0.0069) / 255})`,
+  /** Expo TintStyle DEFAULT: floor(255 * intensity / 100 * 0.44) / 255; white, including exactly 22/255 at 20. */
+  defaultTint: (intensity: number) =>
+    `rgba(255,255,255,${Math.floor(255 * intensity * 0.0044) / 255})`,
+} as const;
+
 /** The bodyweight chart's fill: `accent` fading to nothing under the line. */
 export const trend = {
   fillTop: 'rgba(228,198,140,0.26)',

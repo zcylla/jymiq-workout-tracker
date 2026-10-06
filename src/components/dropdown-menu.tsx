@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
   useReducedMotion,
@@ -21,7 +22,7 @@ import {
 } from '@/theme';
 
 import { GlassUnder, glassStyle } from './glass';
-import { useScreenBlurTarget } from './screen-blur';
+import { useFloatingBlurTarget } from './screen-blur';
 
 export type DropdownAnchor = { x: number; y: number; width: number; height: number };
 export type DropdownItem = { label: string; onPress: () => void; tone?: 'destructive' };
@@ -37,27 +38,71 @@ export function DropdownMenu({
   anchor: DropdownAnchor | null;
   items: DropdownItem[];
 }) {
-  const target = useScreenBlurTarget();
+  const [bounds, setBounds] = useState<DropdownAnchor | null>(null);
+  const [presence, setPresence] = useState({ open, mounted: open });
+  if (presence.open !== open) setPresence({ open, mounted: presence.mounted || open });
+  return presence.mounted && anchor ? (
+    <DropdownBody
+      bounds={bounds}
+      onBounds={setBounds}
+      open={open}
+      onClose={onClose}
+      anchor={anchor}
+      items={items}
+      onExited={() =>
+        setPresence((current) => (current.open ? current : { ...current, mounted: false }))
+      }
+    />
+  ) : null;
+}
+
+function DropdownBody({
+  open,
+  onClose,
+  anchor,
+  items,
+  onExited,
+  bounds,
+  onBounds,
+}: {
+  open: boolean;
+  onClose: () => void;
+  anchor: DropdownAnchor;
+  items: DropdownItem[];
+  onExited: () => void;
+  bounds: DropdownAnchor | null;
+  onBounds: (bounds: DropdownAnchor) => void;
+}) {
+  const [resting, setResting] = useState(false);
+  const [previousOpen, setPreviousOpen] = useState(open);
+  if (previousOpen !== open) {
+    setPreviousOpen(open);
+    setResting(false);
+  }
+  const target = useFloatingBlurTarget(open && resting);
   const window = useWindowDimensions();
   const overlayRef = useRef<View>(null);
-  const [bounds, setBounds] = useState<DropdownAnchor | null>(null);
-  const [mounted, setMounted] = useState(open);
   const progressSV = useSharedValue(0);
+  const openSV = useSharedValue(open);
   const reducedMotion = useReducedMotion();
 
-  if (open && !mounted) setMounted(true);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const finish = () => {
+      if (openSV.get() && progressSV.get() === 1) setResting(true);
+      else if (!openSV.get() && progressSV.get() === 0) onExited();
+    };
+    openSV.set(open);
     progressSV.set(
       withTiming(
         open ? 1 : 0,
         { duration: motion.fast, easing: Easing.bezier(0.23, 1, 0.32, 1) },
         (finished) => {
-          if (finished && !open) scheduleOnRN(setMounted, false);
+          if (finished) scheduleOnRN(finish);
         },
       ),
     );
-  }, [open, progressSV]);
+    return () => cancelAnimation(progressSV);
+  }, [open, openSV, progressSV, onExited]);
 
   useEffect(() => {
     if (!open) return;
@@ -72,8 +117,6 @@ export function DropdownMenu({
     opacity: progressSV.get(),
     transform: [{ scale: reducedMotion ? 1 : 0.96 + 0.04 * progressSV.get() }],
   }));
-
-  if (!mounted || !anchor) return null;
 
   const containerWidth = bounds?.width ?? window.width;
   const menuWidth = Math.min(184, containerWidth - space.pad * 2);
@@ -90,7 +133,7 @@ export function DropdownMenu({
       pointerEvents={open ? 'box-none' : 'none'}
       onLayout={() =>
         overlayRef.current?.measureInWindow((x, y, width, height) =>
-          setBounds({ x, y, width, height }),
+          onBounds({ x, y, width, height }),
         )
       }
       style={[StyleSheet.absoluteFill, { opacity: bounds ? 1 : 0 }]}
@@ -120,6 +163,7 @@ export function DropdownMenu({
       >
         {target ? (
           <GlassUnder
+            fadeIn
             recipe={controlSheetBlur}
             blur={controlSheetBlur.blur}
             target={target}

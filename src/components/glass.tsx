@@ -1,16 +1,51 @@
 import { BlurView } from 'expo-blur';
-import { createContext, type RefObject, useContext } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import {
+  createContext,
+  type ReactNode,
+  type RefObject,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
+
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { useGlassTrial } from '@/data/glass-trial';
 import { type Element, glassOf } from '@/lib/glass-trial';
-import { chromeGlass, controlGlass, type GlassRecipe, glassRecipes } from '@/theme';
+import {
+  chromeGlass,
+  controlGlass,
+  controlEdgeDense,
+  type GlassRecipe,
+  glassRecipes,
+  motion,
+} from '@/theme';
+import { backdropMaterial } from '@/theme/tokens';
 
 /**
- * The screen's backdrop, wrapped in a `BlurTargetView`, when the trial blurs.
+ * The backdrop identity: a static material marker on Android, a blur target on iOS.
  * Floating surfaces outside a `Screen` use the separate focused-screen target.
  */
 export const BlurTargetContext = createContext<RefObject<View | null> | null>(null);
+
+const targetIds = new WeakMap<RefObject<View | null>, number>();
+let nextTargetId = 0;
+
+function blurTargetKey(target: RefObject<View | null>) {
+  let id = targetIds.get(target);
+  if (id === undefined) {
+    id = ++nextTargetId;
+    targetIds.set(target, id);
+  }
+  return id;
+}
 
 /** Set by a glass hero card, so the stat tiles inside it can follow it under 'hero+inner'. */
 export const GlassHeroContext = createContext(false);
@@ -58,20 +93,40 @@ export function GlassUnder({
   blur,
   target,
   radius,
+  fadeIn = false,
 }: {
   recipe: GlassRecipe;
   blur: number;
   target: RefObject<View | null> | null;
   radius: number | Pick<ViewStyle, 'borderTopLeftRadius' | 'borderTopRightRadius'>;
+  fadeIn?: boolean;
 }) {
+  const backdropTarget = useContext(BlurTargetContext);
   if (blur === 0 || !target) return null;
   const clip = {
     ...(typeof radius === 'number' ? { borderRadius: radius } : radius),
     borderCurve: 'continuous',
     overflow: 'hidden',
   } as const;
-  return (
+  if (Platform.OS === 'android' && target === backdropTarget) {
+    const tint =
+      recipe.blurTint === 'dark'
+        ? backdropMaterial.darkTint(blur)
+        : backdropMaterial.defaultTint(blur);
+    return (
+      <View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, clip, { backgroundColor: backdropMaterial.ground }]}
+      >
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
+        <View style={[StyleSheet.absoluteFill, clip, recipe.fill]} />
+      </View>
+    );
+  }
+  const key = blurTargetKey(target);
+  const nativeBlur = (
     <BlurView
+      key={key}
       pointerEvents="none"
       blurTarget={target}
       blurMethod="dimezisBlurView"
@@ -81,5 +136,32 @@ export function GlassUnder({
     >
       <View style={[StyleSheet.absoluteFill, clip, recipe.fill]} />
     </BlurView>
+  );
+  return Platform.OS === 'android' && fadeIn ? (
+    <BlurFade key={key} clip={clip}>
+      {nativeBlur}
+    </BlurFade>
+  ) : (
+    nativeBlur
+  );
+}
+
+function BlurFade({ children, clip }: { children: ReactNode; clip: ViewStyle }) {
+  const opacitySV = useSharedValue(0);
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    opacitySV.set(
+      withTiming(1, { duration: motion.fast }, (finished) => {
+        if (finished) scheduleOnRN(setSettled, true);
+      }),
+    );
+    return () => cancelAnimation(opacitySV);
+  }, [opacitySV]);
+  const opacity = useAnimatedStyle(() => ({ opacity: opacitySV.get() }));
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, clip]}>
+      {!settled ? <View style={[StyleSheet.absoluteFill, clip, controlEdgeDense]} /> : null}
+      <Animated.View style={[StyleSheet.absoluteFill, opacity]}>{children}</Animated.View>
+    </View>
   );
 }

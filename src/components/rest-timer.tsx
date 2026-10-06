@@ -61,7 +61,8 @@ export function RestTimer({ restUntil, loggedSets, leftSec, onExtend, onSkip }: 
     progressSV.set(restProgress(sweepSV.get(), Date.now()));
   });
 
-  const fill = useAnimatedStyle(() => ({ width: `${progressSV.get() * 100}%` as const }));
+  // scaleX, not width: a width change is a layout pass every frame, a transform is not.
+  const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: progressSV.get() }] }));
 
   return (
     <View style={{ flex: 1 }}>
@@ -76,7 +77,15 @@ export function RestTimer({ restUntil, loggedSets, leftSec, onExtend, onSkip }: 
       <View style={{ height: 2, backgroundColor: hairline.onGround }}>
         <Animated.View
           style={[
-            { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: color.accent },
+            {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+              transformOrigin: 'left',
+              backgroundColor: color.accent,
+            },
             fill,
           ]}
         />

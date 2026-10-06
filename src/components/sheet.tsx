@@ -1,6 +1,7 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useLayoutEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   View,
@@ -8,7 +9,9 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  cancelAnimation,
   Easing,
+  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -20,7 +23,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { controlEdgeDense, controlSheetBlur, hairline, motion, radius, space, wash } from '@/theme';
 
 import { GlassUnder, glassStyle } from './glass';
-import { useScreenBlurTarget, useSheetOpenRegistration } from './screen-blur';
+import { useFloatingBlurTarget, useSheetOpenRegistration } from './screen-blur';
 
 /**
  * The shared shell for every overlay on the live screen (sets, exercises, the
@@ -59,43 +62,97 @@ export function Sheet({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const { height } = useWindowDimensions();
+  const panelHSV = useSharedValue(height);
+  const [presence, setPresence] = useState({ open, mounted: open });
+  if (presence.open !== open) setPresence({ open, mounted: presence.mounted || open });
+  return presence.mounted ? (
+    <SheetBody
+      panelHSV={panelHSV}
+      open={open}
+      onClose={onClose}
+      onExited={() =>
+        setPresence((current) => (current.open ? current : { ...current, mounted: false }))
+      }
+    >
+      {children}
+    </SheetBody>
+  ) : null;
+}
+
+function SheetBody({
+  open,
+  onClose,
+  onExited,
+  children,
+  panelHSV,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onExited: () => void;
+  panelHSV: SharedValue<number>;
+  children: ReactNode;
+}) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const target = useScreenBlurTarget();
-  const [mounted, setMounted] = useState(open);
+  const [resting, setResting] = useState(false);
+  const [previousOpen, setPreviousOpen] = useState(open);
+  if (previousOpen !== open) {
+    setPreviousOpen(open);
+    setResting(false);
+  }
+  const target = useFloatingBlurTarget(open && resting);
   const registerSheetOpen = useSheetOpenRegistration();
   const progressSV = useSharedValue(0);
   const dragYSV = useSharedValue(0);
-  const panelHSV = useSharedValue(height);
+  const openSV = useSharedValue(open);
+  const draggingSV = useSharedValue(false);
 
-  if (open && !mounted) setMounted(true);
+  useEffect(() => registerSheetOpen?.(), [registerSheetOpen]);
 
-  useEffect(() => {
-    if (!mounted || !registerSheetOpen) return;
-    return registerSheetOpen();
-  }, [mounted, registerSheetOpen]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const exit = () => {
+      if (!openSV.get() && progressSV.get() === 0) onExited();
+    };
+    openSV.set(open);
     if (open) {
       dragYSV.set(0);
-      progressSV.set(withTiming(1, { duration: motion.base, easing: Easing.out(Easing.cubic) }));
+      progressSV.set(
+        withTiming(1, { duration: motion.base, easing: Easing.out(Easing.cubic) }, (finished) => {
+          if (finished && openSV.get() && !draggingSV.get() && dragYSV.get() === 0)
+            scheduleOnRN(setResting, true);
+        }),
+      );
     } else {
       progressSV.set(
         withTiming(0, { duration: motion.fast, easing: Easing.in(Easing.cubic) }, (finished) => {
-          if (finished) scheduleOnRN(setMounted, false);
+          if (finished) scheduleOnRN(exit);
         }),
       );
     }
-  }, [open, dragYSV, progressSV]);
+    return () => {
+      cancelAnimation(progressSV);
+      cancelAnimation(dragYSV);
+    };
+  }, [open, dragYSV, openSV, progressSV, draggingSV, onExited]);
 
+  const android = Platform.OS === 'android';
   const pan = Gesture.Pan()
     .activeOffsetY([-4, 4])
     .failOffsetX([-24, 24])
     .hitSlop({ top: 14 })
+    .onStart(() => {
+      if (android) {
+        cancelAnimation(dragYSV);
+        draggingSV.set(true);
+        scheduleOnRN(setResting, false);
+      }
+    })
     .onUpdate((event) => {
       dragYSV.set(Math.max(0, event.translationY));
     })
     .onEnd((event, success) => {
+      draggingSV.set(false);
       const h = panelHSV.get();
       const y = dragYSV.get();
       const dismiss =
@@ -106,8 +163,23 @@ export function Sheet({
         dragYSV.set(0);
         scheduleOnRN(onClose);
       } else {
-        dragYSV.set(withSpring(0, { damping: 28, stiffness: 340 }));
+        dragYSV.set(
+          withSpring(0, { damping: 28, stiffness: 340 }, (finished) => {
+            if (finished && openSV.get() && !draggingSV.get() && dragYSV.get() === 0)
+              scheduleOnRN(setResting, true);
+          }),
+        );
       }
+    })
+    .onFinalize((_event, success) => {
+      if (!android || success) return;
+      draggingSV.set(false);
+      dragYSV.set(
+        withSpring(0, { damping: 28, stiffness: 340 }, (finished) => {
+          if (finished && openSV.get() && !draggingSV.get() && dragYSV.get() === 0)
+            scheduleOnRN(setResting, true);
+        }),
+      );
     });
 
   const scrimStyle = useAnimatedStyle(() => ({
@@ -116,8 +188,6 @@ export function Sheet({
   const panelStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: (1 - progressSV.get()) * panelHSV.get() + dragYSV.get() }],
   }));
-
-  if (!mounted) return null;
 
   return (
     // Edge-to-edge Android never resizes the window for the keyboard, so a sheet
@@ -157,6 +227,7 @@ export function Sheet({
       >
         {target ? (
           <GlassUnder
+            fadeIn
             recipe={controlSheetBlur}
             blur={controlSheetBlur.blur}
             target={target}

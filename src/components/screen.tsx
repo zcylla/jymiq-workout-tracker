@@ -2,7 +2,7 @@ import { BlurTargetView } from 'expo-blur';
 import { useIsFocused } from 'expo-router';
 import { type ReactNode, type Ref, useEffect, useRef } from 'react';
 import type { ScrollView } from 'react-native';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -59,9 +59,8 @@ export function Screen({
   };
   const content = (
     <ScreenBlurTargetContext.Provider value={null}>
-      {/* expo-blur on Android blurs only what sits inside a BlurTargetView, and a
-          BlurView must not be inside its own target — so the target is the backdrop alone. */}
-      {blurs ? (
+      {/* Android uses the backdrop ref as a static material marker; iOS keeps its native target. */}
+      {blurs && Platform.OS !== 'android' ? (
         <BlurTargetView ref={targetRef} style={StyleSheet.absoluteFill}>
           <Backdrop />
         </BlurTargetView>
