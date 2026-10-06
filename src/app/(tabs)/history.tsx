@@ -21,7 +21,6 @@ import {
   Rail,
   type RailItem,
   RowPlate,
-  RollingNumber,
   RowPlates,
   Screen,
   ScreenHeader,
@@ -162,10 +161,9 @@ export default function HistoryScreen() {
                   <Text style={[text.numCore, { color: color.lo }]}>—</Text>
                 </Waiting>
               ) : (
-                <RollingNumber
-                  value={month.length}
-                  style={{ ...text.numCore, color: month.length ? color.hi : color.lo }}
-                />
+                <Text style={{ ...text.numCore, color: month.length ? color.hi : color.lo }}>
+                  {month.length}
+                </Text>
               )}
               <View style={{ paddingBottom: 6 }}>
                 <Text style={text.label}>SESSIONS</Text>

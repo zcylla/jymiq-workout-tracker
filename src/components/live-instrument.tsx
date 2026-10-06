@@ -36,8 +36,6 @@ type Props = {
   onSelect: (parameter: WorkoutParameter) => void;
   onLongPress: (parameter: WorkoutParameter) => void;
   onType: (parameter: WorkoutParameter) => void;
-  /** Bumped on every logged set. */
-  pulse: number;
 };
 
 export function LiveInstrument({
@@ -52,7 +50,6 @@ export function LiveInstrument({
   onSelect,
   onLongPress,
   onType,
-  pulse,
 }: Props) {
   const { weightIncrementKg, weightUnit } = useSettings();
   const unitLabel = weightUnit.toUpperCase();
@@ -117,7 +114,6 @@ export function LiveInstrument({
               // The numerals mean the perimeter is live, which is only true of load.
               showNumerals={editing === 'load'}
               core={core}
-              pulse={pulse}
             />
           </Pressable>
           {editing ? (

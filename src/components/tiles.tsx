@@ -4,7 +4,6 @@ import { Text, View } from 'react-native';
 import { color, radius, space, text } from '@/theme';
 
 import { GlassHeroContext, GlassUnder, glassStyle, useControlGlass, useGlass } from './glass';
-import { RollingNumber } from './rolling-number';
 import { Waiting } from './waiting';
 
 export type Tile = {
@@ -110,14 +109,10 @@ export function StatTiles({
   );
 }
 
-/** A plain integer rolls when it changes; anything with units or decimals is text. */
 function TileValue({ tile }: { tile: Tile }) {
-  const style = { ...text.numTile, color: color[toneOf(tile)] };
-  if (/^\d+$/.test(tile.value) && !tile.pending)
-    return <RollingNumber value={tile.value} style={style} />;
   const value = (
     <Text
-      style={[style, { flexShrink: 1 }]}
+      style={[text.numTile, { color: color[toneOf(tile)], flexShrink: 1 }]}
       numberOfLines={1}
       adjustsFontSizeToFit
       minimumFontScale={0.7}

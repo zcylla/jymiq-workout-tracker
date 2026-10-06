@@ -1,18 +1,9 @@
-import { Fragment, useEffect } from 'react';
+import { Fragment } from 'react';
 import { Pressable, Text, View, type ViewStyle } from 'react-native';
-import Animated, {
-  type CSSTransitionProperties,
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { type CSSTransitionProperties } from 'react-native-reanimated';
 
 import { indexOf, valueAt, type Scale } from '@/lib/scale';
 import { color, type Ink, lh, ls, mono, radius, text, wash } from '@/theme';
-
-import { RollingNumber } from './rolling-number';
 
 const A0 = -240;
 const A1 = 60;
@@ -52,8 +43,6 @@ type Props = {
   mark: number | null;
   showNumerals: boolean;
   core: LoadRingCore;
-  /** Bumped when a set is logged: the core pops once. */
-  pulse?: number;
 };
 
 const polar = (center: number, radius: number, angle: number) => {
@@ -65,17 +54,7 @@ const polar = (center: number, radius: number, angle: number) => {
  * The live-session load dial. Its fill is conveyed by tick length, rather than
  * a colour gradient, so the cursor stays legible on the small edit dial.
  */
-export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse = 0 }: Props) {
-  const popSV = useSharedValue(1);
-
-  // Lab 06 tile 05: under 250ms, one element, never in the way of the next input.
-  useEffect(() => {
-    if (pulse === 0) return;
-    popSV.set(withSequence(withTiming(1.08, { duration: 80 }), withSpring(1, { damping: 14 })));
-  }, [pulse, popSV]);
-
-  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: popSV.get() }] }));
-
+export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props) {
   // A short screen hands this less than 290: the numerals need 19pt of radius
   // they no longer have, and the core sheds its lines rather than run into the ticks.
   const numerals = showNumerals && size >= NUMERALS_MIN;
@@ -171,21 +150,18 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
         );
       })}
 
-      <Animated.View
+      <View
         pointerEvents="box-none"
-        style={[
-          {
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0,
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 1,
-          },
-          popStyle,
-        ]}
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1,
+        }}
       >
         {label ? (
           <View
@@ -202,8 +178,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
             </Text>
           </View>
         ) : null}
-        <RollingNumber
-          value={core.value}
+        <Text
           style={{
             ...mono(600),
             fontSize: big,
@@ -211,7 +186,9 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
             letterSpacing: ls(-0.05, big),
             color: color.hi,
           }}
-        />
+        >
+          {core.value}
+        </Text>
         {subline ? (
           <Text
             style={{
@@ -248,8 +225,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
                   borderCurve: 'continuous',
                 }}
               >
-                <RollingNumber
-                  value={chip.value}
+                <Text
                   style={{
                     ...mono(600),
                     fontSize: small,
@@ -257,7 +233,9 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
                     letterSpacing: ls(-0.03, small),
                     color: color.mid,
                   }}
-                />
+                >
+                  {chip.value}
+                </Text>
                 <Text
                   style={{
                     ...mono(400),
@@ -273,7 +251,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core, pulse =
             ))}
           </View>
         ) : null}
-      </Animated.View>
+      </View>
     </View>
   );
 }

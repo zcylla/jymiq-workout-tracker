@@ -30,7 +30,6 @@ export { Plate } from './plate';
 export { PrimaryButton } from './primary-button';
 export { ProgramWeek } from './program-week';
 export { Rail, type RailItem } from './rail';
-export { RollingNumber } from './rolling-number';
 export { ReorderList } from './reorder-list';
 export { RowPlate, RowPlates } from './row-plate';
 export { Scale } from './scale';

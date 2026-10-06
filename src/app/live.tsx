@@ -214,7 +214,6 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   } | null>(null);
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [pulse, setPulse] = useState(0);
   const ladderSV = useSharedValue(0);
   const wheelStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: ladderSV.get() * LABEL_WIDTH }],
@@ -442,7 +441,6 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     if (!ready) return;
     const hits = completeSet(set.id);
     pop();
-    setPulse((n) => n + 1);
     setEditing(null);
     announce(show, hits, 'Record');
   };
@@ -556,7 +554,6 @@ function LiveSession({ sessionId }: { sessionId: string }) {
                 oneRm={oneRm}
                 showRpe={showRpe}
                 onEdit={(p) => setEditing((current) => (current === p ? null : p))}
-                pulse={pulse}
                 onDetent={onDetent}
                 // Lab 32's switch: one route or the other opens the keypad, and
                 // the tape is always reachable by the one it is not on.
