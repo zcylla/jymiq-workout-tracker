@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, isNull, like, max, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, exists, isNotNull, isNull, like, max, ne, sql } from 'drizzle-orm';
 
 import { db } from '../db';
 import {
@@ -8,6 +8,7 @@ import {
   personalRecords,
   sessionExercises,
   sessions,
+  type Muscle,
   sets,
 } from '../schema';
 
@@ -16,7 +17,9 @@ import {
  * re-runs them when the tables change, so a mutation refreshes every list that
  * reads it without anything invalidating anything.
  */
-export function exerciseListQuery(opts: { search?: string; equipment?: Equipment | null } = {}) {
+export function exerciseListQuery(
+  opts: { search?: string; equipment?: Equipment | null; muscle?: Muscle | null } = {},
+) {
   const search = opts.search?.trim();
   return db
     .select({
@@ -32,6 +35,20 @@ export function exerciseListQuery(opts: { search?: string; equipment?: Equipment
         sql`${exercises.archivedAt} is null`,
         opts.equipment ? eq(exercises.equipment, opts.equipment) : undefined,
         search ? like(exercises.name, `%${search}%`) : undefined,
+        opts.muscle
+          ? exists(
+              db
+                .select({ one: sql`1` })
+                .from(exerciseMuscles)
+                .where(
+                  and(
+                    eq(exerciseMuscles.exerciseId, exercises.id),
+                    eq(exerciseMuscles.muscle, opts.muscle),
+                    eq(exerciseMuscles.role, 'prime'),
+                  ),
+                ),
+            )
+          : undefined,
       ),
     )
     .orderBy(asc(exercises.name));

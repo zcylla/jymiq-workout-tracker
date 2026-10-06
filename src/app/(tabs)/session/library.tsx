@@ -23,7 +23,7 @@ import { addExercisesToRoutine } from '@/data/mutations/routines';
 import { addExerciseToSession, replaceSessionExercise } from '@/data/mutations/sessions';
 import { exerciseListQuery, recentExercisesQuery } from '@/data/queries/exercises';
 import { routineExercisesQuery } from '@/data/queries/routines';
-import type { Equipment } from '@/data/schema';
+import type { Equipment, Muscle } from '@/data/schema';
 import { toggleExerciseSelection } from '@/lib/exercise-selection';
 import { color, space } from '@/theme';
 
@@ -34,6 +34,30 @@ const FILTERS: { label: string; value: Equipment | null }[] = [
   { label: 'MACHINE', value: 'machine' },
   { label: 'CABLE', value: 'cable' },
   { label: 'BODYWEIGHT', value: 'bodyweight' },
+];
+
+const MUSCLE_FILTERS: { label: string; value: Muscle | null }[] = [
+  { label: 'ALL', value: null },
+  ...(
+    [
+      'chest',
+      'back',
+      'lats',
+      'shoulders',
+      'traps',
+      'biceps',
+      'triceps',
+      'forearms',
+      'abs',
+      'lower_back',
+      'quads',
+      'hamstrings',
+      'glutes',
+      'calves',
+      'adductors',
+      'neck',
+    ] as const
+  ).map((value) => ({ label: value.toUpperCase().replace('_', ' '), value })),
 ];
 
 type Row = Awaited<ReturnType<typeof exerciseListQuery>>[number];
@@ -66,11 +90,15 @@ export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
   const routinePicking = Boolean(routineId && !sessionId && !replace);
   const [search, setSearch] = useState('');
   const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [muscle, setMuscle] = useState<Muscle | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const showActionBar = routinePicking && selectedIds.length > 0;
 
-  const query = useMemo(() => exerciseListQuery({ search, equipment }), [search, equipment]);
-  const { data: rows, updatedAt } = useLiveQuery(query, [search, equipment]);
+  const query = useMemo(
+    () => exerciseListQuery({ search, equipment, muscle }),
+    [search, equipment, muscle],
+  );
+  const { data: rows, updatedAt } = useLiveQuery(query, [search, equipment, muscle]);
   const { data: recentRows } = useLiveQuery(
     useMemo(() => recentExercisesQuery(), []),
     [],
@@ -86,14 +114,14 @@ export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
       .filter((row) => !usedIds.has(row.id))
       .map((row) => ({ key: row.id, row }));
     const recent = (recentRows ?? []).filter((row) => !usedIds.has(row.id));
-    if (search.trim() || equipment || !recent.length) return all;
+    if (search.trim() || equipment || muscle || !recent.length) return all;
     return [
       { key: 'label:recent', label: 'RECENT' },
       ...recent.map((row) => ({ key: `recent:${row.id}`, row })),
       ...(all.length || !routinePicking ? [{ key: 'label:all', label: 'ALL' }] : []),
       ...all,
     ];
-  }, [rows, recentRows, search, equipment, routinePicking, routineRows]);
+  }, [rows, recentRows, search, equipment, muscle, routinePicking, routineRows]);
 
   return (
     <View style={{ flex: 1, backgroundColor: color.ground }}>
@@ -135,6 +163,16 @@ export function ExercisePicker({ tabbed }: { tabbed: boolean }) {
                   label={f.label}
                   on={equipment === f.value}
                   onPress={() => setEquipment(f.value)}
+                />
+              ))}
+            </ChipStrip>
+            <ChipStrip>
+              {MUSCLE_FILTERS.map((f) => (
+                <Chip
+                  key={f.label}
+                  label={f.label}
+                  on={muscle === f.value}
+                  onPress={() => setMuscle(f.value)}
                 />
               ))}
             </ChipStrip>
