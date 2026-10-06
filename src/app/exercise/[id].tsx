@@ -39,6 +39,7 @@ import { formatTonnage, formatTonnageAxis } from '@/lib/volume';
 import { color, motion, size, space, text } from '@/theme';
 
 const DASH = '—';
+const LOG_SCROLLS = 3;
 
 const METRICS: { key: Metric; label: string }[] = [
   { key: 'e1rm', label: '1RM' },
@@ -71,8 +72,9 @@ const COMPARED: Record<Exclude<Granularity, 'all'>, string> = {
  */
 export default function ExerciseScreen() {
   // `focus=stats` is the live screen's STATS: the same page, opened on the 1RM chart.
-  const { id, focus } = useLocalSearchParams<{ id: string; focus?: 'stats' }>();
+  const { id, focus } = useLocalSearchParams<{ id: string; focus?: 'stats' | 'log' }>();
   const scrollRef = useRef<ScrollView>(null);
+  const logScrollsLeft = useRef(LOG_SCROLLS);
   const { data: found } = useLiveQuery(
     useMemo(() => exerciseQuery(id), [id]),
     [id],
@@ -337,7 +339,17 @@ export default function ExerciseScreen() {
           ))}
         </View>
       </Section>
-      <ExerciseLog exerciseId={id} />
+      <View
+        onLayout={(e) => {
+          const { y, height } = e.nativeEvent.layout;
+          if (focus === 'log' && height > 0 && logScrollsLeft.current > 0) {
+            logScrollsLeft.current -= 1;
+            scrollRef.current?.scrollTo({ y, animated: true });
+          }
+        }}
+      >
+        <ExerciseLog exerciseId={id} />
+      </View>
 
       {/* CC BY-SA asks for credit wherever the work is distributed, and the
             app is where this app distributes it. */}
