@@ -20,10 +20,9 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { controlEdgeDense, controlSheetBlur, hairline, motion, radius, space, wash } from '@/theme';
+import { controlEdgeDense, hairline, motion, radius, space, wash } from '@/theme';
 
-import { GlassUnder, glassStyle } from './glass';
-import { useFloatingBlurTarget, useSheetOpenRegistration } from './screen-blur';
+import { useSheetOpenRegistration } from './screen-blur';
 
 /**
  * The shared shell for every overlay on the live screen (sets, exercises, the
@@ -95,18 +94,10 @@ function SheetBody({
 }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const [resting, setResting] = useState(false);
-  const [previousOpen, setPreviousOpen] = useState(open);
-  if (previousOpen !== open) {
-    setPreviousOpen(open);
-    setResting(false);
-  }
-  const target = useFloatingBlurTarget(open && resting);
   const registerSheetOpen = useSheetOpenRegistration();
   const progressSV = useSharedValue(0);
   const dragYSV = useSharedValue(0);
   const openSV = useSharedValue(open);
-  const draggingSV = useSharedValue(false);
 
   useEffect(() => registerSheetOpen?.(), [registerSheetOpen]);
 
@@ -117,12 +108,7 @@ function SheetBody({
     openSV.set(open);
     if (open) {
       dragYSV.set(0);
-      progressSV.set(
-        withTiming(1, { duration: motion.base, easing: Easing.out(Easing.cubic) }, (finished) => {
-          if (finished && openSV.get() && !draggingSV.get() && dragYSV.get() === 0)
-            scheduleOnRN(setResting, true);
-        }),
-      );
+      progressSV.set(withTiming(1, { duration: motion.base, easing: Easing.out(Easing.cubic) }));
     } else {
       progressSV.set(
         withTiming(0, { duration: motion.fast, easing: Easing.in(Easing.cubic) }, (finished) => {
@@ -134,25 +120,17 @@ function SheetBody({
       cancelAnimation(progressSV);
       cancelAnimation(dragYSV);
     };
-  }, [open, dragYSV, openSV, progressSV, draggingSV, onExited]);
+  }, [open, dragYSV, openSV, progressSV, onExited]);
 
   const android = Platform.OS === 'android';
   const pan = Gesture.Pan()
     .activeOffsetY([-4, 4])
     .failOffsetX([-24, 24])
     .hitSlop({ top: 14 })
-    .onStart(() => {
-      if (android) {
-        cancelAnimation(dragYSV);
-        draggingSV.set(true);
-        scheduleOnRN(setResting, false);
-      }
-    })
     .onUpdate((event) => {
       dragYSV.set(Math.max(0, event.translationY));
     })
     .onEnd((event, success) => {
-      draggingSV.set(false);
       const h = panelHSV.get();
       const y = dragYSV.get();
       const dismiss =
@@ -163,23 +141,12 @@ function SheetBody({
         dragYSV.set(0);
         scheduleOnRN(onClose);
       } else {
-        dragYSV.set(
-          withSpring(0, { damping: 28, stiffness: 340 }, (finished) => {
-            if (finished && openSV.get() && !draggingSV.get() && dragYSV.get() === 0)
-              scheduleOnRN(setResting, true);
-          }),
-        );
+        dragYSV.set(withSpring(0, { damping: 28, stiffness: 340 }));
       }
     })
     .onFinalize((_event, success) => {
       if (!android || success) return;
-      draggingSV.set(false);
-      dragYSV.set(
-        withSpring(0, { damping: 28, stiffness: 340 }, (finished) => {
-          if (finished && openSV.get() && !draggingSV.get() && dragYSV.get() === 0)
-            scheduleOnRN(setResting, true);
-        }),
-      );
+      dragYSV.set(withSpring(0, { damping: 28, stiffness: 340 }));
     });
 
   const scrimStyle = useAnimatedStyle(() => ({
@@ -210,13 +177,7 @@ function SheetBody({
           {
             width,
             maxHeight: height * 0.8,
-            ...(target
-              ? {
-                  ...glassStyle(controlSheetBlur, controlSheetBlur.blur),
-                  borderWidth: controlEdgeDense.borderWidth,
-                  borderColor: 'transparent',
-                }
-              : controlEdgeDense),
+            ...controlEdgeDense,
             borderTopLeftRadius: radius.sheet,
             borderTopRightRadius: radius.sheet,
             borderCurve: 'continuous',
@@ -225,15 +186,6 @@ function SheetBody({
           panelStyle,
         ]}
       >
-        {target ? (
-          <GlassUnder
-            fadeIn
-            recipe={controlSheetBlur}
-            blur={controlSheetBlur.blur}
-            target={target}
-            radius={{ borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet }}
-          />
-        ) : null}
         <GestureDetector gesture={pan}>
           <View style={{ alignItems: 'center', paddingTop: 14, paddingBottom: 12 }}>
             <View
