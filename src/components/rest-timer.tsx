@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -23,6 +23,8 @@ type Props = {
   onSkip: () => void;
 };
 
+let lastSweep: RestSweep | null = null;
+
 function TextButton({ label, onPress }: { label: string; onPress: () => void }) {
   const press = usePressFeel();
   return (
@@ -46,15 +48,19 @@ function TextButton({ label, onPress }: { label: string; onPress: () => void }) 
  * grows the span rather than restarting it.
  */
 export function RestTimer({ restUntil, loggedSets, leftSec, onExtend, onSkip }: Props) {
-  const progressSV = useSharedValue(1);
-  const sweepSV = useSharedValue<RestSweep | null>(null);
-  const sweep = useRef<RestSweep | null>(null);
+  const [start] = useState(() => {
+    const nowMs = Date.now();
+    const sweep = updateRestSweep(lastSweep, restUntil, loggedSets, nowMs);
+    return { sweep, progress: restProgress(sweep, nowMs) };
+  });
+  const progressSV = useSharedValue(start.progress);
+  const sweepSV = useSharedValue<RestSweep | null>(start.sweep);
 
   useEffect(() => {
     const nowMs = Date.now();
-    sweep.current = updateRestSweep(sweep.current, restUntil, loggedSets, nowMs);
-    sweepSV.set(sweep.current);
-    progressSV.set(restProgress(sweep.current, nowMs));
+    lastSweep = updateRestSweep(lastSweep, restUntil, loggedSets, nowMs);
+    sweepSV.set(lastSweep);
+    progressSV.set(restProgress(lastSweep, nowMs));
   }, [restUntil, loggedSets, progressSV, sweepSV]);
 
   useFrameCallback(() => {
@@ -72,7 +78,13 @@ export function RestTimer({ restUntil, loggedSets, leftSec, onExtend, onSkip }: 
         </Waiting>
         <View style={{ flex: 1 }} />
         <TextButton label="+30s" onPress={onExtend} />
-        <TextButton label="Skip" onPress={onSkip} />
+        <TextButton
+          label="Skip"
+          onPress={() => {
+            lastSweep = null;
+            onSkip();
+          }}
+        />
       </View>
       <View style={{ height: 2, backgroundColor: hairline.onGround }}>
         <Animated.View

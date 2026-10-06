@@ -63,6 +63,27 @@ test('repeated extensions add each deadline delta exactly once', () => {
   assert.equal(rest.restProgress(second, 190_000), 0.4);
 });
 
+test('a remount of the same rest keeps its span and its place in the sweep', () => {
+  const sweep = rest.updateRestSweep(null, 190_000, 1, 100_000);
+  const remounted = rest.updateRestSweep(sweep, 190_000, 1, 145_000);
+  assert.equal(remounted.spanMs, 90_000);
+  assert.equal(rest.restProgress(remounted, 145_000), 0.5);
+  const extended = rest.updateRestSweep(
+    rest.updateRestSweep(sweep, 220_000, 1, 145_000),
+    220_000,
+    1,
+    160_000,
+  );
+  assert.equal(extended.spanMs, 120_000);
+});
+
+test('a remount after the rest ended starts a fresh full sweep', () => {
+  const sweep = rest.updateRestSweep(null, 190_000, 1, 100_000);
+  const next = rest.updateRestSweep(sweep, 400_000, 1, 300_000);
+  assert.equal(next.spanMs, 100_000);
+  assert.equal(rest.restProgress(next, 300_000), 1);
+});
+
 test('a shorter new rest replaces the old span and starts full', () => {
   const sweep = rest.updateRestSweep(null, 280_000, 1, 100_000);
   const next = rest.updateRestSweep(sweep, 220_000, 2, 160_000);
