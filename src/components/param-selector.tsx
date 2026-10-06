@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { color, lh, ls, mono, radius, wash } from '@/theme';
+import { color, hairline, lh, ls, mono, radius, wash } from '@/theme';
 
 import { pop } from './haptics';
 
@@ -108,6 +108,8 @@ export function ParamSelector({
             borderRadius: radius.row,
             borderCurve: 'continuous',
             backgroundColor: wash.field,
+            borderWidth: 1,
+            borderColor: hairline.onPlate,
             opacity: pressed ? 0.7 : 1,
           })}
         >
