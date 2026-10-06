@@ -66,7 +66,7 @@ export function clampIndex(s: Scale, index: number): number {
 export const LOAD_STEPS_KG = [1.25, 2.5, 5] as const;
 
 /**
- * Load 20–140 by `step`: every detent is a weight you can actually load. The
+ * Load 0–140 by `step`: every detent is a weight you can actually load. The
  * ends are multiples of every offered step, so the span never moves, and a rule
  * lands every 10 kg and a numeral every 20 whatever the step.
  */
@@ -76,8 +76,8 @@ export const loadDisplayStep = (stepKg: number, unit: 'kg' | 'lb'): number =>
 export const loadScale = (stepKg: number, unit: 'kg' | 'lb' = 'kg') => {
   const step = loadDisplayStep(stepKg, unit);
   return unit === 'kg'
-    ? makeScale(20, 140, step, 10 / step, 20 / step)
-    : makeScale(40, 280, step, 20 / step, 40 / step);
+    ? makeScale(0, 140, step, 10 / step, 20 / step)
+    : makeScale(0, 280, step, 20 / step, 40 / step);
 };
 export const LOAD_SCALE = loadScale(2.5);
 export const REPS_SCALE = makeScale(1, 15, 1, 5, 5);

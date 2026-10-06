@@ -282,16 +282,16 @@ test('the warm-up ramp rounds down, skips the bar and never repeats', () => {
 
 // --------------------------------------------------------------- scale ----
 test('every load detent is a weight you could load', () => {
-  assert.equal(LOAD_SCALE.n, 49);
-  assert.equal(valueAt(LOAD_SCALE, 0), 20);
-  assert.equal(valueAt(LOAD_SCALE, 48), 140);
-  assert.equal(indexOf(LOAD_SCALE, 102.5), 33);
+  assert.equal(LOAD_SCALE.n, 57);
+  assert.equal(valueAt(LOAD_SCALE, 0), 0);
+  assert.equal(valueAt(LOAD_SCALE, 56), 140);
+  assert.equal(indexOf(LOAD_SCALE, 102.5), 41);
   assert.equal(valueAt(LOAD_SCALE, indexOf(LOAD_SCALE, 102.5)), 102.5);
 });
 
 test('scale indices clamp instead of running off the end', () => {
-  assert.equal(indexOf(LOAD_SCALE, 5), 0);
-  assert.equal(indexOf(LOAD_SCALE, 500), 48);
+  assert.equal(indexOf(LOAD_SCALE, -5), 0);
+  assert.equal(indexOf(LOAD_SCALE, 500), 56);
   assert.equal(RPE_SCALE.n, 10);
 });
 

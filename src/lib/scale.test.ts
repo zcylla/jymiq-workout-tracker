@@ -49,12 +49,20 @@ test('a step stops at the ends of the scale', () => {
   assert.equal(stepBy(REST_SCALE, 20, -15), 15);
 });
 
-test('every offered increment keeps the 20 to 140 kg span', () => {
+test('every offered increment keeps the 0 to 140 kg span', () => {
   for (const step of LOAD_STEPS_KG) {
     const scale = loadScale(step);
-    assert.equal(valueAt(scale, 0), 20);
+    assert.equal(valueAt(scale, 0), 0);
     assert.equal(valueAt(scale, scale.n - 1), 140);
-    assert.equal(scale.n, 120 / step + 1);
+    assert.equal(scale.n, 140 / step + 1);
+  }
+});
+
+test('the pound load scale also starts at 0', () => {
+  for (const step of LOAD_STEPS_KG) {
+    const scale = loadScale(step, 'lb');
+    assert.equal(valueAt(scale, 0), 0);
+    assert.equal(valueAt(scale, scale.n - 1), 280);
   }
 });
 
@@ -84,13 +92,13 @@ test('a logged load between detents snaps to the nearest one and the ends clamp'
   assert.equal(snapTo(loadScale(5), 82.5), 85);
   assert.equal(snapTo(loadScale(1.25), 82.5), 82.5);
   assert.equal(snapTo(loadScale(1), 82.4), 82);
-  assert.equal(snapTo(loadScale(5), 10), 20);
+  assert.equal(snapTo(loadScale(5), -10), 0);
   assert.equal(snapTo(loadScale(5), 200), 140);
 });
 
 test('the default load scale is the 2.5 kg one the app shipped with', () => {
   assert.deepEqual(LOAD_SCALE, loadScale(2.5));
-  assert.equal(LOAD_SCALE.n, 49);
+  assert.equal(LOAD_SCALE.n, 57);
   assert.equal(LOAD_SCALE.major, 4);
   assert.equal(LOAD_SCALE.label, 8);
 });
