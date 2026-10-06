@@ -58,6 +58,7 @@ import type { Swipe } from '@/lib/pager';
 import { formatPrValue, type PrHit, PR_LABELS } from '@/lib/pr';
 import { moved } from '@/lib/reorder';
 import { moveSetGroup, removalSetIds, setTypeLabel, setTypeOrdinal } from '@/lib/set-groups';
+import { applyDraft, draftPatch, type SetDraft } from '@/lib/set-draft';
 import type { SetKind } from '@/lib/volume';
 import { elapsedSec, formatClock, restRemainingSec } from '@/lib/time';
 import { formatWeight } from '@/lib/units';
@@ -213,6 +214,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     returnToSets: boolean;
   } | null>(null);
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
+  const [draft, setDraft] = useState<{ setId: string; values: SetDraft } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const ladderSV = useSharedValue(0);
   const wheelStyle = useAnimatedStyle(() => ({
@@ -254,6 +256,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     sets.find((s) => s.id === session?.currentSetId) ??
     sets.find((s) => s.completedAt == null) ??
     sets[0];
+  if (draft && draft.setId !== set?.id) setDraft(null);
 
   const historyOrdinal = set ? setTypeOrdinal(sets, set.id) : 1;
   const previous = useLiveQuery(
@@ -382,8 +385,13 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     );
   }
 
-  const load = set.weightKg ?? 0;
-  const reps = set.reps ?? 0;
+  const isLogged = set.completedAt != null;
+  const stored = { weightKg: set.weightKg, reps: set.reps, rpe: set.rpe };
+  const shown = applyDraft(stored, draft?.values ?? null);
+  const patch = draftPatch(stored, draft?.values ?? null);
+  const changed = Object.keys(patch).length > 0;
+  const load = shown.weightKg ?? 0;
+  const reps = shown.reps ?? 0;
   const oneRm = estimate1RM(load, reps);
   const e1rm = liveE1rm(sets, load, reps);
   const restLeft = restRemainingSec(session.restUntil, now);
@@ -429,13 +437,26 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     });
   };
 
-  const onDetent = (value: number) => {
-    if (editing === 'load') updateSet(set.id, { weightKg: value });
-    else if (editing === 'reps') updateSet(set.id, { reps: value });
-    else if (editing === 'rpe') updateSet(set.id, { rpe: value });
+  const edit = (change: SetDraft) => {
+    if (isLogged) setDraft((d) => ({ setId: set.id, values: { ...d?.values, ...change } }));
+    else updateSet(set.id, change);
   };
 
-  const ready = set.completedAt == null && set.weightKg != null && set.reps != null && set.reps > 0;
+  const onDetent = (value: number) => {
+    if (editing === 'load') edit({ weightKg: value });
+    else if (editing === 'reps') edit({ reps: value });
+    else if (editing === 'rpe') edit({ rpe: value });
+  };
+
+  const ready = !isLogged && set.weightKg != null && set.reps != null && set.reps > 0;
+
+  const commitEdit = () => {
+    if (!isLogged || !changed) return;
+    updateSet(set.id, patch);
+    pop();
+    setDraft(null);
+    setEditing(null);
+  };
 
   const log = () => {
     if (!ready) return;
@@ -550,7 +571,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
                 editing={editing}
                 load={load}
                 reps={reps}
-                rpe={set.rpe}
+                rpe={shown.rpe}
                 oneRm={oneRm}
                 showRpe={showRpe}
                 onEdit={(p) => setEditing((current) => (current === p ? null : p))}
@@ -597,8 +618,8 @@ function LiveSession({ sessionId }: { sessionId: string }) {
                       previous.rpe == null ? '' : ` @ ${previous.rpe}`
                     }`,
                     delta:
-                      set.weightKg != null && previous.weightKg != null
-                        ? loadDelta(set.weightKg, previous.weightKg, settings.weightUnit)
+                      shown.weightKg != null && previous.weightKg != null
+                        ? loadDelta(shown.weightKg, previous.weightKg, settings.weightUnit)
                         : null,
                   }
                 : null
@@ -647,11 +668,10 @@ function LiveSession({ sessionId }: { sessionId: string }) {
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
         <ActionBar
-          primary={
-            set.completedAt == null ? `Log set ${setIndex + 1}` : `Set ${setIndex + 1} logged`
-          }
-          onPrimary={log}
-          disabled={!ready}
+          primary={isLogged ? `Edit set ${setIndex + 1}` : `Log set ${setIndex + 1}`}
+          tone={isLogged ? 'done' : 'accent'}
+          onPrimary={isLogged ? commitEdit : log}
+          disabled={isLogged ? !changed : !ready}
           secondary="SETS"
           onSecondary={() => setSheet('sets')}
         />
@@ -730,8 +750,9 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         parameter={keypadParam ?? 'load'}
         setId={set.id}
         currentValue={
-          keypadParam === 'load' ? load : keypadParam === 'reps' ? reps : (set.rpe ?? null)
+          keypadParam === 'load' ? load : keypadParam === 'reps' ? reps : (shown.rpe ?? null)
         }
+        onCommit={isLogged ? edit : undefined}
       />
       <LiveMenu
         open={menu.open}

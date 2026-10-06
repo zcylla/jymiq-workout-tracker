@@ -27,6 +27,7 @@ export function ActionBar({
   secondary,
   onSecondary,
   disabled = false,
+  tone = 'accent',
 }: {
   primary: string;
   onPrimary?: () => void;
@@ -34,6 +35,7 @@ export function ActionBar({
   onSecondary?: () => void;
   /** Dim and inert: the button says the action is not available, instead of a dialog saying why. */
   disabled?: boolean;
+  tone?: 'accent' | 'done';
 }) {
   const insets = useSafeAreaInsets();
   const secondaryPress = usePressFeel();
@@ -107,7 +109,7 @@ export function ActionBar({
             justifyContent: 'center',
             borderRadius: radius.bar,
             borderCurve: 'continuous',
-            backgroundColor: color.accent,
+            backgroundColor: tone === 'done' ? color.done : color.accent,
             boxShadow: fabShadow,
           },
           disabled && disabledControl.surface,

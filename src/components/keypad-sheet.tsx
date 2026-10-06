@@ -42,6 +42,7 @@ type Props = {
   parameter: WorkoutParameter;
   setId: string;
   currentValue: number | null;
+  onCommit?: (patch: Patch) => void;
 };
 
 /**
@@ -52,7 +53,7 @@ type Props = {
  * The caller keys this on `open`/`parameter` (see `live.tsx`) so a fresh open
  * always remounts with blank entry, rather than resetting state in an effect.
  */
-export function KeypadSheet({ open, onClose, parameter, setId, currentValue }: Props) {
+export function KeypadSheet({ open, onClose, parameter, setId, currentValue, onCommit }: Props) {
   const { weightUnit } = useSettings();
   const config = CONFIG[parameter];
   const scales: Record<WorkoutParameter, Scale> = {
@@ -69,9 +70,11 @@ export function KeypadSheet({ open, onClose, parameter, setId, currentValue }: P
       unit={parameter === 'load' ? weightUnit.toUpperCase() : config.unit}
       was={wasText(parameter, currentValue, weightUnit)}
       resolve={(entered) => resolveKeypadValue(entered, scale)}
-      onConfirm={(value) =>
-        updateSet(setId, config.patch(parameter === 'load' ? toKg(value, weightUnit) : value))
-      }
+      onConfirm={(value) => {
+        const patch = config.patch(parameter === 'load' ? toKg(value, weightUnit) : value);
+        if (onCommit) onCommit(patch);
+        else updateSet(setId, patch);
+      }}
     />
   );
 }
