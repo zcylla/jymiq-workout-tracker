@@ -43,11 +43,46 @@ type Props = {
 };
 
 const ROW_HEIGHT = size.hit;
+const TREE_INDENT = 24;
+const TREE_TRUNK_X = 12;
+const TREE_LINE = 1.5;
+
+function TreeConnector({ continues }: { continues: boolean }) {
+  const mid = (ROW_HEIGHT + TREE_LINE) / 2;
+  return (
+    <View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{ position: 'absolute', top: 0, left: 0, width: TREE_INDENT, height: ROW_HEIGHT }}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          top: -space.row,
+          left: TREE_TRUNK_X,
+          width: TREE_LINE,
+          height: space.row + (continues ? ROW_HEIGHT : mid),
+          backgroundColor: color.tick2,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: mid - TREE_LINE,
+          left: TREE_TRUNK_X,
+          width: TREE_INDENT - TREE_TRUNK_X,
+          height: TREE_LINE,
+          backgroundColor: color.tick2,
+        }}
+      />
+    </View>
+  );
+}
 
 function SetRow({
   set,
   typeLabel,
-  linked,
   isCurrent,
   handle,
   onPress,
@@ -58,7 +93,6 @@ function SetRow({
 }: {
   set: SheetSet;
   typeLabel: string;
-  linked: boolean;
   isCurrent: boolean;
   handle: ReactNode;
   onPress: () => void;
@@ -72,36 +106,34 @@ function SetRow({
   const valueColor = isCurrent ? color.accent : done ? color.hi : color.mid;
   const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} × ${set.reps ?? '—'}`;
   return (
-    <View style={{ paddingLeft: linked ? space.within : 0 }}>
-      <RowPlate
-        tinted
-        selected={isCurrent || selected}
-        done={done && !picking}
-        disabled={disabled}
-        onPress={onPress}
+    <RowPlate
+      tinted
+      selected={isCurrent || selected}
+      done={done && !picking}
+      disabled={disabled}
+      onPress={onPress}
+    >
+      <View
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. ${picking ? 'Link drop to this set' : 'Edit set'}`}
+        style={{ flexDirection: 'row', alignItems: 'center', height: ROW_HEIGHT, gap: 9 }}
       >
-        <View
-          accessible
-          accessibilityRole="button"
-          accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. ${picking ? 'Link drop to this set' : 'Edit set'}`}
-          style={{ flexDirection: 'row', alignItems: 'center', height: ROW_HEIGHT, gap: 9 }}
-        >
-          {handle}
-          <Text style={[text.numSm, { color: indexColor }]}>
-            {String(set.position).padStart(2, '0')}
-          </Text>
-          {set.kind === 'working' ? null : (
-            <Text style={[text.meta, { color: color.lo }]}>{typeLabel.toUpperCase()}</Text>
-          )}
-          <View style={{ flex: 1 }} />
-          <Text style={[text.numSm, { color: valueColor }]} numberOfLines={1}>
-            {values}
-            {set.rpe == null ? '' : ` @${set.rpe}`}
-          </Text>
-          {isCurrent ? null : <Chevron />}
-        </View>
-      </RowPlate>
-    </View>
+        {handle}
+        <Text style={[text.numSm, { color: indexColor }]}>
+          {String(set.position).padStart(2, '0')}
+        </Text>
+        {set.kind === 'working' ? null : (
+          <Text style={[text.meta, { color: color.lo }]}>{typeLabel.toUpperCase()}</Text>
+        )}
+        <View style={{ flex: 1 }} />
+        <Text style={[text.numSm, { color: valueColor }]} numberOfLines={1}>
+          {values}
+          {set.rpe == null ? '' : ` @${set.rpe}`}
+        </Text>
+        {isCurrent ? null : <Chevron />}
+      </View>
+    </RowPlate>
   );
 }
 
@@ -171,13 +203,14 @@ export function SetsSheet({
               }
             : undefined
         }
-        renderRow={(s, _i, handle) => {
+        renderRow={(s, i, handle) => {
           const pickable = isWorkingSet(s) && s.id !== pickParent?.setId;
+          const parent = dropParent(sets, s.id);
+          const next = sets[i + 1];
           const row = (
             <SetRow
               set={s}
               typeLabel={setTypeLabel(sets, s.id)}
-              linked={dropParent(sets, s.id) != null}
               isCurrent={!pickParent && s.id === currentSetId}
               handle={handle}
               onPress={() => (pickParent ? onPickParent?.(s.id) : selectSet(s.id))}
@@ -187,16 +220,22 @@ export function SetsSheet({
               disabled={pickParent != null && !pickable}
             />
           );
-          return pickParent ? (
+          const content = pickParent ? (
             row
           ) : (
-            <SwipeRow
-              key={s.id}
-              surface={color.raised}
-              onDelete={onDelete ? () => onDelete(s.id) : undefined}
-            >
+            <SwipeRow surface={color.raised} onDelete={onDelete ? () => onDelete(s.id) : undefined}>
               {row}
             </SwipeRow>
+          );
+          return parent ? (
+            <View style={{ paddingLeft: TREE_INDENT }}>
+              <TreeConnector
+                continues={next != null && dropParent(sets, next.id)?.id === parent.id}
+              />
+              {content}
+            </View>
+          ) : (
+            content
           );
         }}
       />
