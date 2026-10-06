@@ -37,6 +37,9 @@ type Props = {
   onReorder?: (fromIndex: number, toIndex: number) => void;
   onDelete?: (setId: string) => void;
   onAddDrop: () => void;
+  pickParent?: { setId: string | null };
+  onPickParent?: (parentId: string) => void;
+  onCancelPick?: () => void;
 };
 
 const ROW_HEIGHT = size.hit;
@@ -49,6 +52,9 @@ function SetRow({
   handle,
   onPress,
   unit,
+  picking = false,
+  selected = false,
+  disabled = false,
 }: {
   set: SheetSet;
   typeLabel: string;
@@ -57,6 +63,9 @@ function SetRow({
   handle: ReactNode;
   onPress: () => void;
   unit: Unit;
+  picking?: boolean;
+  selected?: boolean;
+  disabled?: boolean;
 }) {
   const done = set.completedAt != null;
   const indexColor = isCurrent ? color.accent : done ? color.done : color.dim;
@@ -64,11 +73,17 @@ function SetRow({
   const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} × ${set.reps ?? '—'}`;
   return (
     <View style={{ paddingLeft: linked ? space.within : 0 }}>
-      <RowPlate tinted selected={isCurrent} done={done} onPress={onPress}>
+      <RowPlate
+        tinted
+        selected={isCurrent || selected}
+        done={done && !picking}
+        disabled={disabled}
+        onPress={onPress}
+      >
         <View
           accessible
           accessibilityRole="button"
-          accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. Edit set`}
+          accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. ${picking ? 'Link drop to this set' : 'Edit set'}`}
           style={{ flexDirection: 'row', alignItems: 'center', height: ROW_HEIGHT, gap: 9 }}
         >
           {handle}
@@ -101,6 +116,9 @@ export function SetsSheet({
   onReorder,
   onDelete,
   onAddDrop,
+  pickParent,
+  onPickParent,
+  onCancelPick,
 }: Props) {
   const { weightUnit } = useSettings();
   const [reorderEpoch, setReorderEpoch] = useState(0);
@@ -109,6 +127,7 @@ export function SetsSheet({
     setSessionCursor(sessionId, { setId: id });
     onClose();
   };
+  const parentId = pickParent?.setId ? dropParent(sets, pickParent.setId)?.id : undefined;
 
   return (
     <Sheet open={open} onClose={onClose}>
@@ -121,9 +140,22 @@ export function SetsSheet({
         }}
       >
         <Text style={[text.label, { flex: 1 }]} numberOfLines={1}>
-          {exerciseName.toUpperCase()}
+          {pickParent ? 'LINK DROP TO A WORKING SET' : exerciseName.toUpperCase()}
         </Text>
-        <Text style={text.label}>{`${done}/${sets.length}`}</Text>
+        {pickParent ? (
+          <Pressable
+            onPress={onCancelPick}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              { height: size.hit, justifyContent: 'center' },
+              pressed && { opacity: 0.6 },
+            ]}
+          >
+            <Text style={[text.label, { color: color.accent }]}>CANCEL</Text>
+          </Pressable>
+        ) : (
+          <Text style={text.label}>{`${done}/${sets.length}`}</Text>
+        )}
       </View>
       <ReorderList
         key={reorderEpoch}
@@ -132,77 +164,92 @@ export function SetsSheet({
         rowHeight={ROW_HEIGHT}
         gap={space.row}
         onReorder={
-          onReorder
+          onReorder && !pickParent
             ? (from, to) => {
                 onReorder(from, to);
                 setReorderEpoch((value) => value + 1);
               }
             : undefined
         }
-        renderRow={(s, _i, handle) => (
-          <SwipeRow
-            key={s.id}
-            surface={color.raised}
-            onDelete={onDelete ? () => onDelete(s.id) : undefined}
-          >
+        renderRow={(s, _i, handle) => {
+          const pickable = isWorkingSet(s) && s.id !== pickParent?.setId;
+          const row = (
             <SetRow
               set={s}
               typeLabel={setTypeLabel(sets, s.id)}
               linked={dropParent(sets, s.id) != null}
-              isCurrent={s.id === currentSetId}
+              isCurrent={!pickParent && s.id === currentSetId}
               handle={handle}
-              onPress={() => selectSet(s.id)}
+              onPress={() => (pickParent ? onPickParent?.(s.id) : selectSet(s.id))}
               unit={weightUnit}
+              picking={pickParent != null}
+              selected={s.id === parentId}
+              disabled={pickParent != null && !pickable}
             />
-          </SwipeRow>
-        )}
-      />
-      <View style={{ flexDirection: 'row', gap: space.row, marginTop: space.within }}>
-        {[
-          {
-            label: '+ Warmup',
-            disabled: false,
-            onPress: () => selectSet(addSet(sessionExerciseId, 'warmup')),
-          },
-          { label: '+ Drop', disabled: !sets.some(isWorkingSet), onPress: onAddDrop },
-        ].map((add) => (
-          <Pressable
-            key={add.label}
-            onPress={add.onPress}
-            disabled={add.disabled}
-            accessibilityRole="button"
-            style={({ pressed }) => [
-              {
-                flex: 1,
-                minHeight: size.hit,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: radius.row,
-                borderCurve: 'continuous',
-                backgroundColor: wash.field,
-                borderWidth: 1,
-                borderColor: hairline.onPlate,
-                opacity: pressed ? 0.7 : 1,
-              },
-              add.disabled && disabledControl.surface,
-            ]}
-          >
-            <Text
-              style={{
-                ...sans(500),
-                fontSize: 14,
-                letterSpacing: ls(-0.01, 14),
-                color: add.disabled ? disabledControl.label : color.hi,
-              }}
+          );
+          return pickParent ? (
+            row
+          ) : (
+            <SwipeRow
+              key={s.id}
+              surface={color.raised}
+              onDelete={onDelete ? () => onDelete(s.id) : undefined}
             >
-              {add.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={{ marginTop: space.row }}>
-        <PrimaryButton label="Add set" onPress={() => selectSet(addSet(sessionExerciseId))} />
-      </View>
+              {row}
+            </SwipeRow>
+          );
+        }}
+      />
+      {pickParent ? null : (
+        <>
+          <View style={{ flexDirection: 'row', gap: space.row, marginTop: space.within }}>
+            {[
+              {
+                label: '+ Warmup',
+                disabled: false,
+                onPress: () => selectSet(addSet(sessionExerciseId, 'warmup')),
+              },
+              { label: '+ Drop', disabled: !sets.some(isWorkingSet), onPress: onAddDrop },
+            ].map((add) => (
+              <Pressable
+                key={add.label}
+                onPress={add.onPress}
+                disabled={add.disabled}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  {
+                    flex: 1,
+                    minHeight: size.hit,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: radius.row,
+                    borderCurve: 'continuous',
+                    backgroundColor: wash.field,
+                    borderWidth: 1,
+                    borderColor: hairline.onPlate,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                  add.disabled && disabledControl.surface,
+                ]}
+              >
+                <Text
+                  style={{
+                    ...sans(500),
+                    fontSize: 14,
+                    letterSpacing: ls(-0.01, 14),
+                    color: add.disabled ? disabledControl.label : color.hi,
+                  }}
+                >
+                  {add.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={{ marginTop: space.row }}>
+            <PrimaryButton label="Add set" onPress={() => selectSet(addSet(sessionExerciseId))} />
+          </View>
+        </>
+      )}
     </Sheet>
   );
 }

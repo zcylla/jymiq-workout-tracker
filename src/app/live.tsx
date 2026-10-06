@@ -208,11 +208,8 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   const [sheet, setSheet] = useState<'sets' | 'exercises' | 'notes' | 'plates' | 'type' | null>(
     null,
   );
-  const [typeRequest, setTypeRequest] = useState<{
-    setId: string;
-    addingDrop: boolean;
-    returnToSets: boolean;
-  } | null>(null);
+  const [typeRequest, setTypeRequest] = useState<{ setId: string } | null>(null);
+  const [dropPick, setDropPick] = useState<{ setId: string | null } | null>(null);
   const [keypadParam, setKeypadParam] = useState<WorkoutParameter | null>(null);
   const [draft, setDraft] = useState<{ setId: string; values: SetDraft } | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -328,6 +325,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         }
         if (sheet !== null) {
           setSheet(null);
+          setDropPick(null);
           return true;
         }
         if (editing !== null) {
@@ -486,29 +484,47 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   const still = exerciseStillFor(exercise.exerciseId, exercise.name);
   const compact = windowHeight < SHORT_DP;
   const stillSize = compact ? STILL_SHORT : STILL;
-  const chooseType = (setId: string, addingDrop = false, returnToSets = false) => {
+  const chooseType = (setId: string) => {
     setEditing(null);
-    setTypeRequest({ setId, addingDrop, returnToSets });
+    setTypeRequest({ setId });
     setSheet('type');
   };
-  const closeType = () => setSheet(typeRequest?.returnToSets ? 'sets' : null);
-  const changeType = (kind: SetKind, parentId?: string) => {
+  const closeType = () => setSheet(null);
+  const closeSets = () => {
+    setDropPick(null);
+    setSheet(null);
+  };
+  const changeFailed = (error: unknown) =>
+    show({
+      title: 'Could not change set',
+      message: error instanceof Error ? error.message : 'Try again.',
+    });
+  const changeType = (kind: SetKind) => {
     if (!typeRequest) return;
     try {
-      if (typeRequest.addingDrop) {
-        const id = addSet(exercise.id, kind, parentId);
-        setSessionCursor(session.id, { setId: id });
-        setSheet(null);
-      } else {
-        updateSet(typeRequest.setId, { kind }, parentId);
-        closeType();
-      }
+      updateSet(typeRequest.setId, { kind });
+      closeType();
     } catch (error) {
-      show({
-        title: 'Could not change set',
-        message: error instanceof Error ? error.message : 'Try again.',
-      });
+      changeFailed(error);
     }
+  };
+  const pickDropParent = (parentId: string) => {
+    if (!dropPick) return;
+    try {
+      if (dropPick.setId == null) {
+        const id = addSet(exercise.id, 'drop', parentId);
+        setSessionCursor(session.id, { setId: id });
+      } else {
+        updateSet(dropPick.setId, { kind: 'drop' }, parentId);
+      }
+      closeSets();
+    } catch (error) {
+      changeFailed(error);
+    }
+  };
+  const cancelDropPick = () => {
+    if (dropPick?.setId != null) setSheet('type');
+    setDropPick(null);
   };
 
   return (
@@ -686,13 +702,16 @@ function LiveSession({ sessionId }: { sessionId: string }) {
       />
       <SetsSheet
         open={sheet === 'sets'}
-        onClose={() => setSheet(null)}
+        onClose={closeSets}
         exerciseName={exercise.name}
         sessionId={session.id}
         sessionExerciseId={exercise.id}
         sets={sets}
         currentSetId={set.id}
-        onAddDrop={() => chooseType(set.id, true, true)}
+        onAddDrop={() => setDropPick({ setId: null })}
+        pickParent={dropPick ?? undefined}
+        onPickParent={pickDropParent}
+        onCancelPick={cancelDropPick}
         onReorder={(from, to) => reorderSets(moveSetGroup(sets, from, to).map((s) => s.id))}
         onDelete={(id) => {
           const removed = removalSetIds(sets, id);
@@ -716,14 +735,16 @@ function LiveSession({ sessionId }: { sessionId: string }) {
         }}
       />
       <SetTypeSheet
-        key={`${typeRequest?.setId}-${typeRequest?.addingDrop}-${sheet === 'type'}`}
+        key={typeRequest?.setId}
         open={sheet === 'type'}
         onClose={closeType}
         sets={sets}
         setId={typeRequest?.setId ?? set.id}
-        addingDrop={typeRequest?.addingDrop}
-        unit={settings.weightUnit}
         onChoose={changeType}
+        onPickDrop={() => {
+          setDropPick({ setId: typeRequest?.setId ?? set.id });
+          setSheet('sets');
+        }}
       />
       <ExercisesSheet
         open={sheet === 'exercises'}
