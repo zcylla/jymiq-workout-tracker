@@ -22,6 +22,7 @@ export function RowPlate({
   disabled = false,
   tinted: tintedProp,
   selected = false,
+  done = false,
 }: {
   children: ReactNode;
   onPress?: () => void;
@@ -31,6 +32,8 @@ export function RowPlate({
   tinted?: boolean;
   /** Washed and ringed in the accent, the way the week strip marks today. */
   selected?: boolean;
+  /** Washed and ringed in the done green. `selected` wins when both are set. */
+  done?: boolean;
 }) {
   const press = usePressFeel(0.3, disabled);
   const groupTinted = useContext(TintedRows);
@@ -50,7 +53,7 @@ export function RowPlate({
   const under = (
     <>
       {glass ? <GlassUnder recipe={glass} blur={blur} target={target} radius={radius.row} /> : null}
-      {selected && !disabled ? (
+      {(selected || done) && !disabled ? (
         <View
           pointerEvents="none"
           style={[
@@ -58,9 +61,9 @@ export function RowPlate({
             {
               borderRadius: radius.row,
               borderCurve: 'continuous',
-              backgroundColor: wash.chip,
+              backgroundColor: selected ? wash.chip : wash.done,
               borderWidth: 1.5,
-              borderColor: color.accent,
+              borderColor: selected ? color.accent : color.done,
             },
           ]}
         />

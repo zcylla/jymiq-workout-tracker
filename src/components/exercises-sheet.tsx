@@ -62,7 +62,7 @@ function ExerciseRow({
   const still = exerciseStillFor(exercise.exerciseId, exercise.name);
 
   return (
-    <RowPlate tinted selected={isCurrent} onPress={onPress}>
+    <RowPlate tinted selected={isCurrent} done={completed} onPress={onPress}>
       <View style={{ flexDirection: 'row', alignItems: 'center', height: size.hit, gap: 9 }}>
         {handle}
         {still != null ? (

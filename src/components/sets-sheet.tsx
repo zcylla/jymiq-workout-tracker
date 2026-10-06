@@ -64,7 +64,7 @@ function SetRow({
   const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} × ${set.reps ?? '—'}`;
   return (
     <View style={{ paddingLeft: linked ? space.within : 0 }}>
-      <RowPlate tinted selected={isCurrent} onPress={onPress}>
+      <RowPlate tinted selected={isCurrent} done={done} onPress={onPress}>
         <View
           accessible
           accessibilityRole="button"
