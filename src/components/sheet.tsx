@@ -20,9 +20,19 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { color, controlEdgeDense, hairline, motion, radius, space, wash } from '@/theme';
+import {
+  color,
+  controlEdgeDense,
+  controlSheetBlur,
+  hairline,
+  motion,
+  radius,
+  space,
+  wash,
+} from '@/theme';
 
-import { useSheetOpenRegistration } from './screen-blur';
+import { GlassUnder, glassStyle } from './glass';
+import { useFloatingBlurTarget, useSheetOpenRegistration } from './screen-blur';
 
 /**
  * The shared shell for every overlay on the live screen (sets, exercises, the
@@ -94,6 +104,7 @@ function SheetBody({
 }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const target = useFloatingBlurTarget();
   const registerSheetOpen = useSheetOpenRegistration();
   const progressSV = useSharedValue(0);
   const dragYSV = useSharedValue(0);
@@ -177,8 +188,13 @@ function SheetBody({
           {
             width,
             maxHeight: height * 0.8,
-            ...controlEdgeDense,
-            backgroundColor: color.raised,
+            ...(target
+              ? {
+                  ...glassStyle(controlSheetBlur, controlSheetBlur.blur),
+                  borderWidth: controlEdgeDense.borderWidth,
+                  borderColor: 'transparent',
+                }
+              : { ...controlEdgeDense, backgroundColor: color.raised }),
             borderTopLeftRadius: radius.sheet,
             borderTopRightRadius: radius.sheet,
             borderCurve: 'continuous',
@@ -187,6 +203,14 @@ function SheetBody({
           panelStyle,
         ]}
       >
+        {target ? (
+          <GlassUnder
+            recipe={controlSheetBlur}
+            blur={controlSheetBlur.blur}
+            target={target}
+            radius={{ borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet }}
+          />
+        ) : null}
         <GestureDetector gesture={pan}>
           <View style={{ alignItems: 'center', paddingTop: 14, paddingBottom: 12 }}>
             <View
