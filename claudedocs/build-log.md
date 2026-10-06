@@ -3,6 +3,39 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
+**START HERE (2026-10-06, device state and owner notes batch).** Newest; it supersedes the install
+facts and the "production release is not built" item below. `main` holds 22+ local commits after
+`d78356d`, nothing pushed.
+- **On the phone (P2129K000313).** Production `com.zcylla.jymiq` is a **release build of `b4c5386`**
+  installed in place at 15:07 (`firstInstallTime` 2026-09-06 kept, same debug-keystore signature,
+  no migrations in this build). Its Sentry source maps were **not uploaded**: this machine has no
+  `SENTRY_AUTH_TOKEN`, so the build ran with `SENTRY_DISABLE_AUTO_UPLOAD=true`; stack traces from this
+  build stay minified until the maps are uploaded with the token (it lives on the work PC). Jymiq Dev is a
+  standalone **release** build (Supabase blank, installed 15:02), so `adb run-as` can no longer reach its
+  database. Recipes: dev `APP_VARIANT=development EXPO_PUBLIC_SUPABASE_URL= EXPO_PUBLIC_SUPABASE_KEY=
+  SENTRY_DISABLE_AUTO_UPLOAD=true pnpm prebuild:dev && cd android && ./gradlew :app:assembleRelease
+  -PreactNativeArchitectures=arm64-v8a`; production the same with `APP_VARIANT=production`, the Supabase
+  variables left to `.env`. Cloud counts before the prod install: 767 sessions, 4,676 session exercises,
+  16,176 sets, 1,438 personal records (one under the old floor, an edit or discard can remove a record).
+- **Dev data.** It still holds two "Pull 1" test sessions (5 Oct, 1 set each) from notification testing;
+  the pre-test backup is `~/jymiq-dev-backups-20261005/dev-sqlite-backup.tar`, the only pristine copy
+  (no seed on this machine). Restoring needs a debuggable build.
+- **Work PC.** The owner also builds on `ssh inowu@inowudev`
+  (`~/Desktop/Projects/personal/jymiq-workout-tracker`). Its uncommitted blur rework was imported here
+  as `722e656`; run `git checkout .` there before pulling.
+- **Shipped this round.** Muscle filter in the library; load wheel starts at 0; no rolling or spring on
+  numbers; Edit button for logged sets (draft, green); completed rows painted in both sheets; solid
+  deck buttons; rest bar keeps its progress; HISTORY opens the exercise log; slower exercise demo
+  (900 ms per frame); sets sheet doubles as the drop-parent picker; rounded, detached tree connector
+  for drops; configurable, unit-aware plate calculator (`Settings.plateCounts`); sheets keep a real
+  blur through the slide (the artifact was the "blur at rest" logic, not a stale snapshot); finishing a
+  session during a rest removes the notification (`STOP_FOREGROUND_REMOVE`); the notification bar
+  starts full and drains.
+- **Not yet seen on a device.** The connector restyle, the plate calculator panel, release-build sheet
+  performance (the blur costs about 1 point of janky frames and 3 ms GPU on the debug build).
+- **Tooling.** `codex_cli` in harness-dispatch rejects `--full-auto` (2026-10-06); native subagents were
+  used. `node_modules` here was stale until `pnpm install --frozen-lockfile`.
+
 **START HERE (2026-10-02, warmup/drop sets and ladder scrub).** Implementation,
 installed on **Jymiq Dev** (`com.zcylla.jymiq.dev`) at 13:47 on the connected Android phone.
 Production (`com.zcylla.jymiq`) remains unchanged, last installed 2026-10-01 17:00.
