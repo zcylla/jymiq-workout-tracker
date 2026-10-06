@@ -75,10 +75,10 @@ class LiveRestService : Service() {
     handler.postDelayed(tick, minOf(1000L, endMs - nowMs))
   }
 
-  fun detachAndStop() {
+  fun detachAndStop(removeNotification: Boolean = false) {
     handler.removeCallbacks(tick)
     releaseWakeLock()
-    stopForeground(STOP_FOREGROUND_DETACH)
+    stopForeground(if (removeNotification) STOP_FOREGROUND_REMOVE else STOP_FOREGROUND_DETACH)
     foreground = false
     if (LiveRestNotification.service === this) LiveRestNotification.service = null
     stopSelf()

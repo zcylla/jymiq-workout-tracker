@@ -67,7 +67,8 @@ internal object LiveRestNotification {
   fun hide(context: Context) {
     current = null
     LiveRestActions.preferences(context).edit().remove("notification").commit()
-    stopService(context)
+    // NotificationManager ignores an app's cancel() while the notification is still the service's; only REMOVE clears it
+    stopService(context, removeNotification = true)
     manager(context).cancel(ID)
   }
 
@@ -86,10 +87,10 @@ internal object LiveRestNotification {
     return current
   }
 
-  private fun stopService(context: Context) {
+  private fun stopService(context: Context, removeNotification: Boolean = false) {
     val running = service
     if (running != null) {
-      running.detachAndStop()
+      running.detachAndStop(removeNotification)
     } else {
       context.stopService(Intent(context, LiveRestService::class.java))
     }
