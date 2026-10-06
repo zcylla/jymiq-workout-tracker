@@ -154,8 +154,8 @@ internal object LiveRestNotification {
     if (color != 0) builder.setColor(context.getColor(color))
     if (resting) {
       val max = ((rest.endMs - rest.startMs + 999) / 1000).coerceIn(1, Int.MAX_VALUE.toLong()).toInt()
-      val progress = ((nowMs - rest.startMs) / 1000).coerceIn(0, max.toLong()).toInt()
-      builder.setProgress(max, progress, false).setWhen(rest.endMs)
+      val remaining = ((rest.endMs - nowMs + 999) / 1000).coerceIn(0, max.toLong()).toInt()
+      builder.setProgress(max, remaining, false).setWhen(rest.endMs)
       listOf("minus" to "−30s", "plus" to "+30s", "skip" to "Skip").forEachIndexed { index, (type, label) ->
         val action = Intent(context, LiveRestReceiver::class.java).setAction("expo.modules.liverest.$type")
         val pending = PendingIntent.getBroadcast(
