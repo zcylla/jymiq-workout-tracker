@@ -36,9 +36,11 @@ import { formatPrValue } from '@/lib/pr';
 import { sessionDateLabel } from '@/lib/time';
 import { formatWeight, toDisplay, toKg } from '@/lib/units';
 import { formatTonnage, formatTonnageAxis } from '@/lib/volume';
-import { color, motion, size, space, text } from '@/theme';
+import { color, size, space, text } from '@/theme';
 
 const DASH = '—';
+const DEMO_FRAME_MS = 900;
+const DEMO_FADE_MS = 450;
 const LOG_SCROLLS = 3;
 
 const METRICS: { key: Metric; label: string }[] = [
@@ -364,13 +366,13 @@ export default function ExerciseScreen() {
 
 /**
  * The three frames are a movement, not three pictures, so the block loops them.
- * Plain state on a timer rather than Reanimated: this is one swap every ~380ms
+ * Plain state on a timer rather than Reanimated: this is one swap every ~900ms
  * on the JS thread, not a gesture, and a shared value would buy nothing.
  */
 function Demo({ frames }: { frames: readonly [number, number, number] }) {
   const [i, setI] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setI((n) => (n + 1) % frames.length), motion.slow);
+    const t = setInterval(() => setI((n) => (n + 1) % frames.length), DEMO_FRAME_MS);
     return () => clearInterval(t);
   }, [frames.length]);
 
@@ -382,7 +384,7 @@ function Demo({ frames }: { frames: readonly [number, number, number] }) {
         contentFit="contain"
         tintColor={color.hi}
         cachePolicy="memory-disk"
-        transition={{ duration: motion.slow, effect: 'cross-dissolve' }}
+        transition={{ duration: DEMO_FADE_MS, effect: 'cross-dissolve' }}
       />
     </View>
   );
