@@ -477,7 +477,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
     }
   };
 
-  const openExercise = (focus?: 'stats') =>
+  const openExercise = (focus?: 'stats' | 'log') =>
     router.push({
       pathname: '/exercise/[id]',
       params: focus ? { id: exercise.exerciseId, focus } : { id: exercise.exerciseId },
@@ -625,7 +625,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
                 : null
             }
             hasNote={!!exercise.note}
-            onHistory={() => openExercise()}
+            onHistory={() => openExercise('log')}
             onStats={() => openExercise('stats')}
             onNotes={() => setSheet('notes')}
             onSwap={() => pick({ replace: exercise.id })}
