@@ -44,11 +44,23 @@ type Props = {
 
 const ROW_HEIGHT = size.hit;
 const TREE_INDENT = 24;
-const TREE_TRUNK_X = 12;
+const TREE_TRUNK_X = 8;
 const TREE_LINE = 1.5;
+const TREE_CAP = TREE_LINE / 2;
+const TREE_GAP = 4;
+const TREE_RADIUS = 8;
 
-function TreeConnector({ continues }: { continues: boolean }) {
+function TreeConnector({ first, continues }: { first: boolean; continues: boolean }) {
   const mid = (ROW_HEIGHT + TREE_LINE) / 2;
+  const top = first ? TREE_GAP - space.row + TREE_CAP : -space.row;
+  const end = TREE_INDENT - TREE_GAP;
+  const dot = {
+    position: 'absolute',
+    width: TREE_LINE,
+    height: TREE_LINE,
+    borderRadius: TREE_CAP,
+    backgroundColor: color.tick2,
+  } as const;
   return (
     <View
       pointerEvents="none"
@@ -56,26 +68,34 @@ function TreeConnector({ continues }: { continues: boolean }) {
       importantForAccessibility="no-hide-descendants"
       style={{ position: 'absolute', top: 0, left: 0, width: TREE_INDENT, height: ROW_HEIGHT }}
     >
+      {first ? <View style={[dot, { top: top - TREE_CAP, left: TREE_TRUNK_X }]} /> : null}
       <View
         style={{
           position: 'absolute',
-          top: -space.row,
+          top,
           left: TREE_TRUNK_X,
-          width: TREE_LINE,
-          height: space.row + (continues ? ROW_HEIGHT : mid),
-          backgroundColor: color.tick2,
+          width: end - TREE_CAP - TREE_TRUNK_X,
+          height: mid - top,
+          borderColor: color.tick2,
+          borderLeftWidth: TREE_LINE,
+          borderBottomWidth: TREE_LINE,
+          borderBottomLeftRadius: TREE_RADIUS,
         }}
       />
-      <View
-        style={{
-          position: 'absolute',
-          top: mid - TREE_LINE,
-          left: TREE_TRUNK_X,
-          width: TREE_INDENT - TREE_TRUNK_X,
-          height: TREE_LINE,
-          backgroundColor: color.tick2,
-        }}
-      />
+      <View style={[dot, { top: mid - TREE_LINE, left: end - TREE_LINE }]} />
+      {continues ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: mid - TREE_RADIUS,
+            left: TREE_TRUNK_X,
+            width: TREE_LINE,
+            height: ROW_HEIGHT - mid + TREE_RADIUS,
+            borderColor: color.tick2,
+            borderLeftWidth: TREE_LINE,
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -230,6 +250,7 @@ export function SetsSheet({
           return parent ? (
             <View style={{ paddingLeft: TREE_INDENT }}>
               <TreeConnector
+                first={sets[i - 1]?.id === parent.id}
                 continues={next != null && dropParent(sets, next.id)?.id === parent.id}
               />
               {content}
