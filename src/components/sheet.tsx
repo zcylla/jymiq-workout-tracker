@@ -20,7 +20,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { controlEdgeDense, hairline, motion, radius, space, wash } from '@/theme';
+import { color, controlEdgeDense, hairline, motion, radius, space, wash } from '@/theme';
 
 import { useSheetOpenRegistration } from './screen-blur';
 
@@ -178,6 +178,7 @@ function SheetBody({
             width,
             maxHeight: height * 0.8,
             ...controlEdgeDense,
+            backgroundColor: color.raised,
             borderTopLeftRadius: radius.sheet,
             borderTopRightRadius: radius.sheet,
             borderCurve: 'continuous',
