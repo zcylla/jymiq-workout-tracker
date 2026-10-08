@@ -24,6 +24,7 @@
     "voltagent-meta@voltagent-subagents": false,
     "voltagent-qa-sec@voltagent-subagents": false,
     "voltagent-research@voltagent-subagents": false,
-    "expo@claude-plugins-official": true
+    "expo@claude-plugins-official": true,
+    "sentry@anthropic-plugin-directory": true
   }
 }
