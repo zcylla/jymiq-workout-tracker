@@ -73,11 +73,33 @@ export const LOAD_STEPS_KG = [1.25, 2.5, 5] as const;
 export const loadDisplayStep = (stepKg: number, unit: 'kg' | 'lb'): number =>
   unit === 'kg' ? stepKg : stepKg * 2;
 
-export const loadScale = (stepKg: number, unit: 'kg' | 'lb' = 'kg') => {
+export const LOAD_MAX_TIERS = { kg: [140, 200, 300], lb: [280, 400, 600] } as const;
+export const LOAD_DIAL_CAP = 1000;
+
+const loadRange = (stepKg: number, unit: 'kg' | 'lb', max: number) => {
   const step = loadDisplayStep(stepKg, unit);
   return unit === 'kg'
-    ? makeScale(0, 140, step, 10 / step, 20 / step)
-    : makeScale(0, 280, step, 20 / step, 40 / step);
+    ? makeScale(0, max, step, 10 / step, 20 / step)
+    : makeScale(0, max, step, 20 / step, 40 / step);
+};
+
+const tierMax = (unit: 'kg' | 'lb', tier: number): number =>
+  (LOAD_MAX_TIERS[unit] as readonly number[])[tier] ?? LOAD_MAX_TIERS[unit][0];
+
+export const loadScale = (stepKg: number, unit: 'kg' | 'lb' = 'kg', tier = 0) =>
+  loadRange(stepKg, unit, tierMax(unit, tier));
+
+/** The chosen tier, widened to the next numeral when the load already sits above it, so no clamp ever lowers it. */
+export const liveLoadScale = (
+  stepKg: number,
+  unit: 'kg' | 'lb',
+  tier: number,
+  displayLoad: number,
+): Scale => {
+  const max = tierMax(unit, tier);
+  if (!(displayLoad > max)) return loadRange(stepKg, unit, max);
+  const label = unit === 'kg' ? 20 : 40;
+  return loadRange(stepKg, unit, Math.min(Math.ceil(displayLoad / label) * label, LOAD_DIAL_CAP));
 };
 export const LOAD_SCALE = loadScale(2.5);
 export const REPS_SCALE = makeScale(1, 15, 1, 5, 5);

@@ -4,7 +4,7 @@ import {
   PLATE_DENOMINATIONS,
   type PlateCounts,
 } from './plates.ts';
-import { LOAD_STEPS_KG, REST_SCALE, snapTo } from './scale.ts';
+import { LOAD_MAX_TIERS, LOAD_STEPS_KG, REST_SCALE, snapTo } from './scale.ts';
 import type { Unit } from './units.ts';
 
 /**
@@ -35,6 +35,8 @@ export interface Settings {
    * does not follow the display unit, so there is nothing to convert.
    */
   weightIncrementKg: number;
+  /** Index into `LOAD_MAX_TIERS`: the top of the live load dial. A typed load above it extends the dial for that set. */
+  wheelMaxTier: number;
   /** Sets a newly added exercise starts with, in a routine or a live session. */
   defaultSets: number;
   /** Hold the screen awake while a session is live. */
@@ -60,6 +62,7 @@ export const DEFAULT_SETTINGS: Settings = {
   tapOpensKeypad: false,
   weeklyGoal: null,
   weightIncrementKg: 2.5,
+  wheelMaxTier: 0,
   defaultSets: 3,
   keepScreenOn: false,
   liveNotification: null,
@@ -70,6 +73,8 @@ export const DEFAULT_SETS_MAX = 10;
 
 const isStep = (n: unknown): n is (typeof LOAD_STEPS_KG)[number] =>
   LOAD_STEPS_KG.some((step) => step === n);
+const isTier = (n: unknown): n is number =>
+  typeof n === 'number' && Number.isInteger(n) && n >= 0 && n < LOAD_MAX_TIERS.kg.length;
 const isSetCount = (n: unknown): n is number =>
   typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= DEFAULT_SETS_MAX;
 const isRest = (n: unknown): n is number => typeof n === 'number' && n >= 0 && n <= 3600;
@@ -117,6 +122,7 @@ export function coerceSettings(raw: unknown): Settings {
     weightIncrementKg: isStep(o.weightIncrementKg)
       ? o.weightIncrementKg
       : DEFAULT_SETTINGS.weightIncrementKg,
+    wheelMaxTier: isTier(o.wheelMaxTier) ? o.wheelMaxTier : DEFAULT_SETTINGS.wheelMaxTier,
     defaultSets: isSetCount(o.defaultSets) ? o.defaultSets : DEFAULT_SETTINGS.defaultSets,
     keepScreenOn: o.keepScreenOn === true,
     liveNotification: typeof o.liveNotification === 'boolean' ? o.liveNotification : null,

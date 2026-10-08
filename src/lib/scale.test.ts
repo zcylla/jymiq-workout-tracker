@@ -4,10 +4,13 @@ import { resolveKeypadValue } from './keypad.ts';
 import { formatWeight, toDisplay, toKg } from './units.ts';
 
 import {
+  LOAD_DIAL_CAP,
+  LOAD_MAX_TIERS,
   LOAD_SCALE,
   LOAD_STEPS_KG,
   REST_SCALE,
   indexOf,
+  liveLoadScale,
   loadScale,
   loadDisplayStep,
   targetLoadScale,
@@ -138,4 +141,89 @@ test('live pound keypad input stores kilograms and reads back in pounds', () => 
   assert.equal(display, 100);
   assert.equal(toKg(display!, 'lb'), 45.359);
   assert.equal(formatWeight(toKg(display!, 'lb'), 'lb'), '100');
+});
+
+test('the wheel maximum tiers start at the shipped range and keep every ruling aligned', () => {
+  assert.equal(LOAD_MAX_TIERS.kg[0], 140);
+  assert.equal(LOAD_MAX_TIERS.lb[0], 280);
+  for (const unit of ['kg', 'lb'] as const) {
+    const label = unit === 'kg' ? 20 : 40;
+    for (const [tier, max] of LOAD_MAX_TIERS[unit].entries()) {
+      assert.equal(max % label, 0);
+      for (const stepKg of LOAD_STEPS_KG) {
+        const scale = loadScale(stepKg, unit, tier);
+        const step = loadDisplayStep(stepKg, unit);
+        assert.equal(max % step, 0);
+        assert.equal(valueAt(scale, 0), 0);
+        assert.equal(valueAt(scale, scale.n - 1), max);
+        assert.equal(scale.n, max / step + 1);
+        assert.equal(scale.major * step, label / 2);
+        assert.equal(scale.label * step, label);
+        assert.equal(Number.isInteger(scale.major), true);
+        assert.equal(Number.isInteger(scale.label), true);
+      }
+    }
+  }
+});
+
+test('loadScale defaults to tier 0 and an invalid tier falls back to it', () => {
+  for (const unit of ['kg', 'lb'] as const) {
+    for (const stepKg of LOAD_STEPS_KG) {
+      assert.deepEqual(loadScale(stepKg, unit, 0), loadScale(stepKg, unit));
+      for (const bad of [-1, 3, 1.5, Number.NaN])
+        assert.deepEqual(loadScale(stepKg, unit, bad), loadScale(stepKg, unit));
+    }
+  }
+  assert.equal(loadScale(2.5, 'kg', 2).hi, 300);
+  assert.equal(loadScale(2.5, 'lb', 1).hi, 400);
+});
+
+test('the live scale is the chosen tier while the load fits inside it', () => {
+  for (const unit of ['kg', 'lb'] as const) {
+    for (const tier of [0, 1, 2]) {
+      const max = LOAD_MAX_TIERS[unit][tier];
+      for (const load of [0, 20, max / 2, max])
+        assert.deepEqual(liveLoadScale(2.5, unit, tier, load), loadScale(2.5, unit, tier));
+    }
+  }
+  assert.deepEqual(liveLoadScale(2.5, 'lb', 2, 45), loadScale(2.5, 'lb', 2));
+  assert.deepEqual(liveLoadScale(2.5, 'kg', 0, Number.NaN), loadScale(2.5, 'kg', 0));
+});
+
+test('a load above the tier widens the dial to the next numeral', () => {
+  assert.equal(liveLoadScale(2.5, 'lb', 0, 281).hi, 320);
+  assert.equal(liveLoadScale(2.5, 'lb', 0, 315).hi, 320);
+  assert.equal(liveLoadScale(2.5, 'lb', 0, 320).hi, 320);
+  assert.equal(liveLoadScale(2.5, 'lb', 0, 500).hi, 520);
+  assert.equal(liveLoadScale(2.5, 'kg', 0, 141).hi, 160);
+  assert.equal(liveLoadScale(2.5, 'kg', 1, 205).hi, 220);
+  assert.equal(liveLoadScale(2.5, 'lb', 1, 401).hi, 440);
+});
+
+test('a widened dial never clamps the load and stays aligned', () => {
+  for (const unit of ['kg', 'lb'] as const) {
+    const label = unit === 'kg' ? 20 : 40;
+    for (const stepKg of LOAD_STEPS_KG) {
+      const step = loadDisplayStep(stepKg, unit);
+      for (const load of [281, 315, 399.5, 600.5, 999]) {
+        const scale = liveLoadScale(stepKg, unit, 0, load);
+        assert.equal(scale.hi % label, 0);
+        assert.equal(scale.hi % step, 0);
+        assert.equal(scale.label * step, label);
+        assert.ok(scale.hi >= load || scale.hi === LOAD_DIAL_CAP);
+        assert.ok(scale.hi >= LOAD_MAX_TIERS[unit][0]);
+      }
+    }
+  }
+});
+
+test('the widened dial is capped at the keypad ceiling and never shrinks below the tier', () => {
+  assert.equal(LOAD_DIAL_CAP, 1000);
+  assert.equal(liveLoadScale(2.5, 'lb', 0, 999).hi, 1000);
+  assert.equal(liveLoadScale(2.5, 'kg', 0, 999).hi, 1000);
+  assert.equal(liveLoadScale(2.5, 'lb', 0, 5000).hi, 1000);
+  assert.equal(liveLoadScale(2.5, 'lb', 2, 100).hi, 600);
+  assert.equal(liveLoadScale(2.5, 'kg', 2, 0).hi, 300);
+  assert.equal(liveLoadScale(2.5, 'lb', 9, 100).hi, 280);
+  assert.equal(liveLoadScale(2.5, 'lb', 9, 315).hi, 320);
 });

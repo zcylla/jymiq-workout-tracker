@@ -15,6 +15,7 @@ test('the defaults are the behaviour the app already had', () => {
   assert.equal(DEFAULT_SETTINGS.trackRpe, false);
   assert.equal(DEFAULT_SETTINGS.tapOpensKeypad, false);
   assert.equal(DEFAULT_SETTINGS.weightIncrementKg, 2.5);
+  assert.equal(DEFAULT_SETTINGS.wheelMaxTier, 0);
   assert.equal(DEFAULT_SETTINGS.defaultSets, 3);
   assert.equal(DEFAULT_SETTINGS.keepScreenOn, false);
   assert.equal(DEFAULT_SETTINGS.liveNotification, null);
@@ -65,6 +66,18 @@ test('the weight increment is one of the offered steps, else the default', () =>
     assert.equal(coerceSettings({ weightIncrementKg: step }).weightIncrementKg, step);
   for (const bad of [0, 3, -2.5, '5', null, Number.NaN])
     assert.equal(coerceSettings({ weightIncrementKg: bad }).weightIncrementKg, 2.5);
+});
+
+test('the wheel maximum is a tier index 0-2, else 0, and a bad one resets alone', () => {
+  for (const tier of [0, 1, 2])
+    assert.equal(coerceSettings({ wheelMaxTier: tier }).wheelMaxTier, tier);
+  for (const bad of [3, -1, 1.5, '1', null, undefined, Number.NaN, true])
+    assert.equal(coerceSettings({ wheelMaxTier: bad }).wheelMaxTier, 0);
+  const s = coerceSettings({ wheelMaxTier: 'x', weightIncrementKg: 5, defaultSets: 4 });
+  assert.equal(s.wheelMaxTier, 0);
+  assert.equal(s.weightIncrementKg, 5);
+  assert.equal(s.defaultSets, 4);
+  assert.equal(coerceSettings({ weightUnit: 'lb', trackRpe: true }).wheelMaxTier, 0);
 });
 
 test('default sets is a whole number from 1 to 10, else 3', () => {
