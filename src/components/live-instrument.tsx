@@ -5,7 +5,7 @@ import { useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useSettings } from '@/data/settings';
-import { loadScale, REPS_SCALE, RPE_SCALE } from '@/lib/scale';
+import { liveLoadScale, REPS_SCALE, RPE_SCALE } from '@/lib/scale';
 import { formatWeight, toDisplay, toKg } from '@/lib/units';
 import { percentOf1RM } from '@/lib/e1rm';
 import { size } from '@/theme';
@@ -57,12 +57,12 @@ export function LiveInstrument({
   onLongPress,
   onType,
 }: Props) {
-  const { weightIncrementKg, weightUnit } = useSettings();
+  const { weightIncrementKg, weightUnit, wheelMaxTier } = useSettings();
   const unitLabel = weightUnit.toUpperCase();
   const displayLoad = toDisplay(load, weightUnit);
   const units = { load: unitLabel, reps: 'REPS', rpe: 'RPE' };
   const scales = {
-    load: loadScale(weightIncrementKg, weightUnit),
+    load: liveLoadScale(weightIncrementKg, weightUnit, wheelMaxTier, displayLoad),
     reps: REPS_SCALE,
     rpe: RPE_SCALE,
   };
