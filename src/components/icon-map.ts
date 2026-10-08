@@ -6,10 +6,10 @@ import ArrowUp02Icon from '@hugeicons/core-free-icons/ArrowUp02Icon';
 import Calendar04Icon from '@hugeicons/core-free-icons/Calendar04Icon';
 import ChartColumnIcon from '@hugeicons/core-free-icons/ChartColumnIcon';
 import Clock01Icon from '@hugeicons/core-free-icons/Clock01Icon';
+import DialpadSquare02Icon from '@hugeicons/core-free-icons/DialpadSquare02Icon';
 import Dumbbell01Icon from '@hugeicons/core-free-icons/Dumbbell01Icon';
 import FileTextIcon from '@hugeicons/core-free-icons/FileTextIcon';
 import HistoryIcon from '@hugeicons/core-free-icons/HistoryIcon';
-import KeyboardIcon from '@hugeicons/core-free-icons/KeyboardIcon';
 import MoreVerticalCircle01Icon from '@hugeicons/core-free-icons/MoreVerticalCircle01Icon';
 import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
 import PlusSignIcon from '@hugeicons/core-free-icons/PlusSignIcon';
@@ -40,5 +40,5 @@ export const ICON_MAP = {
   chev: ArrowRight01Icon,
   up: ArrowUp02Icon,
   down: ArrowDown02Icon,
-  keyboard: KeyboardIcon,
+  keypad: DialpadSquare02Icon,
 } as const satisfies Record<IconName, IconSvgElement>;

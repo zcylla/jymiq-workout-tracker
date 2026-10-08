@@ -114,7 +114,7 @@ export function ParamSelector({
             opacity: pressed ? 0.7 : 1,
           })}
         >
-          <Icon name="keyboard" tone={color.mid} />
+          <Icon name="keypad" tone={color.mid} />
         </Pressable>
       ) : null}
     </View>
