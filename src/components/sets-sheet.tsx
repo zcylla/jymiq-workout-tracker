@@ -182,33 +182,31 @@ export function SetsSheet({
   const parentId = pickParent?.setId ? dropParent(sets, pickParent.setId)?.id : undefined;
 
   return (
-    <Sheet open={open} onClose={onClose}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: space.within,
-          marginBottom: space.within,
-        }}
-      >
-        <Text style={[text.label, { flex: 1 }]} numberOfLines={1}>
-          {pickParent ? 'LINK DROP TO A WORKING SET' : exerciseName.toUpperCase()}
-        </Text>
-        {pickParent ? (
-          <Pressable
-            onPress={onCancelPick}
-            accessibilityRole="button"
-            style={({ pressed }) => [
-              { height: size.hit, justifyContent: 'center' },
-              pressed && { opacity: 0.6 },
-            ]}
-          >
-            <Text style={[text.label, { color: color.accent }]}>CANCEL</Text>
-          </Pressable>
-        ) : (
-          <Text style={text.label}>{`${done}/${sets.length}`}</Text>
-        )}
-      </View>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      header={
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.within }}>
+          <Text style={[text.label, { flex: 1 }]} numberOfLines={1}>
+            {pickParent ? 'LINK DROP TO A WORKING SET' : exerciseName.toUpperCase()}
+          </Text>
+          {pickParent ? (
+            <Pressable
+              onPress={onCancelPick}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                { height: size.hit, justifyContent: 'center' },
+                pressed && { opacity: 0.6 },
+              ]}
+            >
+              <Text style={[text.label, { color: color.accent }]}>CANCEL</Text>
+            </Pressable>
+          ) : (
+            <Text style={text.label}>{`${done}/${sets.length}`}</Text>
+          )}
+        </View>
+      }
+    >
       <ReorderList
         key={reorderEpoch}
         quiet

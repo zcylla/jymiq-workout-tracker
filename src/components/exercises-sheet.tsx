@@ -113,18 +113,22 @@ export function ExercisesSheet({
   };
 
   return (
-    <Sheet open={open} onClose={onClose}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.within }}>
-        <Text style={[text.label, { flexShrink: 1 }]} numberOfLines={1}>
-          {sessionName.toUpperCase()}
-        </Text>
-        <View style={{ flex: 1 }} />
-        <Text style={[text.label, { flexShrink: 0 }]}>{`${done}/${exercises.length}`}</Text>
-      </View>
-      <View
-        style={{ height: 1, backgroundColor: hairline.onPlate, marginVertical: space.within }}
-      />
-
+    <Sheet
+      open={open}
+      onClose={onClose}
+      header={
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.within }}>
+            <Text style={[text.label, { flexShrink: 1 }]} numberOfLines={1}>
+              {sessionName.toUpperCase()}
+            </Text>
+            <View style={{ flex: 1 }} />
+            <Text style={[text.label, { flexShrink: 0 }]}>{`${done}/${exercises.length}`}</Text>
+          </View>
+          <View style={{ height: 1, backgroundColor: hairline.onPlate, marginTop: space.within }} />
+        </>
+      }
+    >
       <ReorderList
         items={exercises}
         rowHeight={size.hit}

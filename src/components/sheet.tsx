@@ -65,10 +65,12 @@ const MIN_FLING_DRAG = 24;
 export function Sheet({
   open,
   onClose,
+  header,
   children,
 }: {
   open: boolean;
   onClose: () => void;
+  header?: ReactNode;
   children: ReactNode;
 }) {
   const { height } = useWindowDimensions();
@@ -80,6 +82,7 @@ export function Sheet({
       panelHSV={panelHSV}
       open={open}
       onClose={onClose}
+      header={header}
       onExited={() =>
         setPresence((current) => (current.open ? current : { ...current, mounted: false }))
       }
@@ -93,6 +96,7 @@ function SheetBody({
   open,
   onClose,
   onExited,
+  header,
   children,
   panelHSV,
 }: {
@@ -100,6 +104,7 @@ function SheetBody({
   onClose: () => void;
   onExited: () => void;
   panelHSV: SharedValue<number>;
+  header?: ReactNode;
   children: ReactNode;
 }) {
   const { width, height } = useWindowDimensions();
@@ -218,6 +223,11 @@ function SheetBody({
             />
           </View>
         </GestureDetector>
+        {header ? (
+          <View style={{ paddingHorizontal: space.pad, paddingBottom: space.within }}>
+            {header}
+          </View>
+        ) : null}
         <ScrollView
           style={{ flexGrow: 0 }}
           contentContainerStyle={{ paddingHorizontal: space.pad, paddingBottom: space.within }}
