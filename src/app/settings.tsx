@@ -20,7 +20,13 @@ import { latestCheckInQuery } from '@/data/queries/readiness';
 import { setSettings, useSettings } from '@/data/settings';
 import { resolveKeypadValue } from '@/lib/keypad';
 import { dayStart, readinessStep } from '@/lib/readiness';
-import { LOAD_STEPS_KG, loadDisplayStep, makeScale, WEEKLY_GOAL_SCALE } from '@/lib/scale';
+import {
+  LOAD_MAX_TIERS,
+  LOAD_STEPS_KG,
+  loadDisplayStep,
+  makeScale,
+  WEEKLY_GOAL_SCALE,
+} from '@/lib/scale';
 import { DEFAULT_SETS_MAX } from '@/lib/settings';
 import { formatRest } from '@/lib/time';
 
@@ -48,9 +54,11 @@ export default function SettingsScreen() {
   const unit = settings.weightUnit.toUpperCase();
   const incrementLabel = (stepKg: number) =>
     `${loadDisplayStep(stepKg, settings.weightUnit)} ${unit}`;
+  const wheelMaxLabel = (max: number) => `${max} ${unit}`;
   const [picking, setPicking] = useState<'compound' | 'isolation' | null>(null);
   const [goal, setGoal] = useState({ open: false, n: 0 });
   const [pickingIncrement, setPickingIncrement] = useState(false);
+  const [pickingWheelMax, setPickingWheelMax] = useState(false);
   const [pickingSets, setPickingSets] = useState(false);
 
   const today = useMemo(() => dayStart(nowMs()), []);
@@ -132,6 +140,14 @@ export default function SettingsScreen() {
                 value={incrementLabel(settings.weightIncrementKg)}
               />
             </RowPlate>
+            <RowPlate onPress={() => setPickingWheelMax(true)}>
+              <ListRow
+                quiet
+                title="Wheel maximum"
+                meta="TOP OF THE LIVE LOAD DIAL · A HIGHER TYPED LOAD EXTENDS IT FOR THAT SET"
+                value={wheelMaxLabel(LOAD_MAX_TIERS[settings.weightUnit][settings.wheelMaxTier])}
+              />
+            </RowPlate>
             <RowPlate onPress={() => setPickingSets(true)}>
               <ListRow quiet title="Default sets" value={String(settings.defaultSets)} />
             </RowPlate>
@@ -194,6 +210,17 @@ export default function SettingsScreen() {
         value={settings.weightIncrementKg}
         onPick={(weightIncrementKg) => setSettings({ weightIncrementKg })}
         onClose={() => setPickingIncrement(false)}
+      />
+      <OptionSheet
+        open={pickingWheelMax}
+        title="Wheel maximum"
+        options={LOAD_MAX_TIERS[settings.weightUnit].map((max, tier) => ({
+          value: tier,
+          label: wheelMaxLabel(max),
+        }))}
+        value={settings.wheelMaxTier}
+        onPick={(wheelMaxTier) => setSettings({ wheelMaxTier })}
+        onClose={() => setPickingWheelMax(false)}
       />
       <NumberSheet
         key={`sets-${pickingSets}`}
