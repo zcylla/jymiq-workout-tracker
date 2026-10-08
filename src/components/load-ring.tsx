@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { Pressable, Text, View, type ViewStyle } from 'react-native';
+import { GestureDetector, type GestureType } from 'react-native-gesture-handler';
 import Animated, { type CSSTransitionProperties } from 'react-native-reanimated';
 
 import { indexOf, valueAt, type Scale } from '@/lib/scale';
@@ -22,6 +23,8 @@ const TICK_TRANSITION: CSSTransitionProperties<ViewStyle> = {
 
 type RingChip = {
   onPress?: () => void;
+  /** A hold gesture on the chip; once it activates, the press is cancelled. */
+  gesture?: GestureType;
   value: string;
   unit: string;
 };
@@ -203,52 +206,61 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
         ) : null}
         {chips?.length ? (
           <View style={{ flexDirection: 'row', gap: 4, marginTop: gap }}>
-            {chips.map((chip) => (
-              <Pressable
-                key={chip.unit}
-                accessibilityRole="button"
-                accessibilityLabel={`Edit ${chip.unit.toLowerCase()}`}
-                hitSlop={{ top: 10, bottom: 10 }}
-                onPress={(event) => {
-                  event.stopPropagation();
-                  chip.onPress?.();
-                }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'baseline',
-                  gap: 5,
-                  minWidth: 44,
-                  minHeight: 44,
-                  paddingVertical: 2,
-                  paddingHorizontal: 7,
-                  borderRadius: radius.cell,
-                  borderCurve: 'continuous',
-                }}
-              >
-                <Text
+            {chips.map((chip) => {
+              const pressable = (
+                <Pressable
+                  key={chip.unit}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit ${chip.unit.toLowerCase()}`}
+                  hitSlop={{ top: 10, bottom: 10 }}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    chip.onPress?.();
+                  }}
                   style={{
-                    ...mono(600),
-                    fontSize: small,
-                    lineHeight: Math.round(small * 1.02),
-                    letterSpacing: ls(-0.03, small),
-                    color: color.mid,
+                    flexDirection: 'row',
+                    alignItems: 'baseline',
+                    gap: 5,
+                    minWidth: 44,
+                    minHeight: 44,
+                    paddingVertical: 2,
+                    paddingHorizontal: 7,
+                    borderRadius: radius.cell,
+                    borderCurve: 'continuous',
                   }}
                 >
-                  {chip.value}
-                </Text>
-                <Text
-                  style={{
-                    ...mono(400),
-                    fontSize: 11,
-                    lineHeight: lh(11),
-                    letterSpacing: ls(0.12, 11),
-                    color: color.lo,
-                  }}
-                >
-                  {chip.unit}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    style={{
+                      ...mono(600),
+                      fontSize: small,
+                      lineHeight: Math.round(small * 1.02),
+                      letterSpacing: ls(-0.03, small),
+                      color: color.mid,
+                    }}
+                  >
+                    {chip.value}
+                  </Text>
+                  <Text
+                    style={{
+                      ...mono(400),
+                      fontSize: 11,
+                      lineHeight: lh(11),
+                      letterSpacing: ls(0.12, 11),
+                      color: color.lo,
+                    }}
+                  >
+                    {chip.unit}
+                  </Text>
+                </Pressable>
+              );
+              return chip.gesture ? (
+                <GestureDetector key={chip.unit} gesture={chip.gesture}>
+                  {pressable}
+                </GestureDetector>
+              ) : (
+                pressable
+              );
+            })}
           </View>
         ) : null}
       </View>

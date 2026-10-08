@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
+  type SharedValue,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
@@ -12,6 +13,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { clampIndex, indexOf, valueAt, type Scale } from '@/lib/scale';
+import { scrubIndex } from '@/lib/scrub';
 import { color, lh, mono, size, text } from '@/theme';
 
 import { pop, tick } from './haptics';
@@ -24,6 +26,8 @@ type Props = {
   onDetent?: (value: number) => void;
   /** Visible detents, odd so one sits in the centre. A short screen shows fewer. */
   rows?: number;
+  /** A finger held elsewhere drives the tape: its vertical travel while held, null otherwise. */
+  scrubSV?: SharedValue<number | null>;
 };
 /** Lab 06 tile 02: underdamped on purpose — the overshoot is what reads as mechanical. */
 const SETTLE = { damping: 26, stiffness: 220, mass: 0.6 };
@@ -34,7 +38,7 @@ const SETTLE = { damping: 26, stiffness: 220, mass: 0.6 };
  * the UI thread; every detent it crosses — dragged or coasting — ticks and
  * writes through `onDetent` exactly once.
  */
-export function Tape({ scale, value, unit, onDetent, rows = 9 }: Props) {
+export function Tape({ scale, value, unit, onDetent, rows = 9, scrubSV }: Props) {
   const centre = (rows - 1) / 2;
   const active = indexOf(scale, value);
   const posSV = useSharedValue(active);
@@ -72,10 +76,33 @@ export function Tape({ scale, value, unit, onDetent, rows = 9 }: Props) {
     );
   };
 
+  // A held scrub moves detent by detent, so there is nothing to coast or settle.
+  useAnimatedReaction(
+    () => scrubSV?.get() ?? null,
+    (dy, previous) => {
+      if (dy == null) {
+        if (previous == null) return;
+        movingSV.set(false);
+        if (clampIndex(scale, Math.round(posSV.get())) !== originSV.get()) scheduleOnRN(pop);
+        return;
+      }
+      if (previous == null) {
+        cancelAnimation(posSV);
+        const at = clampIndex(scale, Math.round(posSV.get()));
+        if (!movingSV.get()) originSV.set(at);
+        movingSV.set(true);
+        startSV.set(at);
+        posSV.set(at);
+      }
+      posSV.set(scrubIndex(scale, startSV.get(), dy, size.tapeRow, posSV.get()));
+    },
+  );
+
   const pan = Gesture.Pan()
     .activeOffsetY([-4, 4])
     .failOffsetX([-16, 16])
     .onBegin(() => {
+      if (scrubSV?.get() != null) return;
       // A touch catches a coasting tape where it is.
       cancelAnimation(posSV);
       if (!movingSV.get()) originSV.set(clampIndex(scale, Math.round(posSV.get())));
@@ -83,11 +110,12 @@ export function Tape({ scale, value, unit, onDetent, rows = 9 }: Props) {
       startSV.set(posSV.get());
     })
     .onUpdate((event) => {
+      if (scrubSV?.get() != null) return;
       const next = startSV.get() - event.translationY / size.tapeRow;
       posSV.set(Math.min(Math.max(next, 0), scale.n - 1));
     })
     .onEnd((event, success) => {
-      if (!success) return;
+      if (!success || scrubSV?.get() != null) return;
       posSV.set(
         withDecay(
           { velocity: -event.velocityY / size.tapeRow, clamp: [0, scale.n - 1] },
@@ -98,7 +126,7 @@ export function Tape({ scale, value, unit, onDetent, rows = 9 }: Props) {
       );
     })
     .onFinalize((_event, success) => {
-      if (!success) settle();
+      if (!success && scrubSV?.get() == null) settle();
     });
 
   const strip = useAnimatedStyle(() => ({
