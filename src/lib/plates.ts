@@ -32,8 +32,8 @@ export const PLATE_DENOMINATIONS: Record<Unit, readonly number[]> = {
 };
 
 export const BAR_WEIGHTS: Record<Unit, readonly number[]> = {
-  kg: [20, 15],
-  lb: [45, 35],
+  kg: [20, 15, 0],
+  lb: [45, 35, 0],
 };
 
 export const DEFAULT_PLATE_COUNTS: PlateCounts = {
@@ -176,6 +176,16 @@ export function solveInUnit(
     bar,
     PLATE_DENOMINATIONS[unit].map((size) => ({ size, count: counts[size] ?? 0 })),
   );
+}
+
+/** What a set of plates weighs: `counts` are plates PER SIDE by size, `bar` shares their unit. */
+export function weighPlates(
+  counts: Record<number, number>,
+  bar: number,
+): { perSide: number; total: number } {
+  let sum = 0;
+  for (const [size, n] of Object.entries(counts)) sum += Number(size) * n;
+  return { perSide: Math.round(sum * 100) / 100, total: Math.round((bar + 2 * sum) * 100) / 100 };
 }
 
 /** Nearest weight the bar can actually hold, for snapping a dialled value. */

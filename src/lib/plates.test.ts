@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  BAR_WEIGHTS,
   DEFAULT_INVENTORY,
   DEFAULT_PLATE_COUNTS,
   loadInUnit,
   PLATE_DENOMINATIONS,
   solveInUnit,
   solvePlates,
+  weighPlates,
 } from './plates.ts';
 import { toKg } from './units.ts';
 
@@ -106,4 +108,99 @@ test('limiting kg plates changes the answer', () => {
   assert.equal(sol.achieved, 100);
   const onePairOfTwenties = { ...DEFAULT_PLATE_COUNTS.kg, 25: 0, 20: 1 };
   assert.deepEqual(solveInUnit(100, 'kg', 20, onePairOfTwenties).perSide, [20, 15, 5]);
+});
+
+test('the bars keep their order and NO BAR comes last', () => {
+  assert.deepEqual(BAR_WEIGHTS.kg, [20, 15, 0]);
+  assert.deepEqual(BAR_WEIGHTS.lb, [45, 35, 0]);
+});
+
+test('100 kg with no bar is 25 + 25 a side', () => {
+  const sol = solveInUnit(100, 'kg', 0, DEFAULT_PLATE_COUNTS.kg);
+  assert.deepEqual(sol.perSide, [25, 25]);
+  assert.equal(sol.achieved, 100);
+  assert.equal(sol.residual, 0);
+});
+
+test('100 lb with no bar is 45 + 5 a side', () => {
+  const sol = solveInUnit(toKg(100, 'lb'), 'lb', 0, DEFAULT_PLATE_COUNTS.lb);
+  assert.deepEqual(sol.perSide, [45, 5]);
+  assert.equal(sol.achieved, 100);
+  assert.equal(sol.residual, 0);
+});
+
+test('with no bar the smallest pair of plates is the smallest load', () => {
+  const kg = solveInUnit(2.5, 'kg', 0, DEFAULT_PLATE_COUNTS.kg);
+  assert.deepEqual(kg.perSide, [1.25]);
+  assert.equal(kg.achieved, 2.5);
+  const lb = solveInUnit(toKg(5, 'lb'), 'lb', 0, DEFAULT_PLATE_COUNTS.lb);
+  assert.deepEqual(lb.perSide, [2.5]);
+  assert.equal(lb.achieved, 5);
+});
+
+test('with no bar a load below the smallest pair fits nothing and says by how much', () => {
+  const kg = solveInUnit(2, 'kg', 0, DEFAULT_PLATE_COUNTS.kg);
+  assert.deepEqual(kg.perSide, []);
+  assert.equal(kg.achieved, 0);
+  assert.equal(kg.residual, 2);
+  const lb = solveInUnit(toKg(4, 'lb'), 'lb', 0, DEFAULT_PLATE_COUNTS.lb);
+  assert.deepEqual(lb.perSide, []);
+  assert.equal(lb.achieved, 0);
+  assert.equal(lb.residual, 4);
+});
+
+test('with no bar and nothing to load there is nothing to do', () => {
+  const sol = solveInUnit(0, 'kg', 0, DEFAULT_PLATE_COUNTS.kg);
+  assert.deepEqual(sol.perSide, []);
+  assert.equal(sol.achieved, 0);
+  assert.equal(sol.residual, 0);
+});
+
+test('weighing the plates of a kg load gives the bar plus both sides', () => {
+  const w = weighPlates({ 25: 2, 1.25: 1 }, 20);
+  assert.equal(w.perSide, 51.25);
+  assert.equal(w.total, 122.5);
+});
+
+test('weighing pounds', () => {
+  const w = weighPlates({ 45: 2, 10: 1, 2.5: 1 }, 45);
+  assert.equal(w.perSide, 102.5);
+  assert.equal(w.total, 250);
+});
+
+test('weighing with no bar is just the two sides', () => {
+  assert.deepEqual(weighPlates({ 20: 1 }, 0), { perSide: 20, total: 40 });
+  assert.deepEqual(weighPlates({ 45: 1, 5: 1 }, 0), { perSide: 50, total: 100 });
+});
+
+test('weighing no plates is just the bar', () => {
+  assert.deepEqual(weighPlates({}, 20), { perSide: 0, total: 20 });
+  assert.deepEqual(weighPlates({ 25: 0, 20: 0 }, 45), { perSide: 0, total: 45 });
+  assert.deepEqual(weighPlates({}, 0), { perSide: 0, total: 0 });
+});
+
+test('weighing repeated fractional plates stays exact', () => {
+  assert.deepEqual(weighPlates({ 1.25: 3 }, 20), { perSide: 3.75, total: 27.5 });
+  assert.deepEqual(weighPlates({ 2.5: 3, 1.25: 7 }, 20), { perSide: 16.25, total: 52.5 });
+});
+
+test('weighing rounds float noise to a hundredth', () => {
+  assert.deepEqual(weighPlates({ 0.1: 3 }, 0), { perSide: 0.3, total: 0.6 });
+  assert.deepEqual(weighPlates({ 0.1: 3, 0.2: 1 }, 0.7), { perSide: 0.5, total: 1.7 });
+});
+
+test('weighing what the solver loaded gives back the weight it achieved', () => {
+  const tally = (plates: number[]) => {
+    const counts: Record<number, number> = {};
+    for (const p of plates) counts[p] = (counts[p] ?? 0) + 1;
+    return counts;
+  };
+  for (const unit of ['kg', 'lb'] as const) {
+    for (const bar of [...BAR_WEIGHTS[unit]]) {
+      for (const load of [0, 12.5, 60, 100, 142.5, 225, 317.5]) {
+        const sol = solveInUnit(toKg(load, unit), unit, bar, DEFAULT_PLATE_COUNTS[unit]);
+        assert.equal(weighPlates(tally(sol.perSide), bar).total, sol.achieved);
+      }
+    }
+  }
 });
