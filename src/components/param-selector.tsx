@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { color, hairline, lh, ls, mono, radius, wash } from '@/theme';
 
 import { pop } from './haptics';
+import { Icon } from './icon';
 
 export type WorkoutParameter = 'load' | 'reps' | 'rpe';
 
@@ -113,17 +114,7 @@ export function ParamSelector({
             opacity: pressed ? 0.7 : 1,
           })}
         >
-          <Text
-            style={{
-              ...mono(400),
-              fontSize: 11,
-              lineHeight: lh(11),
-              letterSpacing: ls(0.12, 11),
-              color: color.mid,
-            }}
-          >
-            TYPE
-          </Text>
+          <Icon name="keyboard" tone={color.mid} />
         </Pressable>
       ) : null}
     </View>

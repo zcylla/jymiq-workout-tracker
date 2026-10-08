@@ -18,6 +18,7 @@ export const ICON_NAMES = [
   'chev',
   'up',
   'down',
+  'keyboard',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
@@ -50,6 +51,9 @@ export const ICON_SIZE = {
   /** Inside a Delta, beside 13px mono. */
   up: 9,
   down: 9,
+
+  /** In the live session's type-a-value button. */
+  keyboard: 22,
 } as const satisfies Record<IconName, number>;
 
 const NAV_STROKE = (1.6 * 24) / 22;
@@ -79,4 +83,5 @@ export const ICON_STROKE_WIDTH = {
   chev: (1.7 * 24) / 16,
   up: (1.8 * 24) / 10,
   down: (1.8 * 24) / 10,
+  keyboard: NAV_STROKE,
 } as const satisfies Record<IconName, number>;
