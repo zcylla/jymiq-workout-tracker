@@ -59,10 +59,10 @@ const GRANULARITIES: { key: Granularity; label: string }[] = [
 ];
 
 const COMPARED: Record<Exclude<Granularity, 'all'>, string> = {
-  day: 'LATEST DAY VS PREVIOUS',
-  week: 'THIS WEEK VS LAST',
-  month: 'THIS MONTH VS LAST',
-  year: 'THIS YEAR VS LAST',
+  day: 'DAY',
+  week: 'WEEK',
+  month: 'MONTH',
+  year: 'YEAR',
 };
 
 /**
@@ -114,7 +114,7 @@ export default function ExerciseScreen() {
         : metric === 'e1rm'
           ? formatPrValue('best_e1rm', v, unit)
           : formatWeight(v, unit);
-  const { current, previous } = compared;
+  const { current, previous, latest } = compared;
   const toUnit = (kg: number) => toDisplay(kg, unit);
 
   const frames = exerciseArt(id);
@@ -241,7 +241,12 @@ export default function ExerciseScreen() {
           </View>
 
           {gran !== 'all' ? (
-            <Section label={COMPARED[gran]} plated={false}>
+            <Section
+              label={
+                latest ? `LATEST ${COMPARED[gran]} VS PREVIOUS` : `THIS ${COMPARED[gran]} VS LAST`
+              }
+              plated={false}
+            >
               <StatTiles
                 glass
                 items={[

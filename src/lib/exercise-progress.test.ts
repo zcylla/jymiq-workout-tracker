@@ -121,7 +121,7 @@ test('empty input gives empty buckets, series, labels and no comparison', () => 
     const s = progressSeries(bs, g, 'e1rm', now);
     assert.deepEqual(s.points, []);
     assert.deepEqual(axisLabels(s, g), []);
-    assert.deepEqual(comparePeriods(bs, g, now), { current: null, previous: null });
+    assert.deepEqual(comparePeriods(bs, g, now), { current: null, previous: null, latest: true });
   }
 });
 
@@ -320,9 +320,10 @@ test('day comparison is the latest training day against the one before it', () =
     [set(2026, 9, 1, 100, 5), set(2026, 9, 8, 105, 5), set(2026, 9, 10, 110, 5)],
     'day',
   );
-  const { current, previous } = comparePeriods(bs, 'day', ms(2026, 9, 30));
+  const { current, previous, latest } = comparePeriods(bs, 'day', ms(2026, 9, 30));
   assert.equal(current?.start, dayStart(2026, 9, 10));
   assert.equal(previous?.start, dayStart(2026, 9, 8));
+  assert.equal(latest, true);
 });
 
 test('a single training day has no previous day', () => {
@@ -350,9 +351,60 @@ test('a previous period with no data is null, never an older period', () => {
   assert.equal(previous, null);
 });
 
-test('a current period with no data is null even when the past has data', () => {
+test('the current period present compares strictly with the calendar period before it', () => {
+  const bs = buckets(
+    [set(2026, 9, 1, 90, 5), set(2026, 9, 8, 100, 5), set(2026, 9, 15, 105, 5)],
+    'week',
+  );
+  const { current, previous, latest } = comparePeriods(bs, 'week', ms(2026, 9, 17));
+  assert.equal(current?.weightKg, 105);
+  assert.equal(previous?.weightKg, 100);
+  assert.equal(latest, false);
+});
+
+test('a current period with no sets falls back to the latest two periods with sets', () => {
+  const bs = buckets(
+    [set(2026, 9, 1, 100, 5), set(2026, 9, 8, 105, 5), set(2026, 9, 22, 110, 5)],
+    'week',
+  );
+  const { current, previous, latest } = comparePeriods(bs, 'week', ms(2026, 9, 30));
+  assert.equal(current?.weightKg, 110);
+  assert.equal(previous?.weightKg, 105);
+  assert.equal(latest, true);
+});
+
+test('a lift last trained ten days ago shows its latest week against the one before', () => {
+  const bs = buckets([set(2026, 9, 14, 100, 5), set(2026, 9, 21, 105, 5)], 'week');
+  const { current, previous, latest } = comparePeriods(bs, 'week', ms(2026, 10, 1));
+  assert.equal(current?.start, dayStart(2026, 9, 21));
+  assert.equal(previous?.start, dayStart(2026, 9, 14));
+  assert.equal(latest, true);
+});
+
+test('a lift trained in one period only has a latest and no previous', () => {
   const bs = buckets([set(2026, 9, 1, 100, 5)], 'week');
-  assert.deepEqual(comparePeriods(bs, 'week', ms(2026, 9, 30)), { current: null, previous: null });
+  const { current, previous, latest } = comparePeriods(bs, 'week', ms(2026, 9, 30));
+  assert.equal(current?.weightKg, 100);
+  assert.equal(previous, null);
+  assert.equal(latest, true);
+});
+
+test('the fallback applies to month and year, and starts at the boundary', () => {
+  const months = buckets([set(2026, 7, 31, 100, 5), set(2026, 8, 1, 105, 5)], 'month');
+  const sep = comparePeriods(months, 'month', ms(2026, 9, 1));
+  assert.equal(sep.current?.weightKg, 105);
+  assert.equal(sep.previous?.weightKg, 100);
+  assert.equal(sep.latest, true);
+  const aug = comparePeriods(months, 'month', ms(2026, 8, 31));
+  assert.equal(aug.current?.weightKg, 105);
+  assert.equal(aug.previous?.weightKg, 100);
+  assert.equal(aug.latest, false);
+
+  const years = buckets([set(2024, 5, 1, 100, 5), set(2025, 5, 1, 110, 5)], 'year');
+  const y = comparePeriods(years, 'year', ms(2026, 1, 1));
+  assert.equal(y.current?.weightKg, 110);
+  assert.equal(y.previous?.weightKg, 100);
+  assert.equal(y.latest, true);
 });
 
 test('month comparison steps over 29 February and year comparison over New Year', () => {
@@ -394,7 +446,11 @@ test('all history uses uncapped calendar months with gaps through the current mo
   const estimates = progressSeries(bs, 'all', 'e1rm', ms(2026, 9, 17));
   assert.equal(estimates.slots, 36);
   assert.equal(estimates.points[0].slot, 35);
-  assert.deepEqual(comparePeriods(bs, 'all', ms(2026, 9, 17)), { current: null, previous: null });
+  assert.deepEqual(comparePeriods(bs, 'all', ms(2026, 9, 17)), {
+    current: null,
+    previous: null,
+    latest: false,
+  });
 });
 
 test('all history aggregates months, ignores uncounted sets and has no synthetic zero points', () => {

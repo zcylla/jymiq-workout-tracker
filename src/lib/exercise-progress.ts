@@ -207,26 +207,31 @@ export function trendOf(points: readonly { slot: number; value: number }[]): Tre
 }
 
 /**
- * The period on show and the one before it. Day: the latest training day and
- * the one before it, whatever lies between. Week, month, year: the calendar
+ * The period on show and the one before it. Week, month, year: the calendar
  * period holding `now` and the one directly before it, each null when it has
- * no sets — an older period is never passed off as the previous one.
+ * no sets — an older period is never passed off as the previous one. When the
+ * current period has no sets at all, and always for day, it is the latest two
+ * periods that have sets, whatever lies between, and `latest` says so.
  */
 export function comparePeriods(
   bs: readonly Bucket[],
   gran: Granularity,
   now: number,
-): { current: Bucket | null; previous: Bucket | null } {
-  if (gran === 'all') return { current: null, previous: null };
-  if (gran === 'day') {
-    return { current: bs[bs.length - 1] ?? null, previous: bs[bs.length - 2] ?? null };
+): { current: Bucket | null; previous: Bucket | null; latest: boolean } {
+  if (gran === 'all') return { current: null, previous: null, latest: false };
+  if (gran !== 'day') {
+    const currentStart = bucketStart(now, gran);
+    const current = bs.find((b) => b.start === currentStart);
+    if (current) {
+      const previousStart = bucketStart(currentStart - 1, gran);
+      return {
+        current,
+        previous: bs.find((b) => b.start === previousStart) ?? null,
+        latest: false,
+      };
+    }
   }
-  const currentStart = bucketStart(now, gran);
-  const previousStart = bucketStart(currentStart - 1, gran);
-  return {
-    current: bs.find((b) => b.start === currentStart) ?? null,
-    previous: bs.find((b) => b.start === previousStart) ?? null,
-  };
+  return { current: bs[bs.length - 1] ?? null, previous: bs[bs.length - 2] ?? null, latest: true };
 }
 
 /**
