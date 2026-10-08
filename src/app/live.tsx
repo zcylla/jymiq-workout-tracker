@@ -276,9 +276,9 @@ function LiveSession({ sessionId }: { sessionId: string }) {
   const keepAwake = focused && settings.keepScreenOn && session !== undefined;
   useEffect(() => {
     if (!keepAwake) return;
-    activateKeepAwakeAsync(KEEP_AWAKE_TAG);
+    activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
     return () => {
-      deactivateKeepAwake(KEEP_AWAKE_TAG);
+      deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => {});
     };
   }, [keepAwake]);
 
