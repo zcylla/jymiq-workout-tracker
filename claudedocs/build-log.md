@@ -27,7 +27,28 @@ exists and is stale.
   week and month comparison falls back to the latest trained periods (label LATEST ... VS PREVIOUS); plate calculator
   NO BAR and a WEIGH mode; Settings "Wheel maximum" (kg 140/200/300, lb 280/400/600) and a dial that extends past the
   tier for a typed heavier load (the old snap-down bug); press and hold the load or reps/RPE number, then drag to
-  scrub it in place (350 ms hold, same direction as the tape). None of these has been seen on a device.
+  scrub it in place (350 ms hold, same direction as the tape).
+- **Verified on the dev release (2026-10-07 evening, 190 adb steps, evidence kept only in the session scratchpad).** All
+  passed with no crash: pinned sets-sheet header with 13 sets; blurred sheet with nothing ghosting; NO BAR and WEIGH totals
+  (275 lb with a 45 lb bar, 230 lb without); wheel maximum 400 lb gives a 0-400 ring and a typed 315 lb extends the dial to
+  320 and one tape step down reads 310 (no snap-down); press-and-hold scrub on load and reps (31 dp per detent, about 81
+  px, drag up raises, tap and page swipe unchanged); rounded, detached drop connectors (about 4 dp gaps, a faint 2 px seam
+  where two rows join); week and month comparison titled LATEST ... VS PREVIOUS with numbers. By design, not defects:
+  Discard skips its confirm when no set is logged, and a new drop or warmup starts unset. Not verifiable over adb: haptics,
+  the content-desc of the type-a-value button (uiautomator cannot dump the live screen), and the exercises-sheet pinned
+  header (only the sets sheet was driven).
+- **Fixed after the builds, not yet on the phone.** The Hugeicons keyboard glyph reads as a robot head at 22 pt, so the
+  type-a-value button now uses the free dial pad (`DialpadSquare02Icon`, icon name `keypad`), commit `a99deb2`. A rebuild of
+  both variants is needed to see it (the prod install needs the owner's go-ahead and the checks in `shared-phone-rules`).
+- **Open for the next session.** (1) Rebuild and install dev and prod to ship `a99deb2`. (2) Owner decisions pending: whether
+  a disabled Edit button should stay grey or become a dimmed green; the interpolated-frames proof of concept (page published
+  as a private artifact, verdict: not shippable unreviewed, CC BY-SA 4.0 share-alike on any adapted frame); whether to apply
+  the sheet's always-mounted blur to the dropdown menu and tab bar, which still use the "blur only at rest" pop-in. (3) Sentry:
+  resolve JYMIQ-WORKOUT-TRACKER-2 once it has not recurred, and -1 is stale. (4) The dev history still holds two "Pull 1" test
+  sessions (5 Oct); clearing them needs a debuggable build and `~/jymiq-dev-backups-20261005/dev-sqlite-backup.tar`.
+  (5) Git: origin/main is behind by the unpushed commits listed by `git log origin/main..HEAD`; the owner pushes. The work PC
+  needs `git checkout .` then a pull. (6) `pnpm check` has the same 3 old lint warnings. (7) The Codex route in
+  harness-dispatch still rejects `--full-auto`.
 
 **START HERE (2026-10-06, device state and owner notes batch).** Superseded by the block above for Sentry; it supersedes the install
 facts and the "production release is not built" item below. `main` holds 22+ local commits after
