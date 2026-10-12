@@ -33,6 +33,7 @@ import {
   type Trend,
   trendOf,
 } from '@/lib/exercise-progress';
+import { demoFrames } from '@/lib/exercise-art-order';
 import { exerciseNumbers, repMaxes, WINDOW_WEEKS } from '@/lib/exercise-stats';
 import { formatPrValue } from '@/lib/pr';
 import { sessionDateLabel } from '@/lib/time';
@@ -139,7 +140,7 @@ export default function ExerciseScreen() {
             this screen's two main components. */}
       {frames ? (
         <Section first>
-          <Demo frames={frames} />
+          <Demo frames={demoFrames(id, frames)} />
         </Section>
       ) : null}
 
