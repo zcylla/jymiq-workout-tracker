@@ -541,36 +541,42 @@ function LiveSession({ sessionId }: { sessionId: string }) {
           can={can}
           disabled={editing !== null || sheet !== null || keypadParam !== null}
           onSwipe={turn}
+          header={
+            <Pressable
+              onPress={() => setSheet('exercises')}
+              accessibilityRole="button"
+              accessibilityLabel="Exercises"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: space.within,
+                paddingTop: 4,
+              }}
+            >
+              <View style={{ flex: 1, gap: 5 }}>
+                <Text style={text.label}>
+                  EXERCISE {exerciseIndex + 1} OF {exercises.length}
+                </Text>
+                <Text style={text.h1} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
+                  {exercise.name}
+                </Text>
+              </View>
+              {still ? (
+                <Pressable
+                  onPress={() => openExercise()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Exercise history"
+                >
+                  <ExerciseStill
+                    exerciseId={exercise.exerciseId}
+                    name={exercise.name}
+                    size={stillSize}
+                  />
+                </Pressable>
+              ) : null}
+            </Pressable>
+          }
         >
-          <Pressable
-            onPress={() => setSheet('exercises')}
-            accessibilityRole="button"
-            accessibilityLabel="Exercises"
-            style={{ flexDirection: 'row', alignItems: 'center', gap: space.within, paddingTop: 4 }}
-          >
-            <View style={{ flex: 1, gap: 5 }}>
-              <Text style={text.label}>
-                EXERCISE {exerciseIndex + 1} OF {exercises.length}
-              </Text>
-              <Text style={text.h1} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
-                {exercise.name}
-              </Text>
-            </View>
-            {still ? (
-              <Pressable
-                onPress={() => openExercise()}
-                accessibilityRole="button"
-                accessibilityLabel="Exercise history"
-              >
-                <ExerciseStill
-                  exerciseId={exercise.exerciseId}
-                  name={exercise.name}
-                  size={stillSize}
-                />
-              </Pressable>
-            ) : null}
-          </Pressable>
-
           <SetCounter
             index={setIndex + 1}
             total={sets.length}

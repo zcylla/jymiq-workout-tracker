@@ -37,6 +37,7 @@ type Props = {
   can: Record<Swipe, boolean>;
   disabled: boolean;
   onSwipe: (swipe: Swipe) => void;
+  header?: ReactNode;
   children: ReactNode;
 };
 
@@ -64,7 +65,7 @@ function enter(
  * either edge is left to the system, and a cancelled swipe snaps back and never
  * commits.
  */
-export function LivePager({ pageKey, can, disabled, onSwipe, children }: Props) {
+export function LivePager({ pageKey, can, disabled, onSwipe, header, children }: Props) {
   const { width } = useWindowDimensions();
   const xSV = useSharedValue(0);
   const ySV = useSharedValue(0);
@@ -146,8 +147,11 @@ export function LivePager({ pageKey, can, disabled, onSwipe, children }: Props) 
 
   return (
     <GestureDetector gesture={pan}>
-      <View style={{ flex: 1, overflow: 'hidden' }}>
-        <Animated.View style={[{ flex: 1 }, style]}>{children}</Animated.View>
+      <View style={{ flex: 1 }}>
+        {header}
+        <View style={{ flex: 1, overflow: 'hidden' }}>
+          <Animated.View style={[{ flex: 1 }, style]}>{children}</Animated.View>
+        </View>
       </View>
     </GestureDetector>
   );
