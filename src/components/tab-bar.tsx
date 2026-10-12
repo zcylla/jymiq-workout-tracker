@@ -30,7 +30,7 @@ import { GlassUnder, glassStyle } from './glass';
 import { tick } from './haptics';
 import { Icon, type IconName } from './icon';
 import { AnimatedPressable, usePressFeel } from './press';
-import { useFloatingBlurTarget, useSheetOpen } from './screen-blur';
+import { useHeldBlurTarget, useSheetOpen } from './screen-blur';
 
 /**
  * W2 (Lab 23) — four labelled tabs on one plane with an inset circular start
@@ -95,19 +95,12 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
   const android = Platform.OS === 'android';
   const sheetOpen = useSheetOpen();
   const visibilitySV = useSharedValue(sheetOpen ? 0 : 1);
-  const [visibleAtRest, setVisibleAtRest] = useState(!sheetOpen);
-  const [previousSheetOpen, setPreviousSheetOpen] = useState(sheetOpen);
-  if (previousSheetOpen !== sheetOpen) {
-    setPreviousSheetOpen(sheetOpen);
-    setVisibleAtRest(false);
-  }
+  const [hidden, setHidden] = useState(sheetOpen);
+  if (hidden && !sheetOpen) setHidden(false);
   useEffect(() => {
-    const finishVisibility = () => {
-      if (visibilitySV.get() === 1) setVisibleAtRest(true);
-    };
     visibilitySV.set(
       withTiming(sheetOpen ? 0 : 1, { duration: motion.fast }, (finished) => {
-        if (finished && !sheetOpen) scheduleOnRN(finishVisibility);
+        if (finished && sheetOpen) scheduleOnRN(setHidden, true);
       }),
     );
   }, [sheetOpen, visibilitySV]);
@@ -116,7 +109,8 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
   const progressSV = useSharedValue(0);
   const [minimised, setMinimised] = useState(false);
   const [blurEndpoint, setBlurEndpoint] = useState<number | null>(0);
-  const target = useFloatingBlurTarget(!sheetOpen && visibleAtRest && blurEndpoint !== null);
+  const held = useHeldBlurTarget();
+  const target = android && hidden ? null : held;
   const surface = target
     ? {
         ...glassStyle(controlBarBlur, controlBarBlur.blur),
@@ -125,23 +119,12 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
       }
     : controlEdgeDense;
 
-  function beginCrossfade(next: number) {
-    setMinimised(next === 1);
-    if (android) setBlurEndpoint(null);
-  }
-  function finishCrossfade(next: number) {
-    if (minimisedSV?.get() === next && progressSV.get() === next) setBlurEndpoint(next);
-  }
   useAnimatedReaction(
     () => minimisedSV.get(),
     (next, previous) => {
       if (next === previous) return;
-      scheduleOnRN(beginCrossfade, next);
-      progressSV.set(
-        withTiming(next, { duration: motion.base }, (finished) => {
-          if (finished && android) scheduleOnRN(finishCrossfade, next);
-        }),
-      );
+      scheduleOnRN(setMinimised, next === 1);
+      progressSV.set(withTiming(next, { duration: motion.base }));
     },
   );
   useAnimatedReaction(
@@ -150,13 +133,11 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
       return progress === 0 || progress === 1 ? progress : null;
     },
     (now, previous) => {
-      if (!android && now !== previous) scheduleOnRN(setBlurEndpoint, now);
+      if (now !== previous) scheduleOnRN(setBlurEndpoint, now);
     },
   );
-  const fullBlurs =
-    target && (android ? !minimised && blurEndpoint === 0 : !minimised || blurEndpoint !== 1);
-  const smallBlurs =
-    target && (android ? minimised && blurEndpoint === 1 : minimised || blurEndpoint !== 0);
+  const fullBlurs = target && (!minimised || blurEndpoint !== 1);
+  const smallBlurs = target && (minimised || blurEndpoint !== 0);
   const full = useAnimatedStyle(() => ({
     opacity: 1 - progressSV.get(),
     transform: [{ scale: 1 - 0.06 * progressSV.get() }],
@@ -202,7 +183,6 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
         >
           {fullBlurs ? (
             <GlassUnder
-              fadeIn
               recipe={controlBarBlur}
               blur={controlBarBlur.blur}
               target={target}
@@ -241,7 +221,6 @@ export function TabBar({ children, onStart }: { children: ReactNode; onStart?: (
         >
           {smallBlurs ? (
             <GlassUnder
-              fadeIn
               recipe={controlBarBlur}
               blur={controlBarBlur.blur}
               target={target}

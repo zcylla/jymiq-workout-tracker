@@ -77,6 +77,18 @@ export function useFloatingBlurTarget(atRest = true) {
   return Platform.OS !== 'android' || (atRest && !moving && focused) ? target : null;
 }
 
+export function useHeldBlurTarget() {
+  const live = useScreenBlurTarget();
+  const focused = useIsFocused();
+  const [held, setHeld] = useState(live);
+  const [covering, setCovering] = useState<typeof live>(null);
+  if (live !== held && live !== covering) {
+    if (focused) setHeld(live);
+    else setCovering(live);
+  }
+  return Platform.OS === 'android' && live ? held : live;
+}
+
 export function useStackBlurMotionListeners() {
   const signal = useContext(ScreenMotionContext);
   const id = useId();
