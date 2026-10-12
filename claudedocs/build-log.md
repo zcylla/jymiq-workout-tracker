@@ -3,12 +3,12 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-**START HERE (2026-10-11, fourth-workout notes).** Newest; where it conflicts with the block below, this wins. `origin/main`
-is `45f9c8c` (the owner pushed); 16 local commits on top (`git log origin/main..HEAD`), `pnpm check` green (671 tests, the same 3 old
-lint warnings). **Nothing from this block is on the phone yet.** The phone was installed from `35995eb` on 2026-10-07 and was not
-connected when the build finished; a dev release APK of `04dcd53` (it also carries the number-pad icon of `a99deb2`; package `com.zcylla.jymiq.dev`, arm64, Sentry debug ID
-`f0766ade-7fbd-4a79-9714-5ab14db9e889` uploaded, token absent from the log) sits in the disposable `android/app/build/outputs/apk/release/`
-and is rebuilt by the dev recipe. Installing it needs the owner's go-ahead; production is untouched.
+**START HERE (2026-10-11/12, fourth-workout notes).** Newest; where it conflicts with the block below, this wins. `origin/main`
+is `45f9c8c` (the owner pushed); 23 local commits on top (`git log origin/main..HEAD`), `pnpm check` green (678 tests, the same 3 old
+lint warnings). **On the phone:** Jymiq Dev (`com.zcylla.jymiq.dev`) is a release build of `04dcd53`, installed 2026-10-11 19:16 over the
+`35995eb` build (data kept; it carries the number-pad icon of `a99deb2`; Sentry debug ID `f0766ade-7fbd-4a79-9714-5ab14db9e889`
+uploaded). It is NOT the current HEAD: it still has the tab-bar blur that was reverted (below) and lacks the routine-changes fixes.
+Production is still `35995eb`, untouched. A second dev install (HEAD) and a frame-rate re-measurement are pending the owner's go-ahead.
 - **Done, per the owner's notes.** Plate calculator pins its readout and bar options above the scrolling steppers (`cc2b00b`, the
   header sat inside the scroll area and slid under the handle). Exercise screen: muscles as `Pill` tags, primary gold and secondary
   the new `quiet` tone (`f396e89`, also fixes `LOWER_BACK`), HOW TO steps on the rail with numerals instead of dots (`fbf35f5`; §0's rail
@@ -17,31 +17,48 @@ and is rebuilt by the dev recipe. Installing it needs the owner's go-ahead; prod
   (`7a30e85`, uses `onEdit`'s toggle semantics, no `live.tsx` change); the tape snaps harder the slower it is moved (`652f628`,
   constants at the top of `src/lib/scrub.ts`); warmup is a dim pill and drop an accent pill under the counter, the Log button names the
   type ("Log warmup 1", "Log drop 1") and the sets sheet matches (`41d2a2d`). The sheet's always-mounted blur now covers the dropdown
-  menu (`525bdfe`) and the tab bar (`5e8a583`, `useHeldBlurTarget` in `screen-blur.tsx`; the action bar still has the old gate).
+  menu (`525bdfe`). The tab bar got it too (`5e8a583`) and was **reverted** (`72b90db`), see the performance block.
 - **Exercise demo order (`4479dff`).** 302 exercises, three frames each. Vision agents classified all of them: 152 are reversed in
   `src/lib/exercise-art-order.ts` (played frame 3, 2, 1), 67 are forward, 83 were unsure and keep their order (holds, alternating or
   cyclic movements). 20 of the reversed and 11 of the forward calls were low confidence, and "start" was defined as the lengthened or
   loaded pose (bottom of a squat or press, bar on the floor, arm hanging). Corrections are one id in or out of that set. Thumbnails
-  still use frame 1.
-- **Routine changes at the end of a workout** (`c8a7109`, `d3ac599`, `880c661`, `fed08c1`, `04dcd53`). The summary screen lists what the
-  session changed against its routine, each with SAVE, and SAVE ALL: exercise added, removed (only if nothing was logged), swapped;
-  working-set count; target reps and load (only when every logged working set agrees). Reordering and set types (warmup, drop) are out:
-  a routine holds only sets x reps x load, and set types would need a schema change. No schema change was made. It only shows on the
-  routine's most recent completed session, so an old session opened from History never proposes stale targets. The diff is computed
-  against the live routine, so a saved change drops out on its own. `removeSessionExercise` now keeps a routine-linked lift as a removed
-  row with no sets instead of hard-deleting it, so a removal is detectable. Known limit: a reorder after a swap can split the swap
-  pair (the diff then reports a remove plus an add), because `reorderSessionExercises` renumbers only visible rows.
-- **Unverified on a device (all of it).** Plate sheet layout (a second 11 pt of bottom padding when CONFIGURE is closed, from `Sheet`
-  always rendering its scroll view); the rail connector length at `air={16}`; pager header does not shift a pixel; tape feel (tune
-  `SNAP_BELOW_DPS`/`FREE_ABOVE_DPS`/`DRAG_MAGNET`/`GLIDE_SECONDS`); `Log drop 1` fit in the action bar; dropdown and tab-bar blur flashes
-  (a fresh BlurView draws a plain tint for 1-2 frames; `glass.tsx` keys it on the target); the routine-changes section end to end.
-- **Blur performance check still owed.** The tab bar's live blur over scrolling content cost 51% janky frames at blur 20 versus 5%
-  without (dev build, 2026-09-30). Compare with `adb shell dumpsys gfxinfo com.zcylla.jymiq.dev reset` then the scenarios (tab loop x3,
-  History scroll across minimise, sheet open/close x5, push/pop a routine x5) on `35995eb` versus this build. If the second layer during the
-  240 ms cross-fade is too costly, mount the incoming blur at the start and unmount the outgoing one at the end.
+  still use frame 1. Device check: Bicep Curl plays hanging, curling, curled; Goblet Squat plays bottom, rising, standing.
+- **Routine changes at the end of a workout** (`c8a7109`, `d3ac599`, `880c661`, `fed08c1`, `04dcd53`, then the fixes `4b1b833`,
+  `8a8135a`, `042410f`, `a543796`). The summary screen lists what the session changed against its routine, each with SAVE, and SAVE ALL:
+  exercise added, removed (only if nothing was logged), swapped; working-set count; target reps and load (only when every logged working
+  set agrees, and only against an existing target: a blank routine target never produces a row, owner decision 2026-10-12). Reordering
+  and set types (warmup, drop) are out: a routine holds only sets x reps x load, and set types would need a schema change. No schema
+  change was made. The section is reachable ONLY from the redirect right after Finish; History opens a plain session view without it, so
+  tapping Done drops unsaved proposals (accepted by the owner). The diff is computed against the live routine, so a saved change
+  drops out on its own. `removeSessionExercise` keeps a routine-linked lift as a removed row with no sets instead of hard-deleting it,
+  so a removal is detectable. A Codex (gpt-6.1-sol) review found and the fixes closed: an add that could never be saved when the
+  routine already had the exercise with the same targets, the whole section vanishing after saving the last REMOVE (the foreign key
+  nulls the link), and a swap back to the original exercise hiding every target comparison. Known limits left: a reorder after a swap
+  can split the swap pair (a remove plus an add is reported), because `reorderSessionExercises` renumbers only visible rows; the tape
+  reaction ticks once per observed index per frame, so a very hard fling skips haptic ticks (as the old decay did).
+- **Verified on the dev release `04dcd53` (2026-10-11 evening, adb).** Header pinned (0 px difference mid-swipe in all four
+  directions, swipes that start on the name or still still page); warmup and drop pills, "Log warmup 1" / "Log drop 1" / "Edit ..."
+  labels and the sets-sheet pills fit; press-hold-drag-release on reps and load hides the tape and keeps the value (RPE hidden by
+  settings, so untested); tape: slow drags land on whole numbers with no overshoot, 40 px slow release moves 0 numbers, flings of
+  300 px/s travel +3, 1000 px/s +9, a hard 700 px/120 ms fling is clamped at the scale end, the strip needs about 2.5 s to fully
+  settle after a hard fling (tune `GLIDE_SECONDS`); plate sheet: top row not clipped; dropdown, sheets and tab bar render cleanly; the
+  routine-changes section on a throwaway Push 2 session showed exactly the expected rows (SETS, REPS, LOAD, REMOVE, SWAP, ADD, with
+  the warmup ignored), per-row SAVE removed its row and updated the routine. Not verified: SAVE ALL, the rows after the fixes above,
+  the scrolling part of the plate sheet (all steppers fit on this screen), RPE hold, single-frame blur flashes.
+- **Performance (dev release, gfxinfo, 120 Hz so the deadline is 8.3 ms).** `04dcd53` against `35995eb`: History scroll janky frames
+  2.4-2.9% -> 9.1%, slow UI-thread frames 8 -> 85-89; tab loop 6.1-6.3% -> 11-17%, p90 20 -> 65-77 ms; routine push/pop 6.6% -> 10.6-11.4%;
+  GPU time unchanged, so the cost is on the UI thread. The tab-bar blur change touches all three, was reverted in `72b90db`, and the
+  re-measurement of HEAD is still owed. Scripts and raw numbers are in the session scratchpad (`perf.sh`, `baseline.json`, `new.json`),
+  not in the repo: rerun the scenarios (tab loop x3, History scroll across minimise x5, routine push/pop x5) with
+  `adb shell dumpsys gfxinfo com.zcylla.jymiq.dev reset` before and after. Any future tab-bar blur work should avoid two BlurViews during the
+  240 ms cross-fade and the BlurView remount keyed on the target in `glass.tsx`.
+- **Found while testing, not caused by this batch, not fixed.** The record pop-up shows set volume as raw kg in an lb app (SET VOL 430.91
+  / WAS 312.98); the summary says "1 SETS"; text scrolled under the status bar shows through on the exercise screen; the session view shows
+  an e1RM for a warmup set; a new set with 0 reps highlights "1" on the reps tape because that scale starts at 1; in the plate sheet the
+  blurred dial number shows through as a smudge over the plate strip.
 - **Still open from before.** Disabled Edit button grey or dimmed green; the frame-interpolation proof of concept; JYMIQ-WORKOUT-TRACKER-2
-  to resolve once it has not recurred; two 5 Oct test sessions in the dev history; the work PC needs `git checkout .` then a pull; the
-  Codex route in harness-dispatch still rejects `--full-auto`.
+  to resolve once it has not recurred; two 5 Oct test sessions in the dev history; the work PC needs `git checkout .` then a pull. The
+  Codex route in harness-dispatch works again (2026-10-12) and is the default for bounded work.
 
 **START HERE (2026-10-07, Sentry on this machine and the third-workout notes).** Superseded above for the unpushed commits and the open items. **On the phone now:** both
 releases built from `35995eb` with the Sentry token exported (debug IDs injected, source maps uploaded): Jymiq Dev
