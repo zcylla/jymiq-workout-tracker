@@ -1,10 +1,12 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 import { newId } from '@/lib/id';
+import type { RoutineChange } from '@/lib/routine-diff';
 
 import { db } from '../db';
 import { programDays, routineExercises, routines } from '../schema';
 import { getSettings } from '../settings';
+import { syncSoon } from '../sync';
 
 export function createRoutine(input: { name: string; note?: string | null }): string {
   const id = newId();
@@ -199,6 +201,100 @@ export function removeRoutineExercise(id: string): void {
       .all();
     if (row) touch(tx, row.routineId);
   });
+}
+
+/**
+ * Saves what a finished session changed back into its routine, in one transaction.
+ * Every statement is scoped to `routineId` and skips a line that is gone, so a
+ * stale or repeated change is a no-op. An add is skipped when the routine already
+ * has that exercise with the same targets, which is what a second tap looks like.
+ */
+export function applyRoutineChanges(routineId: string, changes: readonly RoutineChange[]): void {
+  if (!changes.length) return;
+  db.transaction((tx) => {
+    const routine = tx
+      .select({ id: routines.id })
+      .from(routines)
+      .where(eq(routines.id, routineId))
+      .get();
+    if (!routine) return;
+
+    const lines = tx
+      .select()
+      .from(routineExercises)
+      .where(eq(routineExercises.routineId, routineId))
+      .all();
+    let position = Math.max(-1, ...lines.map((l) => l.position));
+    const line = (id: string) =>
+      and(eq(routineExercises.id, id), eq(routineExercises.routineId, routineId));
+
+    for (const c of changes) {
+      switch (c.kind) {
+        case 'add': {
+          const targets = {
+            targetSets: c.targetSets,
+            targetReps: c.targetReps,
+            targetWeightKg: c.targetWeightKg,
+          };
+          const saved = lines.some(
+            (l) =>
+              l.exerciseId === c.exerciseId &&
+              l.targetSets === targets.targetSets &&
+              l.targetReps === targets.targetReps &&
+              l.targetWeightKg === targets.targetWeightKg,
+          );
+          if (saved) break;
+          const added = {
+            id: newId(),
+            routineId,
+            exerciseId: c.exerciseId,
+            position: ++position,
+            ...targets,
+            restSec: null,
+            note: null,
+          };
+          tx.insert(routineExercises).values(added).run();
+          lines.push(added);
+          break;
+        }
+        case 'remove':
+          tx.delete(routineExercises).where(line(c.routineExerciseId)).run();
+          break;
+        case 'swap':
+          tx.update(routineExercises)
+            .set({
+              exerciseId: c.toExerciseId,
+              targetSets: c.targetSets,
+              targetReps: c.targetReps,
+              targetWeightKg: c.targetWeightKg,
+            })
+            .where(line(c.routineExerciseId))
+            .run();
+          break;
+        case 'sets':
+          tx.update(routineExercises)
+            .set({ targetSets: c.to })
+            .where(line(c.routineExerciseId))
+            .run();
+          break;
+        case 'reps':
+          tx.update(routineExercises)
+            .set({ targetReps: c.to })
+            .where(line(c.routineExerciseId))
+            .run();
+          break;
+        case 'load':
+          tx.update(routineExercises)
+            .set({ targetWeightKg: c.toKg })
+            .where(line(c.routineExerciseId))
+            .run();
+          break;
+      }
+    }
+
+    touch(tx, routineId);
+  });
+  syncSoon();
 }
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
