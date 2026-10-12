@@ -76,10 +76,22 @@ export function LiveInstrument({
   const holdingChip = scrubbing === 'reps' || scrubbing === 'rpe';
   const ringOff = editing !== null && editing !== 'load' && !holdingChip;
 
+  const holdSV = useSharedValue<{
+    parameter: WorkoutParameter;
+    before: WorkoutParameter | null;
+  } | null>(null);
+
   const beginScrub = (parameter: WorkoutParameter) => {
     gestureStart();
+    holdSV.set({ parameter, before: editing });
     setScrubbing(parameter);
     if (editing !== parameter) onEdit(parameter);
+  };
+  const endScrub = () => {
+    const held = holdSV.get();
+    holdSV.set(null);
+    setScrubbing(null);
+    if (held && held.before !== held.parameter) onEdit(held.before ?? held.parameter);
   };
   const scrub = (parameter: WorkoutParameter) =>
     Gesture.Pan()
@@ -96,7 +108,7 @@ export function LiveInstrument({
       .onFinalize(() => {
         if (scrubSV.get() == null) return;
         scrubSV.set(null);
-        scheduleOnRN(setScrubbing, null);
+        scheduleOnRN(endScrub);
       });
   const repsScrub = scrub('reps');
   const rpeScrub = scrub('rpe');
