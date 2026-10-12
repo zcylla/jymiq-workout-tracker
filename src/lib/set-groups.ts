@@ -50,6 +50,14 @@ export function setTypeOrdinal(sets: readonly TypedSet[], id: string): number {
     .filter((s) => (isWorkingSet(current) ? isWorkingSet(s) : s.kind === current.kind)).length;
 }
 
+export function setActionName(sets: readonly TypedSet[], id: string): string {
+  const at = sets.findIndex((s) => s.id === id);
+  const kind = sets[at]?.kind;
+  return kind === 'warmup' || kind === 'drop'
+    ? `${kind} ${setTypeOrdinal(sets, id)}`
+    : `set ${at + 1}`;
+}
+
 export function insertTypedSet<T extends TypedSet>(
   sets: readonly T[],
   set: T,

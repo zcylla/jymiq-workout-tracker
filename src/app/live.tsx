@@ -57,7 +57,13 @@ import { nextExercise, nextSet, prevExercise, prevSet } from '@/lib/live-nav';
 import type { Swipe } from '@/lib/pager';
 import { formatPrValue, type PrHit, PR_LABELS } from '@/lib/pr';
 import { moved } from '@/lib/reorder';
-import { moveSetGroup, removalSetIds, setTypeLabel, setTypeOrdinal } from '@/lib/set-groups';
+import {
+  moveSetGroup,
+  removalSetIds,
+  setActionName,
+  setTypeLabel,
+  setTypeOrdinal,
+} from '@/lib/set-groups';
 import { applyDraft, draftPatch, type SetDraft } from '@/lib/set-draft';
 import type { SetKind } from '@/lib/volume';
 import { elapsedSec, formatClock, restRemainingSec } from '@/lib/time';
@@ -580,6 +586,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
           <SetCounter
             index={setIndex + 1}
             total={sets.length}
+            kind={set.kind}
             typeLabel={setTypeLabel(sets, set.id)}
             compact={compact}
             onSets={() => setSheet('sets')}
@@ -690,7 +697,7 @@ function LiveSession({ sessionId }: { sessionId: string }) {
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
         <ActionBar
-          primary={isLogged ? `Edit set ${setIndex + 1}` : `Log set ${setIndex + 1}`}
+          primary={`${isLogged ? 'Edit' : 'Log'} ${setActionName(sets, set.id)}`}
           tone={isLogged ? 'done' : 'accent'}
           onPrimary={isLogged ? commitEdit : log}
           disabled={isLogged ? !changed : !ready}

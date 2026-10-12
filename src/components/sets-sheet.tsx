@@ -11,6 +11,7 @@ import { disabledControl } from '@/theme/tokens';
 
 import { Chevron } from './icon';
 import { ReorderList } from './reorder-list';
+import { Pill } from './pill';
 import { PrimaryButton } from './primary-button';
 import { RowPlate } from './row-plate';
 import { Sheet } from './sheet';
@@ -122,7 +123,11 @@ function SetRow({
   disabled?: boolean;
 }) {
   const done = set.completedAt != null;
-  const indexColor = isCurrent ? color.accent : done ? color.done : color.dim;
+  const indexColor = isCurrent
+    ? color.accent
+    : done && set.kind !== 'warmup'
+      ? color.done
+      : color.dim;
   const valueColor = isCurrent ? color.accent : done ? color.hi : color.mid;
   const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} × ${set.reps ?? '—'}`;
   return (
@@ -144,7 +149,7 @@ function SetRow({
           {String(set.position).padStart(2, '0')}
         </Text>
         {set.kind === 'working' ? null : (
-          <Text style={[text.meta, { color: color.lo }]}>{typeLabel.toUpperCase()}</Text>
+          <Pill label={typeLabel.toUpperCase()} tone={set.kind === 'warmup' ? 'dim' : 'accent'} />
         )}
         <View style={{ flex: 1 }} />
         <Text style={[text.numSm, { color: valueColor }]} numberOfLines={1}>

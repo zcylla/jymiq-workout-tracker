@@ -1,12 +1,15 @@
 import { Pressable, Text, View } from 'react-native';
 
+import type { SetKind } from '@/lib/volume';
 import { color, hairline, size, space, text } from '@/theme';
 
 import { Icon } from './icon';
+import { Pill } from './pill';
 
 export function SetCounter({
   index,
   total,
+  kind,
   typeLabel,
   onSets,
   onType,
@@ -14,12 +17,15 @@ export function SetCounter({
 }: {
   index: number;
   total: number;
+  kind: SetKind;
   typeLabel: string;
   onSets: () => void;
   onType: () => void;
   compact: boolean;
 }) {
-  const tone = typeLabel === 'Working' ? color.lo : color.accent;
+  const pillTone = kind === 'warmup' ? 'dim' : 'accent';
+  const plain = kind === 'working';
+  const ink = plain ? color.lo : color[pillTone];
   return (
     <View style={{ alignItems: 'center', marginTop: compact ? 0 : space.within }}>
       <Pressable
@@ -54,8 +60,12 @@ export function SetCounter({
           opacity: pressed ? 0.7 : 1,
         })}
       >
-        <Text style={[text.label, { color: tone }]}>{typeLabel.toUpperCase()}</Text>
-        <Icon name="down" tone={tone} />
+        {plain ? (
+          <Text style={[text.label, { color: ink }]}>{typeLabel.toUpperCase()}</Text>
+        ) : (
+          <Pill label={typeLabel.toUpperCase()} tone={pillTone} />
+        )}
+        <Icon name="down" tone={ink} />
       </Pressable>
     </View>
   );

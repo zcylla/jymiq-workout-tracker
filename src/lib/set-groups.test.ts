@@ -11,6 +11,7 @@ import {
   continuesDropGroup,
   validateSetOrder,
   setTypeOrdinal,
+  setActionName,
 } from './set-groups.ts';
 import type { SetKind } from './volume.ts';
 
@@ -43,6 +44,16 @@ test('historical comparisons count only sets of the current type', () => {
   assert.equal(setTypeOrdinal(sets, 'f'), 3);
   assert.equal(setTypeOrdinal(sets, 'd1'), 1);
   assert.equal(setTypeOrdinal(sets, 'd2'), 2);
+});
+
+test('action names number warmups and drops by type and working sets by position', () => {
+  const w2 = row('w2', 'warmup');
+  const sets = [warmup, w2, a, b, row('c'), d1, d2];
+  assert.equal(setActionName(sets, 'w'), 'warmup 1');
+  assert.equal(setActionName(sets, 'w2'), 'warmup 2');
+  assert.equal(setActionName(sets, 'a'), 'set 3');
+  assert.equal(setActionName(sets, 'd1'), 'drop 1');
+  assert.equal(setActionName(sets, 'd2'), 'drop 2');
 });
 
 test('warmups precede working sets; drops follow the selected parent’s entire sequence', () => {
