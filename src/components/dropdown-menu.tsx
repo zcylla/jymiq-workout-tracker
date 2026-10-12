@@ -73,13 +73,7 @@ function DropdownBody({
   bounds: DropdownAnchor | null;
   onBounds: (bounds: DropdownAnchor) => void;
 }) {
-  const [resting, setResting] = useState(false);
-  const [previousOpen, setPreviousOpen] = useState(open);
-  if (previousOpen !== open) {
-    setPreviousOpen(open);
-    setResting(false);
-  }
-  const target = useFloatingBlurTarget(open && resting);
+  const target = useFloatingBlurTarget();
   const window = useWindowDimensions();
   const overlayRef = useRef<View>(null);
   const progressSV = useSharedValue(0);
@@ -87,9 +81,8 @@ function DropdownBody({
   const reducedMotion = useReducedMotion();
 
   useLayoutEffect(() => {
-    const finish = () => {
-      if (openSV.get() && progressSV.get() === 1) setResting(true);
-      else if (!openSV.get() && progressSV.get() === 0) onExited();
+    const exit = () => {
+      if (!openSV.get() && progressSV.get() === 0) onExited();
     };
     openSV.set(open);
     progressSV.set(
@@ -97,7 +90,7 @@ function DropdownBody({
         open ? 1 : 0,
         { duration: motion.fast, easing: Easing.bezier(0.23, 1, 0.32, 1) },
         (finished) => {
-          if (finished) scheduleOnRN(finish);
+          if (finished) scheduleOnRN(exit);
         },
       ),
     );
@@ -156,14 +149,19 @@ function DropdownBody({
             borderRadius: radius.plate,
             borderCurve: 'continuous',
             transformOrigin: 'top right',
-            ...(target ? glassStyle(controlSheetBlur, controlSheetBlur.blur) : controlEdgeDense),
+            ...(target
+              ? {
+                  ...glassStyle(controlSheetBlur, controlSheetBlur.blur),
+                  borderWidth: controlEdgeDense.borderWidth,
+                  borderColor: 'transparent',
+                }
+              : { ...controlEdgeDense, backgroundColor: color.raised }),
           },
           panelStyle,
         ]}
       >
         {target ? (
           <GlassUnder
-            fadeIn
             recipe={controlSheetBlur}
             blur={controlSheetBlur.blur}
             target={target}
