@@ -4,11 +4,16 @@ Companion to `design-exploration.md`, which holds the design state. **This file 
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
 **START HERE (2026-10-11/12, fourth-workout notes).** Newest; where it conflicts with the block below, this wins. `origin/main`
-is `45f9c8c` (the owner pushed); 23 local commits on top (`git log origin/main..HEAD`), `pnpm check` green (678 tests, the same 3 old
-lint warnings). **On the phone:** Jymiq Dev (`com.zcylla.jymiq.dev`) is a release build of `04dcd53`, installed 2026-10-11 19:16 over the
-`35995eb` build (data kept; it carries the number-pad icon of `a99deb2`; Sentry debug ID `f0766ade-7fbd-4a79-9714-5ab14db9e889`
-uploaded). It is NOT the current HEAD: it still has the tab-bar blur that was reverted (below) and lacks the routine-changes fixes.
-Production is still `35995eb`, untouched. A second dev install (HEAD) and a frame-rate re-measurement are pending the owner's go-ahead.
+is `45f9c8c` (the owner pushed); 24 local commits on top (`git log origin/main..HEAD`), `pnpm check` green (678 tests, the same 3 old
+lint warnings). **On the phone:** production `com.zcylla.jymiq` is a release build of `76a9d3b` (HEAD of this batch, includes the
+tab-bar revert), installed in place 2026-10-12 00:15 on the owner's go-ahead (`firstInstallTime` 2026-09-06 kept, same signer
+`fac61745...`, arm64, not debuggable, cloud URL and key baked in, Sentry debug ID `86d153e6-1a24-4cd6-b841-7d24eff0e521` uploaded;
+cloud before the install: 769 sessions, 4,692 session exercises, 16,225 sets, 1,441 records, none in progress, last session 8 Oct
+13:42 local). The APK, source map and a README are archived in `~/jymiq-prod-builds/2026-10-12-76a9d3b/`. The app was not launched by
+the install session (a background process for the package appeared by itself after the install; no service, no notification). The owner
+tests it on 2026-10-12 and will send notes. Jymiq Dev (`com.zcylla.jymiq.dev`) is still the release build of `04dcd53` (installed
+2026-10-11 19:16), which has the tab-bar blur that was reverted and lacks the routine-changes fixes; it showed a live dev session at
+install time, owned by the owner. The two frame-rate re-measurement and a second dev install are deferred by the owner.
 - **Done, per the owner's notes.** Plate calculator pins its readout and bar options above the scrolling steppers (`cc2b00b`, the
   header sat inside the scroll area and slid under the handle). Exercise screen: muscles as `Pill` tags, primary gold and secondary
   the new `quiet` tone (`f396e89`, also fixes `LOWER_BACK`), HOW TO steps on the rail with numerals instead of dots (`fbf35f5`; §0's rail
