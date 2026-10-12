@@ -31,6 +31,7 @@ export { PrimaryButton } from './primary-button';
 export { ProgramWeek } from './program-week';
 export { Rail, type RailItem } from './rail';
 export { ReorderList } from './reorder-list';
+export { RoutineChangesSection } from './routine-changes';
 export { RowPlate, RowPlates } from './row-plate';
 export { Scale } from './scale';
 export { Screen } from './screen';

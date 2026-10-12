@@ -8,6 +8,7 @@ import {
   Delta,
   ExerciseStill,
   Pill,
+  RoutineChangesSection,
   Screen,
   ScreenHeader,
   Section,
@@ -15,6 +16,8 @@ import {
   type Tile,
   useActionBarHeight,
 } from '@/components';
+import { applyRoutineChanges } from '@/data/mutations/routines';
+import { useRoutineChanges } from '@/data/queries/routine-changes';
 import {
   previousSessionVolumeQuery,
   sessionLogExercisesQuery,
@@ -75,6 +78,8 @@ export default function SummaryScreen() {
     previousVolumeKg != null && previousVolumeKg > 0 && session?.totalVolumeKg != null
       ? volumeDeltaOf(session.totalVolumeKg, previousVolumeKg)
       : null;
+
+  const proposed = useRoutineChanges(id);
 
   const durationLabel = formatSessionDuration(session?.durationSec ?? null);
   const tiles: Tile[] = [
@@ -189,6 +194,17 @@ export default function SummaryScreen() {
               ))}
             </View>
           </Section>
+        ) : null}
+
+        {proposed ? (
+          <RoutineChangesSection
+            routineName={proposed.routineName}
+            changes={proposed.changes}
+            names={proposed.names}
+            unit={settings.weightUnit}
+            onSave={(change) => applyRoutineChanges(proposed.routineId, [change])}
+            onSaveAll={() => applyRoutineChanges(proposed.routineId, proposed.changes)}
+          />
         ) : null}
 
         <Section label="LIFTS" plated={false}>
