@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-  hasRoutinePlan,
   type PlanLine,
   type RoutineChange,
   routineChanges,
@@ -237,7 +236,7 @@ test('a swap already saved to the routine reports nothing', () => {
     planned('a', 'L1', 'bench', 0, [pending()], { removedAt: 5 }),
     added('n', 'db-bench', 1, [done(40, 10)], { plannedSets: 3 }),
   ];
-  assert.deepEqual(routineChanges([line('L1', 'db-bench', 0)], ex), []);
+  assert.deepEqual(routineChanges([line('L1', 'db-bench', 0, 1, 10, 40)], ex), []);
 });
 
 test('a swap whose newcomer was never lifted reports nothing', () => {
@@ -321,14 +320,6 @@ test('warm-ups and drops never count; a failure set is a working set', () => {
   assert.deepEqual(routineChanges([line('L1', 'bench', 0)], ex), []);
 });
 
-test('only a session with routine-linked rows has a plan', () => {
-  const linked = [planned('a', 'L1', 'bench', 0, [])];
-  const copied = [added('a', 'bench', 0, [], { addedMidSession: false })];
-  assert.equal(hasRoutinePlan('r1', linked), true);
-  assert.equal(hasRoutinePlan('r1', copied), false);
-  assert.equal(hasRoutinePlan(null, linked), false);
-});
-
 test('a routine line linked twice, or no longer in the routine, is ignored', () => {
   const ex = [
     planned('a', 'L1', 'bench', 0, asPlanned(5)),
@@ -383,5 +374,101 @@ test('saving any change makes it stop being reported', () => {
   }
   const { lines, ex } = build();
   for (const change of all) apply(lines, ex, change);
+  assert.deepEqual(routineChanges(lines, ex), []);
+});
+
+test('swapping back to the original lift compares all targets', () => {
+  const ex = [
+    planned('a', 'L1', 'bench', 0, [pending()], { removedAt: 5 }),
+    added('b', 'db-bench', 1, [pending()], { plannedSets: 3, removedAt: 6 }),
+    added('c', 'bench', 2, [done(80, 8), done(80, 8)], { plannedSets: 3 }),
+  ];
+  assert.deepEqual(routineChanges([line('L1', 'bench', 0)], ex), [
+    { kind: 'sets', key: 'sets:L1', routineExerciseId: 'L1', exerciseId: 'bench', from: 3, to: 2 },
+    { kind: 'reps', key: 'reps:L1', routineExerciseId: 'L1', exerciseId: 'bench', from: 10, to: 8 },
+    {
+      kind: 'load',
+      key: 'load:L1',
+      routineExerciseId: 'L1',
+      exerciseId: 'bench',
+      fromKg: 100,
+      toKg: 80,
+    },
+  ]);
+});
+
+test('a saved swap still compares targets against the replacement', () => {
+  const ex = [
+    planned('a', 'L1', 'bench', 0, [pending()], { removedAt: 5 }),
+    added('b', 'db-bench', 1, [done(80, 8), done(80, 8)], { plannedSets: 3 }),
+  ];
+  const lines = [line('L1', 'db-bench', 0)];
+  const changes = routineChanges(lines, ex);
+  assert.deepEqual(changes, [
+    {
+      kind: 'sets',
+      key: 'sets:L1',
+      routineExerciseId: 'L1',
+      exerciseId: 'db-bench',
+      from: 3,
+      to: 2,
+    },
+    {
+      kind: 'reps',
+      key: 'reps:L1',
+      routineExerciseId: 'L1',
+      exerciseId: 'db-bench',
+      from: 10,
+      to: 8,
+    },
+    {
+      kind: 'load',
+      key: 'load:L1',
+      routineExerciseId: 'L1',
+      exerciseId: 'db-bench',
+      fromKg: 100,
+      toKg: 80,
+    },
+  ]);
+  for (const change of changes) apply(lines, ex, change);
+  assert.deepEqual(routineChanges(lines, ex), []);
+});
+
+test('perform-again lifts without links or mid-session additions report nothing', () => {
+  const ex = [added('a', 'bench', 0, [done(80, 8)], { addedMidSession: false })];
+  assert.deepEqual(routineChanges([line('L1', 'bench', 0)], ex), []);
+});
+
+test('saving the last linked removal leaves the addition available', () => {
+  const lines = [line('L1', 'bench', 0)];
+  const ex = [
+    planned('a', 'L1', 'bench', 0, [], { removedAt: 5 }),
+    added('b', 'row', 1, [done(80, 8)]),
+  ];
+  const changes = routineChanges(lines, ex);
+  assert.deepEqual(keys(changes), ['remove:L1', 'add:b']);
+  apply(lines, ex, changes[0]);
+  assert.equal(ex[0].routineExerciseId, null);
+  assert.deepEqual(routineChanges(lines, ex), [changes[1]]);
+});
+
+test('identical additions of a linked exercise each need a saved line', () => {
+  const lines = [line('L1', 'bench', 0)];
+  const ex = [
+    planned('a', 'L1', 'bench', 0, asPlanned()),
+    added('b', 'bench', 1, asPlanned()),
+    added('c', 'bench', 2, asPlanned()),
+  ];
+  const changes = routineChanges(lines, ex);
+  assert.deepEqual(keys(changes), ['add:b', 'add:c']);
+  assert.ok(
+    changes.every(
+      (c) =>
+        c.kind === 'add' && c.targetSets === 3 && c.targetReps === 10 && c.targetWeightKg === 100,
+    ),
+  );
+  apply(lines, ex, changes[0]);
+  assert.deepEqual(routineChanges(lines, ex), [changes[1]]);
+  apply(lines, ex, changes[1]);
   assert.deepEqual(routineChanges(lines, ex), []);
 });

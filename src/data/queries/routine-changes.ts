@@ -1,7 +1,7 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { useMemo } from 'react';
 
-import { hasRoutinePlan, type RoutineChange, routineChanges } from '@/lib/routine-diff';
+import { type RoutineChange, routineChanges } from '@/lib/routine-diff';
 
 import { db } from '../db';
 import { useRows } from '../live';
@@ -68,7 +68,6 @@ export function composeRoutineChanges(input: {
     ...e,
     sets: input.sets.filter((s) => s.sessionExerciseId === e.id),
   }));
-  if (!hasRoutinePlan(session.routineId, exerciseInputs)) return null;
 
   const names: Record<string, string> = {};
   for (const e of [...input.lines, ...lifts]) names[e.exerciseId] = e.name;

@@ -86,17 +86,6 @@ export type RoutineChange =
 
 const LOAD_TOLERANCE_KG = 0.01;
 
-/**
- * Only a session started from a routine has a plan to diff against: perform-again
- * copies the routine id but links no row to a routine line.
- */
-export function hasRoutinePlan(
-  routineId: string | null,
-  exercises: readonly SessionExerciseInput[],
-): boolean {
-  return routineId != null && exercises.some((e) => e.routineExerciseId != null);
-}
-
 const loggedWork = (sets: readonly SetLike[]): SetLike[] =>
   sets.filter((s) => wasPerformed(s) && isWorkingSet(s));
 
@@ -155,37 +144,10 @@ export function routineChanges(
   const changes: RoutineChange[] = [];
   const replacements = new Set<string>();
 
-  for (const line of [...lines].sort((a, b) => a.position - b.position)) {
-    const linked = byLine.get(line.id);
-    if (linked?.length !== 1) continue;
-    const [e] = linked;
+  function compareTargets(line: PlanLine, done: readonly SetLike[]): void {
     const routineExerciseId = line.id;
     const exerciseId = line.exerciseId;
-
-    if (e.removedAt != null) {
-      if (e.sets.some(wasPerformed)) continue;
-      const next = replacement(e, exercises);
-      if (!next) {
-        changes.push({ kind: 'remove', key: `remove:${line.id}`, routineExerciseId, exerciseId });
-        continue;
-      }
-      replacements.add(next.id);
-      const done = loggedWork(next.sets);
-      if (done.length && next.exerciseId !== line.exerciseId) {
-        changes.push({
-          kind: 'swap',
-          key: `swap:${line.id}`,
-          routineExerciseId,
-          fromExerciseId: line.exerciseId,
-          toExerciseId: next.exerciseId,
-          ...targetsOf(done),
-        });
-      }
-      continue;
-    }
-
-    const done = loggedWork(e.sets);
-    if (!done.length) continue;
+    if (!done.length) return;
     if (done.length !== line.targetSets) {
       changes.push({
         kind: 'sets',
@@ -227,6 +189,40 @@ export function routineChanges(
         toKg: kg,
       });
     }
+  }
+
+  for (const line of [...lines].sort((a, b) => a.position - b.position)) {
+    const linked = byLine.get(line.id);
+    if (linked?.length !== 1) continue;
+    const [e] = linked;
+    const routineExerciseId = line.id;
+    const exerciseId = line.exerciseId;
+
+    if (e.removedAt != null) {
+      if (e.sets.some(wasPerformed)) continue;
+      const next = replacement(e, exercises);
+      if (!next) {
+        changes.push({ kind: 'remove', key: `remove:${line.id}`, routineExerciseId, exerciseId });
+        continue;
+      }
+      replacements.add(next.id);
+      const done = loggedWork(next.sets);
+      if (next.exerciseId === line.exerciseId) {
+        compareTargets(line, done);
+      } else if (done.length) {
+        changes.push({
+          kind: 'swap',
+          key: `swap:${line.id}`,
+          routineExerciseId,
+          fromExerciseId: line.exerciseId,
+          toExerciseId: next.exerciseId,
+          ...targetsOf(done),
+        });
+      }
+      continue;
+    }
+
+    compareTargets(line, loggedWork(e.sets));
   }
 
   const linkedThisSession = new Set(exercises.flatMap((e) => e.routineExerciseId ?? []));
