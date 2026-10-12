@@ -7,13 +7,12 @@ import Animated, {
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
-  withDecay,
   withSpring,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { clampIndex, indexOf, valueAt, type Scale } from '@/lib/scale';
-import { scrubIndex } from '@/lib/scrub';
+import { magnet, release, scrubIndex } from '@/lib/scrub';
 import { color, lh, mono, size, text } from '@/theme';
 
 import { pop, tick } from './haptics';
@@ -29,13 +28,11 @@ type Props = {
   /** A finger held elsewhere drives the tape: its vertical travel while held, null otherwise. */
   scrubSV?: SharedValue<number | null>;
 };
-/** Lab 06 tile 02: underdamped on purpose — the overshoot is what reads as mechanical. */
-const SETTLE = { damping: 26, stiffness: 220, mass: 0.6 };
 
 /**
- * A fixed centre index over a scale that moves: drag it by detent, throw it and
- * it decays, then springs onto the nearest detent. Position is a float index on
- * the UI thread; every detent it crosses — dragged or coasting — ticks and
+ * A fixed centre index over a scale that moves: a slow drag clicks detent by
+ * detent, a throw glides on, and either lands on a detent. Position is a float
+ * index on the UI thread; every detent it crosses — dragged or coasting — ticks and
  * writes through `onDetent` exactly once.
  */
 export function Tape({ scale, value, unit, onDetent, rows = 9, scrubSV }: Props) {
@@ -64,11 +61,11 @@ export function Tape({ scale, value, unit, onDetent, rows = 9, scrubSV }: Props)
     },
   );
 
-  const settle = () => {
+  const settle = (velocity: number) => {
     'worklet';
-    const target = clampIndex(scale, Math.round(posSV.get()));
+    const { target, config } = release(scale, posSV.get(), velocity);
     posSV.set(
-      withSpring(target, SETTLE, (finished) => {
+      withSpring(target, config, (finished) => {
         if (!finished) return;
         movingSV.set(false);
         if (target !== originSV.get()) scheduleOnRN(pop);
@@ -111,22 +108,16 @@ export function Tape({ scale, value, unit, onDetent, rows = 9, scrubSV }: Props)
     })
     .onUpdate((event) => {
       if (scrubSV?.get() != null) return;
-      const next = startSV.get() - event.translationY / size.tapeRow;
-      posSV.set(Math.min(Math.max(next, 0), scale.n - 1));
+      const raw = startSV.get() - event.translationY / size.tapeRow;
+      const current = clampIndex(scale, Math.round(posSV.get()));
+      posSV.set(magnet(scale, raw, current, -event.velocityY / size.tapeRow));
     })
     .onEnd((event, success) => {
       if (!success || scrubSV?.get() != null) return;
-      posSV.set(
-        withDecay(
-          { velocity: -event.velocityY / size.tapeRow, clamp: [0, scale.n - 1] },
-          (finished) => {
-            if (finished) settle();
-          },
-        ),
-      );
+      settle(-event.velocityY / size.tapeRow);
     })
     .onFinalize((_event, success) => {
-      if (!success && scrubSV?.get() == null) settle();
+      if (!success && scrubSV?.get() == null) settle(0);
     });
 
   const strip = useAnimatedStyle(() => ({
