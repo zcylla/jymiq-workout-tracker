@@ -3,7 +3,47 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
-**START HERE (2026-10-07, Sentry on this machine and the third-workout notes).** Newest. **On the phone now:** both
+**START HERE (2026-10-11, fourth-workout notes).** Newest; where it conflicts with the block below, this wins. `origin/main`
+is `45f9c8c` (the owner pushed); 16 local commits on top (`git log origin/main..HEAD`), `pnpm check` green (671 tests, the same 3 old
+lint warnings). **Nothing from this block is on the phone yet.** The phone was installed from `35995eb` on 2026-10-07 and was not
+connected when the build finished; a dev release APK of `04dcd53` (it also carries the number-pad icon of `a99deb2`; package `com.zcylla.jymiq.dev`, arm64, Sentry debug ID
+`f0766ade-7fbd-4a79-9714-5ab14db9e889` uploaded, token absent from the log) sits in the disposable `android/app/build/outputs/apk/release/`
+and is rebuilt by the dev recipe. Installing it needs the owner's go-ahead; production is untouched.
+- **Done, per the owner's notes.** Plate calculator pins its readout and bar options above the scrolling steppers (`cc2b00b`, the
+  header sat inside the scroll area and slid under the handle). Exercise screen: muscles as `Pill` tags, primary gold and secondary
+  the new `quiet` tone (`f396e89`, also fixes `LOWER_BACK`), HOW TO steps on the rail with numerals instead of dots (`fbf35f5`; §0's rail
+  row amended in `cf130d2`). Live screen: the exercise label, name and still stay put while the set counter and wheel page (`fc55fb3`,
+  `LivePager` has a `header` slot outside the moving view); releasing a press-and-hold restores the tape state from before the hold
+  (`7a30e85`, uses `onEdit`'s toggle semantics, no `live.tsx` change); the tape snaps harder the slower it is moved (`652f628`,
+  constants at the top of `src/lib/scrub.ts`); warmup is a dim pill and drop an accent pill under the counter, the Log button names the
+  type ("Log warmup 1", "Log drop 1") and the sets sheet matches (`41d2a2d`). The sheet's always-mounted blur now covers the dropdown
+  menu (`525bdfe`) and the tab bar (`5e8a583`, `useHeldBlurTarget` in `screen-blur.tsx`; the action bar still has the old gate).
+- **Exercise demo order (`4479dff`).** 302 exercises, three frames each. Vision agents classified all of them: 152 are reversed in
+  `src/lib/exercise-art-order.ts` (played frame 3, 2, 1), 67 are forward, 83 were unsure and keep their order (holds, alternating or
+  cyclic movements). 20 of the reversed and 11 of the forward calls were low confidence, and "start" was defined as the lengthened or
+  loaded pose (bottom of a squat or press, bar on the floor, arm hanging). Corrections are one id in or out of that set. Thumbnails
+  still use frame 1.
+- **Routine changes at the end of a workout** (`c8a7109`, `d3ac599`, `880c661`, `fed08c1`, `04dcd53`). The summary screen lists what the
+  session changed against its routine, each with SAVE, and SAVE ALL: exercise added, removed (only if nothing was logged), swapped;
+  working-set count; target reps and load (only when every logged working set agrees). Reordering and set types (warmup, drop) are out:
+  a routine holds only sets x reps x load, and set types would need a schema change. No schema change was made. It only shows on the
+  routine's most recent completed session, so an old session opened from History never proposes stale targets. The diff is computed
+  against the live routine, so a saved change drops out on its own. `removeSessionExercise` now keeps a routine-linked lift as a removed
+  row with no sets instead of hard-deleting it, so a removal is detectable. Known limit: a reorder after a swap can split the swap
+  pair (the diff then reports a remove plus an add), because `reorderSessionExercises` renumbers only visible rows.
+- **Unverified on a device (all of it).** Plate sheet layout (a second 11 pt of bottom padding when CONFIGURE is closed, from `Sheet`
+  always rendering its scroll view); the rail connector length at `air={16}`; pager header does not shift a pixel; tape feel (tune
+  `SNAP_BELOW_DPS`/`FREE_ABOVE_DPS`/`DRAG_MAGNET`/`GLIDE_SECONDS`); `Log drop 1` fit in the action bar; dropdown and tab-bar blur flashes
+  (a fresh BlurView draws a plain tint for 1-2 frames; `glass.tsx` keys it on the target); the routine-changes section end to end.
+- **Blur performance check still owed.** The tab bar's live blur over scrolling content cost 51% janky frames at blur 20 versus 5%
+  without (dev build, 2026-09-30). Compare with `adb shell dumpsys gfxinfo com.zcylla.jymiq.dev reset` then the scenarios (tab loop x3,
+  History scroll across minimise, sheet open/close x5, push/pop a routine x5) on `35995eb` versus this build. If the second layer during the
+  240 ms cross-fade is too costly, mount the incoming blur at the start and unmount the outgoing one at the end.
+- **Still open from before.** Disabled Edit button grey or dimmed green; the frame-interpolation proof of concept; JYMIQ-WORKOUT-TRACKER-2
+  to resolve once it has not recurred; two 5 Oct test sessions in the dev history; the work PC needs `git checkout .` then a pull; the
+  Codex route in harness-dispatch still rejects `--full-auto`.
+
+**START HERE (2026-10-07, Sentry on this machine and the third-workout notes).** Superseded above for the unpushed commits and the open items. **On the phone now:** both
 releases built from `35995eb` with the Sentry token exported (debug IDs injected, source maps uploaded): Jymiq Dev
 (`com.zcylla.jymiq.dev`) installed 17:42 and production (`com.zcylla.jymiq`) installed in place at 17:45
 (`firstInstallTime` 2026-09-06 kept, same signature; cloud was 768 sessions / 4,684 session exercises / 16,200 sets
