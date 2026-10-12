@@ -7,7 +7,6 @@ export interface ChangeText {
   detail: string;
 }
 
-const DASH = '—';
 const FALLBACK_NAME = 'Exercise';
 
 const count = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 'S'}`;
@@ -58,13 +57,13 @@ export function describeChange(
       return {
         tag: 'REPS',
         title: name(change.exerciseId),
-        detail: `${change.from ?? DASH} → ${count(change.to, 'REP')}`,
+        detail: `${change.from} → ${count(change.to, 'REP')}`,
       };
     case 'load':
       return {
         tag: 'LOAD',
         title: name(change.exerciseId),
-        detail: `${change.fromKg == null ? DASH : formatWeight(change.fromKg, unit)} → ${formatWeight(change.toKg, unit)} ${unit.toUpperCase()}`,
+        detail: `${formatWeight(change.fromKg, unit)} → ${formatWeight(change.toKg, unit)} ${unit.toUpperCase()}`,
       };
   }
 }

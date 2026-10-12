@@ -63,7 +63,7 @@ export interface RepsChange {
   key: string;
   routineExerciseId: string;
   exerciseId: string;
-  from: number | null;
+  from: number;
   to: number;
 }
 
@@ -72,7 +72,7 @@ export interface LoadChange {
   key: string;
   routineExerciseId: string;
   exerciseId: string;
-  fromKg: Kg | null;
+  fromKg: Kg;
   toKg: Kg;
 }
 
@@ -162,7 +162,7 @@ export function routineChanges(
       done.map((s) => s.reps),
       0,
     );
-    if (reps != null && reps !== line.targetReps) {
+    if (reps != null && line.targetReps != null && reps !== line.targetReps) {
       changes.push({
         kind: 'reps',
         key: `reps:${line.id}`,
@@ -178,7 +178,8 @@ export function routineChanges(
     );
     if (
       kg != null &&
-      (line.targetWeightKg == null || Math.abs(kg - line.targetWeightKg) > LOAD_TOLERANCE_KG)
+      line.targetWeightKg != null &&
+      Math.abs(kg - line.targetWeightKg) > LOAD_TOLERANCE_KG
     ) {
       changes.push({
         kind: 'load',

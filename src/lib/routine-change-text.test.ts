@@ -86,14 +86,6 @@ test('sets, reps and load show before and after', () => {
     ),
     { tag: 'REPS', title: 'Bench Press', detail: '8 → 10 REPS' },
   );
-  assert.equal(
-    describeChange(
-      { kind: 'reps', key: 'r', routineExerciseId: 'r1', exerciseId: 'bench', from: null, to: 10 },
-      names,
-      'kg',
-    ).detail,
-    '— → 10 REPS',
-  );
   assert.deepEqual(
     describeChange(
       {
@@ -108,21 +100,6 @@ test('sets, reps and load show before and after', () => {
       'kg',
     ),
     { tag: 'LOAD', title: 'Bench Press', detail: '60 → 62.5 KG' },
-  );
-  assert.equal(
-    describeChange(
-      {
-        kind: 'load',
-        key: 'l',
-        routineExerciseId: 'r1',
-        exerciseId: 'bench',
-        fromKg: null,
-        toKg: 62.5,
-      },
-      names,
-      'kg',
-    ).detail,
-    '— → 62.5 KG',
   );
 });
 

@@ -274,7 +274,7 @@ test('every working set at one new rep count changes the target reps', () => {
   assert.deepEqual(routineChanges([line('L1', 'bench', 0)], ex), [
     { kind: 'reps', key: 'reps:L1', routineExerciseId: 'L1', exerciseId: 'bench', from: 10, to: 8 },
   ]);
-  assert.deepEqual(keys(routineChanges([line('L1', 'bench', 0, 3, null)], ex)), ['reps:L1']);
+  assert.deepEqual(routineChanges([line('L1', 'bench', 0, 3, null)], ex), []);
 });
 
 test('every working set at one new load changes the target load', () => {
@@ -289,7 +289,7 @@ test('every working set at one new load changes the target load', () => {
       toKg: 102.5,
     },
   ]);
-  assert.deepEqual(keys(routineChanges([line('L1', 'bench', 0, 3, 10, null)], ex)), ['load:L1']);
+  assert.deepEqual(routineChanges([line('L1', 'bench', 0, 3, 10, null)], ex), []);
 });
 
 test('load differences inside a hundredth of a kilogram are rounding, not a change', () => {
@@ -471,4 +471,21 @@ test('identical additions of a linked exercise each need a saved line', () => {
   assert.deepEqual(routineChanges(lines, ex), [changes[1]]);
   apply(lines, ex, changes[1]);
   assert.deepEqual(routineChanges(lines, ex), []);
+});
+
+test('a null rep target ignores uniform logged reps', () => {
+  const ex = [planned('a', 'L1', 'bench', 0, [done(100, 12), done(100, 12), done(100, 12)])];
+  assert.deepEqual(routineChanges([line('L1', 'bench', 0, 3, null, 100)], ex), []);
+});
+
+test('a null load target ignores uniform logged load', () => {
+  const ex = [planned('a', 'L1', 'bench', 0, [done(95, 10), done(95, 10), done(95, 10)])];
+  assert.deepEqual(routineChanges([line('L1', 'bench', 0, 3, 10, null)], ex), []);
+});
+
+test('null rep and load targets still allow a working-set count change', () => {
+  const ex = [planned('a', 'L1', 'bench', 0, [done(95, 12), done(95, 12)])];
+  assert.deepEqual(routineChanges([line('L1', 'bench', 0, 3, null, null)], ex), [
+    { kind: 'sets', key: 'sets:L1', routineExerciseId: 'L1', exerciseId: 'bench', from: 3, to: 2 },
+  ]);
 });
