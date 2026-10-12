@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import type { DotTone } from '@/lib/time';
-import { color, hairline } from '@/theme';
+import { color, hairline, text } from '@/theme';
 
 import { listMotion } from './listed';
 
 type RailItem = {
   tone: DotTone;
   body: ReactNode;
+  /** A numeral in the gutter in place of the dot: numbered steps rather than events. */
+  step?: string;
   /** Optional — a rail node is not a target unless a screen makes it one. */
   onPress?: () => void;
 };
@@ -76,16 +78,20 @@ export function RailRow({
       style={{ flexDirection: 'row', gap: 14 }}
       {...(animate ? listMotion(index) : null)}
     >
-      <View style={{ width: 11, flex: 0, alignItems: 'center' }}>
-        <View
-          style={{
-            width: 7,
-            height: 7,
-            borderRadius: 9999,
-            marginTop: 5,
-            backgroundColor: color[item.tone],
-          }}
-        />
+      <View style={{ width: item.step ? 22 : 11, flex: 0, alignItems: 'center' }}>
+        {item.step ? (
+          <Text style={[text.meta, { marginTop: 5, color: color[item.tone] }]}>{item.step}</Text>
+        ) : (
+          <View
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: 9999,
+              marginTop: 5,
+              backgroundColor: color[item.tone],
+            }}
+          />
+        )}
         {last ? null : (
           <View style={{ flex: 1, width: 1, backgroundColor: segColor, marginVertical: 6 }} />
         )}

@@ -9,6 +9,7 @@ import {
   ExerciseLog,
   LineChart,
   Pill,
+  Rail,
   Screen,
   ScreenHeader,
   Section,
@@ -164,14 +165,14 @@ export default function ExerciseScreen() {
 
       {cues.length ? (
         <Section label="HOW TO" plated={false}>
-          <View style={{ gap: space.within }}>
-            {cues.map((cue, i) => (
-              <View key={cue} style={{ flexDirection: 'row', gap: 11 }}>
-                <Text style={[text.meta, { width: 18 }]}>{String(i + 1).padStart(2, '0')}</Text>
-                <Text style={[text.body, { flex: 1 }]}>{cue}</Text>
-              </View>
-            ))}
-          </View>
+          <Rail
+            air={16}
+            items={cues.map((cue, i) => ({
+              tone: 'tick3',
+              step: String(i + 1).padStart(2, '0'),
+              body: <Text style={text.body}>{cue}</Text>,
+            }))}
+          />
         </Section>
       ) : null}
 
