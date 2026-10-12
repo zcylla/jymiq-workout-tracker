@@ -236,14 +236,6 @@ export function applyRoutineChanges(routineId: string, changes: readonly Routine
             targetReps: c.targetReps,
             targetWeightKg: c.targetWeightKg,
           };
-          const saved = lines.some(
-            (l) =>
-              l.exerciseId === c.exerciseId &&
-              l.targetSets === targets.targetSets &&
-              l.targetReps === targets.targetReps &&
-              l.targetWeightKg === targets.targetWeightKg,
-          );
-          if (saved) break;
           const added = {
             id: newId(),
             routineId,
@@ -254,7 +246,6 @@ export function applyRoutineChanges(routineId: string, changes: readonly Routine
             note: null,
           };
           tx.insert(routineExercises).values(added).run();
-          lines.push(added);
           break;
         }
         case 'remove':
