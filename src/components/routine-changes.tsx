@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { describeChange } from '@/lib/routine-change-text';
@@ -24,13 +25,17 @@ function SaveButton({
   label,
   accessibilityLabel,
   onPress,
+  disabled,
 }: {
   label: string;
   accessibilityLabel: string;
   onPress: () => void;
+  disabled: boolean;
 }) {
   return (
     <Pressable
+      disabled={disabled}
+      accessibilityState={{ disabled }}
       onPress={() => {
         pop();
         onPress();
@@ -70,6 +75,36 @@ export function RoutineChangesSection({
   onSave: (change: RoutineChange) => void;
   onSaveAll: () => void;
 }) {
+  const [submitted, setSubmitted] = useState<ReadonlySet<string>>(() => new Set());
+  const submittedRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    const keys = new Set(changes.map((change) => change.key));
+    const remaining = new Set(
+      [...submittedRef.current].filter((key) => key !== 'all' && keys.has(key)),
+    );
+    if (submittedRef.current.has('all') && remaining.size > 0) remaining.add('all');
+    if (remaining.size === submittedRef.current.size) return;
+    submittedRef.current = remaining;
+    setSubmitted(remaining);
+  }, [changes]);
+
+  function save(change: RoutineChange) {
+    if (submittedRef.current.has(change.key) || submittedRef.current.has('all')) return;
+    const next = new Set(submittedRef.current).add(change.key);
+    submittedRef.current = next;
+    setSubmitted(next);
+    onSave(change);
+  }
+
+  function saveAll() {
+    if (submittedRef.current.size > 0) return;
+    const next = new Set(['all', ...changes.map((change) => change.key)]);
+    submittedRef.current = next;
+    setSubmitted(next);
+    onSaveAll();
+  }
+
   if (changes.length === 0) return null;
 
   return (
@@ -81,7 +116,8 @@ export function RoutineChangesSection({
           <SaveButton
             label="SAVE ALL"
             accessibilityLabel={`Save all ${changes.length} changes to ${routineName}`}
-            onPress={onSaveAll}
+            disabled={submitted.size > 0}
+            onPress={saveAll}
           />
         ) : undefined
       }
@@ -115,7 +151,8 @@ export function RoutineChangesSection({
                   <SaveButton
                     label="SAVE"
                     accessibilityLabel={`Save change: ${detail}, ${title}`}
-                    onPress={() => onSave(change)}
+                    disabled={submitted.has(change.key) || submitted.has('all')}
+                    onPress={() => save(change)}
                   />
                 </View>
               </RowPlate>
