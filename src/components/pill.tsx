@@ -8,6 +8,7 @@ const TONE = {
   done: { fg: color.done, bg: wash.done },
   live: { fg: color.live, bg: wash.live },
   dim: { fg: color.dim, bg: wash.field },
+  quiet: { fg: color.lo, bg: wash.field },
 } as const;
 
 export type PillTone = keyof typeof TONE;

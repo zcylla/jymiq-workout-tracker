@@ -8,6 +8,7 @@ import {
   Delta,
   ExerciseLog,
   LineChart,
+  Pill,
   Screen,
   ScreenHeader,
   Section,
@@ -149,9 +150,15 @@ export default function ExerciseScreen() {
       ) : null}
 
       {prime.length ? (
-        <Section label="MUSCLES">
-          <Text style={text.body}>{prime.join(' · ').toUpperCase()}</Text>
-          {assist.length ? <Text style={text.prose}>{assist.join(' · ')}</Text> : null}
+        <Section label="MUSCLES" plated={false}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.row }}>
+            {prime.map((m) => (
+              <Pill key={m} label={muscleLabel(m)} tone="accent" />
+            ))}
+            {assist.map((m) => (
+              <Pill key={m} label={muscleLabel(m)} tone="quiet" />
+            ))}
+          </View>
         </Section>
       ) : null}
 
@@ -410,6 +417,10 @@ function Change({ amount, format }: { amount: number | null; format: (abs: numbe
   return (
     <Delta value={`${amount > 0 ? '+' : '−'}${format(Math.abs(amount))}`} positive={amount > 0} />
   );
+}
+
+function muscleLabel(muscle: string): string {
+  return muscle.replace('_', ' ').toUpperCase();
 }
 
 function nowMs(): number {
