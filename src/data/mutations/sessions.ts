@@ -874,11 +874,18 @@ export function skipSessionExercise(id: string): void {
  * A hard delete, for a lift with nothing logged on it: its sets go with it (the
  * foreign key cascades), the survivors close the gap, and a cursor that pointed
  * at it moves on. Anything logged is skipped instead, so history keeps it.
+ *
+ * A lift from the routine keeps its row, marked removed and emptied of sets, so
+ * the summary can still say it was dropped from the plan.
  */
 export function removeSessionExercise(id: string): void {
   db.transaction((tx) => {
     const [row] = tx
-      .select({ sessionId: sessionExercises.sessionId, position: sessionExercises.position })
+      .select({
+        sessionId: sessionExercises.sessionId,
+        position: sessionExercises.position,
+        routineExerciseId: sessionExercises.routineExerciseId,
+      })
       .from(sessionExercises)
       .where(eq(sessionExercises.id, id))
       .limit(1)
@@ -905,6 +912,11 @@ export function removeSessionExercise(id: string): void {
         })
         .where(eq(sessions.id, row.sessionId))
         .run();
+    }
+
+    if (row.routineExerciseId != null) {
+      tx.delete(sets).where(eq(sets.sessionExerciseId, id)).run();
+      return;
     }
 
     tx.delete(sessionExercises).where(eq(sessionExercises.id, id)).run();
