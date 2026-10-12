@@ -297,91 +297,93 @@ export function PlateSheet({
     setWeighed({ ...weighed, [unit]: { ...weighCounts, [plate]: n } });
   };
 
-  return (
-    <Sheet open={open} onClose={onClose}>
+  const header =
+    mode === 'load' ? (
       <View style={{ gap: space.within }}>
         <Segmented options={MODES} value={mode} onChange={setMode} />
-        {mode === 'load' ? (
-          <>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Text style={text.label}>
-                PLATES · {formatWeight(loadKg, unit)} {label}
-              </Text>
-              <TextButton
-                label={configuring ? 'DONE' : 'CONFIGURE'}
-                onPress={() => setConfiguring((c) => !c)}
-              />
-            </View>
-            <PlateStrip plates={perSide} unit={unit} withBar={bar > 0} />
-            <Text style={text.body}>
-              {load <= 0
-                ? 'Set a load'
-                : load < bar
-                  ? 'Under the bar'
-                  : perSide.length === 0
-                    ? bar === 0
-                      ? 'No plate fits'
-                      : 'Bar only'
-                    : `${perSide.map(num).join(' + ')} per side`}
-            </Text>
-            {closest ? (
-              <Text style={[text.meta, { color: color.lo }]}>
-                CLOSEST {num(achieved)} {label} · {num(residual)} SHORT
-              </Text>
-            ) : null}
-            <Segmented options={barOptions} value={barIndex} onChange={setBarIndex} />
-            {configuring ? (
-              <PlateStepper
-                unit={unit}
-                counts={counts}
-                max={PLATE_COUNT_MAX}
-                resetDisabled={isDefault}
-                onReset={() =>
-                  setSettings({
-                    plateCounts: { ...plateCounts, [unit]: DEFAULT_PLATE_COUNTS[unit] },
-                  })
-                }
-                onChange={setCount}
-              />
-            ) : null}
-          </>
-        ) : (
-          <>
-            <PlateStrip plates={weighedPlates} unit={unit} withBar={bar > 0} />
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Text style={text.label}>TOTAL</Text>
-              <Text style={text.numTile}>
-                {num(weighedSum.total)} {label}
-              </Text>
-            </View>
-            <Text style={text.meta}>
-              PER SIDE {num(weighedSum.perSide)} {label} ·{' '}
-              {bar === 0 ? 'NO BAR' : `BAR ${num(bar)} ${label}`}
-            </Text>
-            <Segmented options={barOptions} value={barIndex} onChange={setBarIndex} />
-            <PlateStepper
-              unit={unit}
-              counts={weighCounts}
-              max={WEIGH_COUNT_MAX}
-              resetDisabled={weighedPlates.length === 0}
-              onReset={() => setWeighed({ ...weighed, [unit]: {} })}
-              onChange={setWeighCount}
-            />
-          </>
-        )}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Text style={text.label}>
+            PLATES · {formatWeight(loadKg, unit)} {label}
+          </Text>
+          <TextButton
+            label={configuring ? 'DONE' : 'CONFIGURE'}
+            onPress={() => setConfiguring((c) => !c)}
+          />
+        </View>
+        <PlateStrip plates={perSide} unit={unit} withBar={bar > 0} />
+        <Text style={text.body}>
+          {load <= 0
+            ? 'Set a load'
+            : load < bar
+              ? 'Under the bar'
+              : perSide.length === 0
+                ? bar === 0
+                  ? 'No plate fits'
+                  : 'Bar only'
+                : `${perSide.map(num).join(' + ')} per side`}
+        </Text>
+        {closest ? (
+          <Text style={[text.meta, { color: color.lo }]}>
+            CLOSEST {num(achieved)} {label} · {num(residual)} SHORT
+          </Text>
+        ) : null}
+        <Segmented options={barOptions} value={barIndex} onChange={setBarIndex} />
       </View>
+    ) : (
+      <View style={{ gap: space.within }}>
+        <Segmented options={MODES} value={mode} onChange={setMode} />
+        <PlateStrip plates={weighedPlates} unit={unit} withBar={bar > 0} />
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Text style={text.label}>TOTAL</Text>
+          <Text style={text.numTile}>
+            {num(weighedSum.total)} {label}
+          </Text>
+        </View>
+        <Text style={text.meta}>
+          PER SIDE {num(weighedSum.perSide)} {label} ·{' '}
+          {bar === 0 ? 'NO BAR' : `BAR ${num(bar)} ${label}`}
+        </Text>
+        <Segmented options={barOptions} value={barIndex} onChange={setBarIndex} />
+      </View>
+    );
+
+  return (
+    <Sheet open={open} onClose={onClose} header={header}>
+      {mode === 'weigh' ? (
+        <PlateStepper
+          unit={unit}
+          counts={weighCounts}
+          max={WEIGH_COUNT_MAX}
+          resetDisabled={weighedPlates.length === 0}
+          onReset={() => setWeighed({ ...weighed, [unit]: {} })}
+          onChange={setWeighCount}
+        />
+      ) : configuring ? (
+        <PlateStepper
+          unit={unit}
+          counts={counts}
+          max={PLATE_COUNT_MAX}
+          resetDisabled={isDefault}
+          onReset={() =>
+            setSettings({
+              plateCounts: { ...plateCounts, [unit]: DEFAULT_PLATE_COUNTS[unit] },
+            })
+          }
+          onChange={setCount}
+        />
+      ) : null}
     </Sheet>
   );
 }
