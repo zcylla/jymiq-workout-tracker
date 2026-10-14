@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import {
   ActionBar,
@@ -11,8 +11,9 @@ import {
   ScreenHeader,
   Section,
   useActionBarHeight,
+  useDialog,
 } from '@/components';
-import { startSessionFrom } from '@/data/mutations/sessions';
+import { deleteSession, startSessionFrom } from '@/data/mutations/sessions';
 import {
   sessionLogExercisesQuery,
   sessionQuery,
@@ -82,6 +83,24 @@ export default function HistoryScreen() {
     return map;
   }, [allSets]);
 
+  const show = useDialog();
+  const remove = () =>
+    show({
+      title: 'Delete workout?',
+      message: 'Removes its sets and any records it set. This cannot be undone.',
+      actions: [
+        {
+          label: 'Delete',
+          tone: 'destructive',
+          onPress: () => {
+            deleteSession(id);
+            router.back();
+          },
+        },
+        { label: 'Keep', tone: 'cancel' },
+      ],
+    });
+
   const loading = exercisesUpdatedAt === undefined || setsUpdatedAt === undefined;
   const anyPerformed = allSets.some(wasPerformed);
   const lifted = exercises.filter((ex) => (performedByExercise.get(ex.id)?.length ?? 0) > 0);
@@ -114,6 +133,23 @@ export default function HistoryScreen() {
           title={session ? sessionDateLabel(session.startedAt) : ''}
           kicker={kickerParts.length ? kickerParts.join(' · ') : undefined}
           onBack={() => router.back()}
+          right={
+            session && session.status !== 'in_progress' ? (
+              <Pressable
+                onPress={remove}
+                accessibilityRole="button"
+                accessibilityLabel="Delete workout"
+                style={{
+                  minHeight: size.hit,
+                  minWidth: size.hit,
+                  justifyContent: 'center',
+                  alignItems: 'flex-end',
+                }}
+              >
+                <Text style={[text.label, { color: color.live }]}>DELETE</Text>
+              </Pressable>
+            ) : undefined
+          }
         />
 
         {anyPerformed || loading ? (

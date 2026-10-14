@@ -21,8 +21,8 @@ export function useHealthStatus(): { status: HealthStatus | null; press: () => v
   }, [refresh]);
 
   const press = useCallback(() => {
-    if (status === 'not_connected') connectHealth().then(setStatus);
-    else if (status === 'partial' || status === 'connected') openHealthSettings();
+    if (status === 'not_connected' || status === 'partial') connectHealth().then(setStatus);
+    else if (status === 'connected') openHealthSettings();
     else if (status === 'needs_update') openHealthStore();
   }, [status]);
 

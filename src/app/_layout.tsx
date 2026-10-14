@@ -13,6 +13,7 @@ import { DialogProvider } from '@/components';
 import { ScreenBlurProvider, useStackBlurMotionListeners } from '@/components/screen-blur';
 import migrations from '@/../drizzle/migrations';
 import { db } from '@/data/db';
+import { HealthSync } from '@/data/health/health-sync';
 import { authCodeFromUrl, exchangeAuthCode } from '@/data/supabase';
 import { LiveNotification } from '@/data/use-live-notification';
 import { sentryEnvironment } from '@/lib/sentry-env';
@@ -84,6 +85,7 @@ function RootLayout() {
             <DialogProvider>
               <RootStack />
               <LiveNotification />
+              <HealthSync />
             </DialogProvider>
           </ScreenBlurProvider>
         )}
