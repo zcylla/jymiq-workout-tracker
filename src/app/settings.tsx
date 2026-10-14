@@ -177,7 +177,7 @@ export default function SettingsScreen() {
           </RowPlates>
         </Section>
 
-        <Section label="HEALTH" plated={false}>
+        <Section label="CONNECTIONS" plated={false}>
           <RowPlates tinted>
             <RowPlate onPress={health.press} disabled={health.status === 'unsupported'}>
               <ListRow
