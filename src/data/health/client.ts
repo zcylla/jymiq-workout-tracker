@@ -157,14 +157,25 @@ export async function canReadHeartRate(): Promise<boolean> {
 
 export async function readHeartRate(startMs: number, endMs: number): Promise<HeartRateSample[]> {
   if (Platform.OS !== 'android') return [];
-  const { records } = await readRecords('HeartRate', {
-    timeRangeFilter: {
-      operator: 'between',
-      startTime: new Date(startMs).toISOString(),
-      endTime: new Date(endMs).toISOString(),
-    },
-  });
-  return records.flatMap((r) =>
-    r.samples.map((s) => ({ time: Date.parse(s.time), bpm: s.beatsPerMinute })),
-  );
+  const paddingMs = 30 * 60 * 1000;
+  const timeRangeFilter = {
+    operator: 'between' as const,
+    startTime: new Date(startMs - paddingMs).toISOString(),
+    endTime: new Date(endMs + paddingMs).toISOString(),
+  };
+  const samples: HeartRateSample[] = [];
+  let pageToken: string | undefined;
+  do {
+    const page = await readRecords('HeartRate', {
+      timeRangeFilter,
+      ...(pageToken ? { pageToken } : {}),
+    });
+    for (const record of page.records) {
+      for (const sample of record.samples) {
+        samples.push({ time: Date.parse(sample.time), bpm: sample.beatsPerMinute });
+      }
+    }
+    pageToken = page.pageToken;
+  } while (pageToken);
+  return samples;
 }
