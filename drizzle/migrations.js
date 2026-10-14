@@ -7,6 +7,7 @@ import m0002 from './0002_programs.sql';
 import m0003 from './0003_conscious_ink.sql';
 import m0004 from './0004_rare_warhawk.sql';
 import m0005 from './0005_stiff_gambit.sql';
+import m0006 from './0006_salty_songbird.sql';
 
 export default {
   journal,
@@ -17,5 +18,6 @@ export default {
     m0003,
     m0004,
     m0005,
+    m0006,
   },
 };

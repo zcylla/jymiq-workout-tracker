@@ -13,7 +13,14 @@ import {
 const meta = { now: Date.UTC(2026, 8, 13, 10, 42), appVersion: '1.0.0' };
 
 test('a real export round-trips through the parser', () => {
-  const envelope = buildExport({ routines: [{ id: 'a' }], sets: [{}, {}] }, meta);
+  const envelope = buildExport(
+    {
+      routines: [{ id: 'a' }],
+      sets: [{}, {}],
+      sessions: [{ id: 'session', avgHr: 121, maxHr: 158 }],
+    },
+    meta,
+  );
   const result = parseBackup(JSON.stringify(envelope));
   assert.equal(result.ok, true);
   if (!result.ok) return;

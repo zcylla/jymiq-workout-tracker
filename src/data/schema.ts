@@ -187,6 +187,8 @@ export const sessions = sqliteTable(
     totalVolumeKg: real('total_volume_kg'),
     totalSets: integer('total_sets'),
     durationSec: integer('duration_sec'),
+    avgHr: integer('avg_hr'),
+    maxHr: integer('max_hr'),
   },
   (t) => [
     index('idx_sessions_started').on(t.startedAt),
