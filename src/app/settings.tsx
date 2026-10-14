@@ -15,7 +15,6 @@ import {
 } from '@/components';
 import { ReadinessPill } from '@/components/pill';
 import { useHealthStatus } from '@/data/health/use-health-status';
-import { useWorkoutExport } from '@/data/health/use-workout-export';
 import { askNotificationPermission } from '@/data/live-notification';
 import { useRows } from '@/data/live';
 import { latestCheckInQuery } from '@/data/queries/readiness';
@@ -55,7 +54,6 @@ const SETS_SCALE = makeScale(1, DEFAULT_SETS_MAX, 1, 1, 1);
 export default function SettingsScreen() {
   const settings = useSettings();
   const health = useHealthStatus();
-  const workouts = useWorkoutExport();
   const unit = settings.weightUnit.toUpperCase();
   const incrementLabel = (stepKg: number) =>
     `${loadDisplayStep(stepKg, settings.weightUnit)} ${unit}`;
@@ -181,18 +179,11 @@ export default function SettingsScreen() {
 
         <Section label="CONNECTIONS" plated={false}>
           <RowPlates tinted>
-            <RowPlate onPress={health.press} disabled={health.status === 'unsupported'}>
+            <RowPlate onPress={() => router.push('/health-connect')}>
               <ListRow
                 quiet
                 title="Health Connect"
                 value={health.status ? healthStatusLabel(health.status) : '—'}
-              />
-            </RowPlate>
-            <RowPlate>
-              <Toggle
-                label="Send workouts to Health Connect"
-                on={workouts.on}
-                onToggle={workouts.toggle}
               />
             </RowPlate>
           </RowPlates>

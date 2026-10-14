@@ -113,6 +113,7 @@ export default function HistoryScreen() {
   const durationLabel = session ? formatSessionDuration(session.durationSec) : DASH;
   const kickerParts = session ? [session.name.toUpperCase()] : [];
   if (durationLabel !== DASH) kickerParts.push(durationLabel);
+  if (session?.avgHr != null) kickerParts.push(`${session.avgHr} AVG BPM`);
 
   const again = () => {
     if (!running) {

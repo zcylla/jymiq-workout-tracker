@@ -125,6 +125,10 @@ export default function SummaryScreen() {
     });
   }
 
+  if (session?.avgHr != null && session?.maxHr != null) {
+    activityTiles.push({ label: 'HEART RATE', value: `${session.avgHr} / ${session.maxHr} BPM` });
+  }
+
   const setsByExercise = new Map<string, typeof allSets>();
   for (const s of allSets) {
     const list = setsByExercise.get(s.sessionExerciseId) ?? [];
