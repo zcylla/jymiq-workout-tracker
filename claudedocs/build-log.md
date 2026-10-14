@@ -3,6 +3,11 @@
 Companion to `design-exploration.md`, which holds the design state. **This file holds the build
 state.** A new session should read `AGENTS.md`, then §0 of `design-exploration.md`, then this.
 
+**NEWEST (2026-10-14).** Two changes on `main`, neither installed on the phone, neither seen on a device.
+- **Rolling centre number** (`60a85eb`): `RollingNumber` is back (restored from before `616db4f`, which removed it) and drives only the live dial's centre value, rolling while any parameter is being edited (`roll={core.editing}`); at rest it sets instantly, so swipes between sets do not roll. The owner asked for it on 2026-10-14, which reverses the 2026-10-05 "no rolling" call for this one number only.
+- **Health Connect foundation** (`1ca7619`..`ec9c2b8`): `src/lib/health.ts` (permission list, status mapping, origin counts, tested), `src/data/health/client.ts` (the only import of `react-native-health-connect`), a HEALTH row in Settings (connect, status, manage), and `/dev/health`, a probe that lists what Health Connect holds for the last 30 days and which apps wrote it. `app.json` has the plugin and eight `android.permission.health.*` entries; prebuilt manifest checked (permissions, rationale hooks, minSdk 26). No table was added: cloud backup mirrors every column of `body_weights` and `sessions`, so health columns will live in unsynced tables added by the weight-in feature. Spec and plan are in `docs/superpowers/` (uncommitted by rule).
+- **Next, with the owner's go-ahead:** (1) native rebuild of Jymiq Dev (the plugin links native code); (2) turn on "Sync your favorite health apps" in the Google Health app (Connections > Partner apps) or nothing reaches Health Connect; (3) Settings > Health Connect > grant; (4) open `jymiqdev:///dev/health` and record which record types the Fitbit Air delivers (sleep, HRV and heart rate are unconfirmed). That result decides which features are worth building. Then the weight-in plan.
+
 **START HERE (2026-10-11/12, fourth-workout notes).** Newest; where it conflicts with the block below, this wins. `origin/main`
 is `45f9c8c` (the owner pushed); 24 local commits on top (`git log origin/main..HEAD`), `pnpm check` green (678 tests, the same 3 old
 lint warnings). **On the phone:** production `com.zcylla.jymiq` is a release build of `76a9d3b` (HEAD of this batch, includes the
