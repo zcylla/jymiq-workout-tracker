@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 
+import { syncWorkoutsSoon } from '@/data/health/export';
 import { estimate1RM } from '@/lib/e1rm';
 import { newId } from '@/lib/id';
 import { performAgainPlan } from '@/lib/perform-again';
@@ -34,6 +35,65 @@ import {
 } from '../schema';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+function rebuildExerciseRecords(tx: Tx, exerciseId: string): void {
+  const history = tx
+    .select({
+      id: sets.id,
+      sessionId: sessionExercises.sessionId,
+      weightKg: sets.weightKg,
+      reps: sets.reps,
+      rpe: sets.rpe,
+      kind: sets.kind,
+      completedAt: sets.completedAt,
+      e1rmKg: sets.e1rmKg,
+    })
+    .from(sets)
+    .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
+    .where(eq(sessionExercises.exerciseId, exerciseId))
+    .orderBy(
+      asc(sets.completedAt),
+      asc(sessionExercises.position),
+      asc(sets.position),
+      asc(sets.id),
+    )
+    .all();
+  const exerciseSessions = tx
+    .selectDistinct({ id: sessions.id, status: sessions.status, endedAt: sessions.endedAt })
+    .from(sessions)
+    .innerJoin(sessionExercises, eq(sessionExercises.sessionId, sessions.id))
+    .where(eq(sessionExercises.exerciseId, exerciseId))
+    .all();
+  const existing = tx
+    .select()
+    .from(personalRecords)
+    .where(eq(personalRecords.exerciseId, exerciseId))
+    .all();
+  const recordKey = (r: { sessionId: string; setId: string | null; category: string }) =>
+    `${r.sessionId}:${r.setId ?? ''}:${r.category}`;
+  const remaining = new Map(existing.map((r) => [recordKey(r), r]));
+  for (const record of replayExerciseRecords(history, exerciseSessions)) {
+    const key = recordKey(record);
+    const previous = remaining.get(key);
+    remaining.delete(key);
+    if (!previous) {
+      tx.insert(personalRecords)
+        .values({ ...record, id: newId(), exerciseId })
+        .run();
+    } else if (
+      previous.value !== record.value ||
+      previous.previousValue !== record.previousValue ||
+      previous.weightKg !== record.weightKg ||
+      previous.reps !== record.reps ||
+      previous.achievedAt !== record.achievedAt
+    ) {
+      tx.update(personalRecords).set(record).where(eq(personalRecords.id, previous.id)).run();
+    }
+  }
+  for (const record of remaining.values()) {
+    tx.delete(personalRecords).where(eq(personalRecords.id, record.id)).run();
+  }
+}
 
 function exerciseSets(tx: Tx, sessionExerciseId: string) {
   return tx
@@ -385,62 +445,7 @@ export function updateSet(
     if (patch.weightKg === undefined && patch.reps === undefined && patch.kind === undefined)
       return;
 
-    const history = tx
-      .select({
-        id: sets.id,
-        sessionId: sessionExercises.sessionId,
-        weightKg: sets.weightKg,
-        reps: sets.reps,
-        rpe: sets.rpe,
-        kind: sets.kind,
-        completedAt: sets.completedAt,
-        e1rmKg: sets.e1rmKg,
-      })
-      .from(sets)
-      .innerJoin(sessionExercises, eq(sessionExercises.id, sets.sessionExerciseId))
-      .where(eq(sessionExercises.exerciseId, row.exerciseId))
-      .orderBy(
-        asc(sets.completedAt),
-        asc(sessionExercises.position),
-        asc(sets.position),
-        asc(sets.id),
-      )
-      .all();
-    const exerciseSessions = tx
-      .selectDistinct({ id: sessions.id, status: sessions.status, endedAt: sessions.endedAt })
-      .from(sessions)
-      .innerJoin(sessionExercises, eq(sessionExercises.sessionId, sessions.id))
-      .where(eq(sessionExercises.exerciseId, row.exerciseId))
-      .all();
-    const existing = tx
-      .select()
-      .from(personalRecords)
-      .where(eq(personalRecords.exerciseId, row.exerciseId))
-      .all();
-    const recordKey = (r: { sessionId: string; setId: string | null; category: string }) =>
-      `${r.sessionId}:${r.setId ?? ''}:${r.category}`;
-    const remaining = new Map(existing.map((r) => [recordKey(r), r]));
-    for (const record of replayExerciseRecords(history, exerciseSessions)) {
-      const key = recordKey(record);
-      const previous = remaining.get(key);
-      remaining.delete(key);
-      if (!previous) {
-        tx.insert(personalRecords)
-          .values({ ...record, id: newId(), exerciseId: row.exerciseId })
-          .run();
-      } else if (
-        previous.value !== record.value ||
-        previous.previousValue !== record.previousValue ||
-        previous.weightKg !== record.weightKg ||
-        previous.reps !== record.reps ||
-        previous.achievedAt !== record.achievedAt
-      ) {
-        tx.update(personalRecords).set(record).where(eq(personalRecords.id, previous.id)).run();
-      }
-    }
-    for (const record of remaining.values()) {
-      tx.delete(personalRecords).where(eq(personalRecords.id, record.id)).run();
-    }
+    rebuildExerciseRecords(tx, row.exerciseId);
   });
   syncSoon();
 }
@@ -1102,11 +1107,12 @@ export function finishSession(sessionId: string, opts: { note?: string | null } 
       .run();
   });
 
+  syncWorkoutsSoon();
   return hits;
 }
 
 /**
- * Thrown away, and the only thing in this app that deletes a session.
+ * Thrown away: `discardSession` removes a live session.
  *
  * The counterpart to `abandonSession`, and the difference is the point.
  * *Abandoned* means "this happened and I stopped early" — it stays in history,
@@ -1121,8 +1127,7 @@ export function finishSession(sessionId: string, opts: { note?: string | null } 
  * `personal_records.session_id` cascades too — which is what makes deleting a
  * session retract the records it set, exactly as the append-only design intends.
  *
- * Only a live session can be discarded. History is not deletable from here, and
- * a session that has already ended is one the user has seen a summary of.
+ * Only a live session can be discarded. `deleteSession` removes an ended one.
  */
 export function discardSession(sessionId: string): void {
   db.transaction((tx) => {
@@ -1136,6 +1141,28 @@ export function discardSession(sessionId: string): void {
     tx.delete(sessions).where(eq(sessions.id, sessionId)).run();
   });
   syncSoon();
+}
+
+export function deleteSession(sessionId: string): void {
+  db.transaction((tx) => {
+    const [session] = tx
+      .select({ status: sessions.status })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .limit(1)
+      .all();
+    if (!session || session.status === 'in_progress') return;
+    const exerciseIds = tx
+      .selectDistinct({ id: sessionExercises.exerciseId })
+      .from(sessionExercises)
+      .where(eq(sessionExercises.sessionId, sessionId))
+      .all()
+      .map((r) => r.id);
+    tx.delete(sessions).where(eq(sessions.id, sessionId)).run();
+    for (const id of exerciseIds) rebuildExerciseRecords(tx, id);
+  });
+  syncSoon();
+  syncWorkoutsSoon();
 }
 
 /**
