@@ -14,10 +14,12 @@ import {
   Toggle,
 } from '@/components';
 import { ReadinessPill } from '@/components/pill';
+import { useHealthStatus } from '@/data/health/use-health-status';
 import { askNotificationPermission } from '@/data/live-notification';
 import { useRows } from '@/data/live';
 import { latestCheckInQuery } from '@/data/queries/readiness';
 import { setSettings, useSettings } from '@/data/settings';
+import { healthStatusLabel } from '@/lib/health';
 import { resolveKeypadValue } from '@/lib/keypad';
 import { dayStart, readinessStep } from '@/lib/readiness';
 import {
@@ -51,6 +53,7 @@ const SETS_SCALE = makeScale(1, DEFAULT_SETS_MAX, 1, 1, 1);
  */
 export default function SettingsScreen() {
   const settings = useSettings();
+  const health = useHealthStatus();
   const unit = settings.weightUnit.toUpperCase();
   const incrementLabel = (stepKg: number) =>
     `${loadDisplayStep(stepKg, settings.weightUnit)} ${unit}`;
@@ -169,6 +172,18 @@ export default function SettingsScreen() {
                       )
                     : setSettings({ liveNotification: false })
                 }
+              />
+            </RowPlate>
+          </RowPlates>
+        </Section>
+
+        <Section label="HEALTH" plated={false}>
+          <RowPlates tinted>
+            <RowPlate onPress={health.press} disabled={health.status === 'unsupported'}>
+              <ListRow
+                quiet
+                title="Health Connect"
+                value={health.status ? healthStatusLabel(health.status) : '—'}
               />
             </RowPlate>
           </RowPlates>
