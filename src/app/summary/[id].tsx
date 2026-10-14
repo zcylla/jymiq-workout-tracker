@@ -99,6 +99,7 @@ export default function SummaryScreen() {
   const stats = sessionSummaryStats(allSets, session?.durationSec ?? null);
   const weightTiles: Tile[] = [];
   const activityTiles: Tile[] = [];
+  const healthTiles: Tile[] = [];
   const unitLabel = settings.weightUnit.toUpperCase();
   if (stats.heaviestSet != null) {
     weightTiles.push({
@@ -126,7 +127,10 @@ export default function SummaryScreen() {
   }
 
   if (session?.avgHr != null && session?.maxHr != null) {
-    activityTiles.push({ label: 'HEART RATE', value: `${session.avgHr} / ${session.maxHr} BPM` });
+    healthTiles.push(
+      { label: 'AVG HEART RATE', value: `${session.avgHr} BPM` },
+      { label: 'MAX HEART RATE', value: `${session.maxHr} BPM` },
+    );
   }
 
   const setsByExercise = new Map<string, typeof allSets>();
@@ -209,6 +213,12 @@ export default function SummaryScreen() {
             onSave={(change) => applyRoutineChanges(proposed.routineId, [change])}
             onSaveAll={() => applyRoutineChanges(proposed.routineId, proposed.changes)}
           />
+        ) : null}
+
+        {healthTiles.length > 0 ? (
+          <Section label="HEALTH" pad={13}>
+            <StatTiles items={healthTiles} columns={healthTiles.length} surface="raised" />
+          </Section>
         ) : null}
 
         <Section label="LIFTS" plated={false}>
