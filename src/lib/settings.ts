@@ -48,6 +48,8 @@ export interface Settings {
   liveNotification: boolean | null;
   /** Plates the owner has PER SIDE, by denomination, kept per unit. Zero means "I don't have it". */
   plateCounts: PlateCounts;
+  /** When "send workouts to Health Connect" was switched on, in ms; null means off. */
+  healthExportSince: number | null;
 }
 
 /**
@@ -67,6 +69,7 @@ export const DEFAULT_SETTINGS: Settings = {
   keepScreenOn: false,
   liveNotification: null,
   plateCounts: DEFAULT_PLATE_COUNTS,
+  healthExportSince: null,
 };
 
 export const DEFAULT_SETS_MAX = 10;
@@ -127,5 +130,11 @@ export function coerceSettings(raw: unknown): Settings {
     keepScreenOn: o.keepScreenOn === true,
     liveNotification: typeof o.liveNotification === 'boolean' ? o.liveNotification : null,
     plateCounts: coercePlateCounts(o.plateCounts),
+    healthExportSince:
+      typeof o.healthExportSince === 'number' &&
+      Number.isFinite(o.healthExportSince) &&
+      o.healthExportSince > 0
+        ? o.healthExportSince
+        : null,
   };
 }

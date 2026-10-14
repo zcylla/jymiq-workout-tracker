@@ -148,3 +148,14 @@ test('a store from before plate counts reads as the defaults', () => {
   const s = coerceSettings({ weightUnit: 'lb', trackRpe: true });
   assert.deepEqual(s.plateCounts, DEFAULT_PLATE_COUNTS);
 });
+
+test('the health export start defaults to off and survives only as a positive number', () => {
+  assert.equal(DEFAULT_SETTINGS.healthExportSince, null);
+  assert.equal(
+    coerceSettings({ healthExportSince: 1_790_000_000_000 }).healthExportSince,
+    1_790_000_000_000,
+  );
+  for (const bad of [0, -5, NaN, Infinity, '1790000000000', true, null, undefined]) {
+    assert.equal(coerceSettings({ healthExportSince: bad }).healthExportSince, null);
+  }
+});
