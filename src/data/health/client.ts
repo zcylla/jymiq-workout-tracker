@@ -1,19 +1,27 @@
+import Constants from 'expo-constants';
 import { Linking, Platform } from 'react-native';
 import {
+  deleteRecordsByUuids,
+  ExerciseType,
   getGrantedPermissions,
   getSdkStatus,
   initialize,
+  insertRecords,
   openHealthConnectSettings,
   readRecords,
+  RecordingMethod,
   requestPermission,
 } from 'react-native-health-connect';
 
 import {
   countByOrigin,
+  DAY_MS,
+  hasWorkoutPermissions,
   type HealthStatus,
   healthStatus,
   READ_RECORD_TYPES,
   WANTED_PERMISSIONS,
+  type WorkoutRecordInput,
 } from '@/lib/health';
 
 export interface ProbeRow {
@@ -84,4 +92,53 @@ export async function probeHealth(days: number): Promise<ProbeRow[]> {
     }
   }
   return rows;
+}
+
+const OWN_ORIGIN = Constants.expoConfig?.android?.package;
+
+export async function canSyncWorkouts(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  try {
+    if ((await readHealthStatus()) === 'unsupported') return false;
+    return hasWorkoutPermissions(await getGrantedPermissions());
+  } catch {
+    return false;
+  }
+}
+
+export async function listOwnWorkoutIds(fromMs: number): Promise<string[]> {
+  if (Platform.OS !== 'android') return [];
+  if (!OWN_ORIGIN) throw new Error('own package name unavailable');
+  const { records } = await readRecords('ExerciseSession', {
+    timeRangeFilter: {
+      operator: 'between',
+      startTime: new Date(fromMs).toISOString(),
+      endTime: new Date(Date.now() + DAY_MS).toISOString(),
+    },
+    dataOriginFilter: [OWN_ORIGIN],
+  });
+  return records.flatMap((r) => (r.metadata?.clientRecordId ? [r.metadata.clientRecordId] : []));
+}
+
+export async function writeWorkouts(records: WorkoutRecordInput[]): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await insertRecords(
+    records.map((r) => ({
+      recordType: 'ExerciseSession' as const,
+      exerciseType: ExerciseType.STRENGTH_TRAINING,
+      title: r.title,
+      startTime: r.startTime,
+      endTime: r.endTime,
+      metadata: {
+        clientRecordId: r.clientRecordId,
+        clientRecordVersion: 0,
+        recordingMethod: RecordingMethod.RECORDING_METHOD_MANUAL_ENTRY,
+      },
+    })),
+  );
+}
+
+export async function removeWorkouts(clientRecordIds: string[]): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await deleteRecordsByUuids('ExerciseSession', [], clientRecordIds);
 }
