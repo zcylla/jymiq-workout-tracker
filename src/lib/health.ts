@@ -10,6 +10,7 @@ export const READ_RECORD_TYPES = [
   'RestingHeartRate',
   'HeartRateVariabilityRmssd',
   'Steps',
+  'ExerciseSession',
 ] as const;
 
 export const WANTED_PERMISSIONS: HealthPermission[] = [
@@ -57,4 +58,61 @@ export function countByOrigin(
   return [...counts]
     .map(([origin, count]) => ({ origin, count }))
     .sort((a, b) => b.count - a.count || a.origin.localeCompare(b.origin));
+}
+
+export const DAY_MS = 24 * 60 * 60 * 1000;
+export const WORKOUT_WINDOW_MS = 90 * DAY_MS;
+
+export interface ExportableSession {
+  id: string;
+  name: string;
+  status: string;
+  startedAt: number;
+  endedAt: number | null;
+  totalSets: number | null;
+}
+
+export interface WorkoutRecordInput {
+  clientRecordId: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+}
+
+export function hasWorkoutPermissions(granted: HealthPermission[]): boolean {
+  const has = (accessType: 'read' | 'write') =>
+    granted.some((p) => p.accessType === accessType && p.recordType === 'ExerciseSession');
+  return has('read') && has('write');
+}
+
+export function workoutRecord(s: ExportableSession): WorkoutRecordInput | null {
+  if (s.status !== 'completed' || s.endedAt === null || s.endedAt <= s.startedAt) return null;
+  if (!s.totalSets || s.totalSets <= 0) return null;
+  return {
+    clientRecordId: s.id,
+    title: s.name,
+    startTime: new Date(s.startedAt).toISOString(),
+    endTime: new Date(s.endedAt).toISOString(),
+  };
+}
+
+export const workoutWindowStart = (since: number, now: number): number =>
+  Math.max(since, now - WORKOUT_WINDOW_MS);
+
+export function planWorkoutSync(
+  sessions: ExportableSession[],
+  existingIds: string[],
+  since: number,
+  now: number,
+): { write: WorkoutRecordInput[]; remove: string[] } {
+  const start = workoutWindowStart(since, now);
+  const known = new Set(sessions.map((s) => s.id));
+  const have = new Set(existingIds);
+  const write: WorkoutRecordInput[] = [];
+  for (const s of sessions) {
+    if (s.endedAt === null || s.endedAt < start || have.has(s.id)) continue;
+    const record = workoutRecord(s);
+    if (record) write.push(record);
+  }
+  return { write, remove: existingIds.filter((id) => !known.has(id)) };
 }

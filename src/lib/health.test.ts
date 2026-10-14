@@ -3,6 +3,13 @@ import { test } from 'node:test';
 
 import {
   countByOrigin,
+  DAY_MS,
+  hasWorkoutPermissions,
+  planWorkoutSync,
+  WORKOUT_WINDOW_MS,
+  workoutRecord,
+  workoutWindowStart,
+  type ExportableSession,
   healthStatus,
   healthStatusLabel,
   READ_RECORD_TYPES,
@@ -11,9 +18,10 @@ import {
 
 const all = WANTED_PERMISSIONS;
 
-test('wants the six reads and the exercise-session write', () => {
-  assert.equal(READ_RECORD_TYPES.length, 6);
-  assert.equal(all.length, 7);
+test('wants the seven reads and the exercise-session write', () => {
+  assert.equal(READ_RECORD_TYPES.length, 7);
+  assert.equal(all.length, 8);
+  assert.equal(READ_RECORD_TYPES.includes('ExerciseSession'), true);
   assert.deepEqual(
     all.filter((p) => p.accessType === 'write'),
     [{ accessType: 'write', recordType: 'ExerciseSession' }],
@@ -60,4 +68,90 @@ test('countByOrigin groups, sorts by count, and names records with no origin', (
     { origin: 'unknown', count: 1 },
   ]);
   assert.deepEqual(countByOrigin([]), []);
+});
+
+const NOW = Date.parse('2026-10-14T12:00:00Z');
+const session = (over: Partial<ExportableSession> = {}): ExportableSession => ({
+  id: 's1',
+  name: 'Pull 1',
+  status: 'completed',
+  startedAt: NOW - 3_600_000,
+  endedAt: NOW - 600_000,
+  totalSets: 12,
+  ...over,
+});
+
+test('workout access needs both the read and the write on exercise sessions', () => {
+  const read = { accessType: 'read' as const, recordType: 'ExerciseSession' };
+  const write = { accessType: 'write' as const, recordType: 'ExerciseSession' };
+  assert.equal(hasWorkoutPermissions([read, write]), true);
+  assert.equal(hasWorkoutPermissions([read]), false);
+  assert.equal(hasWorkoutPermissions([write]), false);
+  assert.equal(hasWorkoutPermissions([]), false);
+});
+
+test('a completed session becomes a record keyed by its own id', () => {
+  assert.deepEqual(workoutRecord(session()), {
+    clientRecordId: 's1',
+    title: 'Pull 1',
+    startTime: new Date(NOW - 3_600_000).toISOString(),
+    endTime: new Date(NOW - 600_000).toISOString(),
+  });
+});
+
+test('only a finished session with sets and a real duration is exportable', () => {
+  assert.equal(workoutRecord(session({ status: 'in_progress' })), null);
+  assert.equal(workoutRecord(session({ status: 'abandoned' })), null);
+  assert.equal(workoutRecord(session({ endedAt: null })), null);
+  assert.equal(workoutRecord(session({ endedAt: NOW - 3_600_000 })), null);
+  assert.equal(workoutRecord(session({ totalSets: 0 })), null);
+  assert.equal(workoutRecord(session({ totalSets: null })), null);
+});
+
+test('the window starts at the toggle time, but never more than 90 days back', () => {
+  assert.equal(workoutWindowStart(NOW - DAY_MS, NOW), NOW - DAY_MS);
+  assert.equal(workoutWindowStart(NOW - 200 * DAY_MS, NOW), NOW - WORKOUT_WINDOW_MS);
+});
+
+test('a completed session with no record is written', () => {
+  const plan = planWorkoutSync([session()], [], NOW - DAY_MS, NOW);
+  assert.deepEqual(
+    plan.write.map((r) => r.clientRecordId),
+    ['s1'],
+  );
+  assert.deepEqual(plan.remove, []);
+});
+
+test('a session that already has a record is neither rewritten nor removed', () => {
+  const plan = planWorkoutSync([session()], ['s1'], NOW - DAY_MS, NOW);
+  assert.deepEqual(plan, { write: [], remove: [] });
+});
+
+test('a record whose session is gone is removed', () => {
+  const plan = planWorkoutSync([], ['gone'], NOW - DAY_MS, NOW);
+  assert.deepEqual(plan, { write: [], remove: ['gone'] });
+});
+
+test('sessions that ended before the toggle was switched on are never written', () => {
+  const old = session({
+    id: 'old',
+    startedAt: NOW - 3 * DAY_MS,
+    endedAt: NOW - 3 * DAY_MS + 3_000_000,
+  });
+  assert.deepEqual(planWorkoutSync([old], [], NOW - DAY_MS, NOW).write, []);
+});
+
+test('a known session just outside the window protects its record from removal', () => {
+  const edge = session({
+    id: 'edge',
+    startedAt: NOW - DAY_MS - 1000,
+    endedAt: NOW - DAY_MS + 1000,
+  });
+  const plan = planWorkoutSync([edge], ['edge'], NOW - DAY_MS, NOW);
+  assert.deepEqual(plan.remove, []);
+});
+
+test('a session that exists but is not exportable keeps an existing record untouched', () => {
+  const plan = planWorkoutSync([session({ totalSets: 0 })], ['s1'], NOW - DAY_MS, NOW);
+  assert.deepEqual(plan, { write: [], remove: [] });
 });
