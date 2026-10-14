@@ -116,3 +116,49 @@ export function planWorkoutSync(
   }
   return { write, remove: existingIds.filter((id) => !known.has(id)) };
 }
+
+export const HEART_RATE_RETRY_MS = 48 * 60 * 60 * 1000;
+export const HEART_RATE_COVER_MS = 2 * 60 * 1000;
+
+export interface HeartRateSample {
+  time: number;
+  bpm: number;
+}
+
+export interface HeartRateCandidate {
+  id: string;
+  status: string;
+  startedAt: number;
+  endedAt: number | null;
+  avgHr: number | null;
+}
+
+export function heartRateForSession(
+  samples: HeartRateSample[],
+  startMs: number,
+  endMs: number,
+): { avg: number; max: number } | null {
+  const inside = samples.filter((s) => s.time >= startMs && s.time <= endMs);
+  if (inside.length === 0) return null;
+  const latest = inside.reduce((m, s) => Math.max(m, s.time), 0);
+  if (latest < endMs - HEART_RATE_COVER_MS) return null;
+  const sum = inside.reduce((t, s) => t + s.bpm, 0);
+  return { avg: Math.round(sum / inside.length), max: Math.max(...inside.map((s) => s.bpm)) };
+}
+
+export function sessionsNeedingHeartRate(
+  sessions: HeartRateCandidate[],
+  now: number,
+): HeartRateCandidate[] {
+  return sessions.filter(
+    (s) =>
+      s.status === 'completed' &&
+      s.avgHr === null &&
+      s.endedAt !== null &&
+      s.endedAt > s.startedAt &&
+      now - s.endedAt <= HEART_RATE_RETRY_MS,
+  );
+}
+
+export const hasHeartRatePermission = (granted: HealthPermission[]): boolean =>
+  granted.some((p) => p.accessType === 'read' && p.recordType === 'HeartRate');
