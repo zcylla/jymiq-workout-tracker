@@ -1,7 +1,7 @@
 import { setSettings, useSettings } from '@/data/settings';
 
 import { canSyncWorkouts, connectHealth } from './client';
-import { syncWorkoutsSoon } from './export';
+import { syncHealthSoon } from './sync';
 
 export function useWorkoutExport(): { on: boolean; toggle: (next: boolean) => void } {
   const on = useSettings().healthExportSince !== null;
@@ -16,7 +16,7 @@ export function useWorkoutExport(): { on: boolean; toggle: (next: boolean) => vo
       .then((ok) => {
         if (!ok) return;
         setSettings({ healthExportSince: Date.now() });
-        syncWorkoutsSoon();
+        syncHealthSoon();
       });
   };
 

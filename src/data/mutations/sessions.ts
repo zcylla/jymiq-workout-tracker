@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 
-import { syncWorkoutsSoon } from '@/data/health/export';
+import { syncHealthSoon } from '@/data/health/sync';
 import { estimate1RM } from '@/lib/e1rm';
 import { newId } from '@/lib/id';
 import { performAgainPlan } from '@/lib/perform-again';
@@ -1107,7 +1107,7 @@ export function finishSession(sessionId: string, opts: { note?: string | null } 
       .run();
   });
 
-  syncWorkoutsSoon();
+  syncHealthSoon();
   return hits;
 }
 
@@ -1162,7 +1162,7 @@ export function deleteSession(sessionId: string): void {
     for (const id of exerciseIds) rebuildExerciseRecords(tx, id);
   });
   syncSoon();
-  syncWorkoutsSoon();
+  syncHealthSoon();
 }
 
 /**

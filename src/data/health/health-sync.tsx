@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
-import { syncWorkoutsSoon } from './export';
+import { syncHealthSoon } from './sync';
 
 export function HealthSync() {
   useEffect(() => {
-    syncWorkoutsSoon();
+    syncHealthSoon();
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') syncWorkoutsSoon();
+      if (s === 'active') syncHealthSoon();
     });
     return () => sub.remove();
   }, []);

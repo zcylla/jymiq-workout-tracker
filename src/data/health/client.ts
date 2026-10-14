@@ -17,6 +17,8 @@ import {
   countByOrigin,
   DAY_MS,
   hasWorkoutPermissions,
+  hasHeartRatePermission,
+  type HeartRateSample,
   type HealthStatus,
   healthStatus,
   READ_RECORD_TYPES,
@@ -141,4 +143,28 @@ export async function writeWorkouts(records: WorkoutRecordInput[]): Promise<void
 export async function removeWorkouts(clientRecordIds: string[]): Promise<void> {
   if (Platform.OS !== 'android') return;
   await deleteRecordsByUuids('ExerciseSession', [], clientRecordIds);
+}
+
+export async function canReadHeartRate(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  try {
+    if ((await readHealthStatus()) === 'unsupported') return false;
+    return hasHeartRatePermission(await getGrantedPermissions());
+  } catch {
+    return false;
+  }
+}
+
+export async function readHeartRate(startMs: number, endMs: number): Promise<HeartRateSample[]> {
+  if (Platform.OS !== 'android') return [];
+  const { records } = await readRecords('HeartRate', {
+    timeRangeFilter: {
+      operator: 'between',
+      startTime: new Date(startMs).toISOString(),
+      endTime: new Date(endMs).toISOString(),
+    },
+  });
+  return records.flatMap((r) =>
+    r.samples.map((s) => ({ time: Date.parse(s.time), bpm: s.beatsPerMinute })),
+  );
 }
