@@ -6,6 +6,8 @@ import Animated, { type CSSTransitionProperties } from 'react-native-reanimated'
 import { indexOf, valueAt, type Scale } from '@/lib/scale';
 import { color, type Ink, lh, ls, mono, radius, text, wash } from '@/theme';
 
+import { RollingNumber } from './rolling-number';
+
 const A0 = -240;
 const A1 = 60;
 /** Every tick is drawn at this box and scaled to its length and weight, so a
@@ -181,7 +183,9 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
             </Text>
           </View>
         ) : null}
-        <Text
+        <RollingNumber
+          value={core.value}
+          roll={core.editing}
           style={{
             ...mono(600),
             fontSize: big,
@@ -189,9 +193,7 @@ export function LoadRing({ size, scale, value, mark, showNumerals, core }: Props
             letterSpacing: ls(-0.05, big),
             color: color.hi,
           }}
-        >
-          {core.value}
-        </Text>
+        />
         {subline ? (
           <Text
             style={{
