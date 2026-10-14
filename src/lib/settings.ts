@@ -50,6 +50,8 @@ export interface Settings {
   plateCounts: PlateCounts;
   /** When "send workouts to Health Connect" was switched on, in ms; null means off. */
   healthExportSince: number | null;
+  /** Read the Fitbit's heart rate for finished workouts from Health Connect. */
+  healthHeartRate: boolean;
 }
 
 /**
@@ -70,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
   liveNotification: null,
   plateCounts: DEFAULT_PLATE_COUNTS,
   healthExportSince: null,
+  healthHeartRate: false,
 };
 
 export const DEFAULT_SETS_MAX = 10;
@@ -136,5 +139,6 @@ export function coerceSettings(raw: unknown): Settings {
       o.healthExportSince > 0
         ? o.healthExportSince
         : null,
+    healthHeartRate: o.healthHeartRate === true,
   };
 }

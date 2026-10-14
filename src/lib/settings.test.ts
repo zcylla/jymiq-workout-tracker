@@ -159,3 +159,11 @@ test('the health export start defaults to off and survives only as a positive nu
     assert.equal(coerceSettings({ healthExportSince: bad }).healthExportSince, null);
   }
 });
+
+test('reading heart rate from health connect is off unless it was switched on', () => {
+  assert.equal(DEFAULT_SETTINGS.healthHeartRate, false);
+  assert.equal(coerceSettings({ healthHeartRate: true }).healthHeartRate, true);
+  for (const bad of ['yes', 1, null, undefined, {}]) {
+    assert.equal(coerceSettings({ healthHeartRate: bad }).healthHeartRate, false);
+  }
+});
