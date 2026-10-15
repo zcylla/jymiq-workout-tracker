@@ -1,8 +1,9 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { color, hairline, mono, radius, size, text, wash } from '@/theme';
+import { color, mono, size, space, text } from '@/theme';
 
 import { key } from './haptics';
+import { RowPlate, RowPlates, useRowSelected } from './row-plate';
 import { Sheet } from './sheet';
 
 type Props<T extends string | number> = {
@@ -25,45 +26,41 @@ export function OptionSheet<T extends string | number>({
 }: Props<T>) {
   return (
     <Sheet open={open} onClose={onClose}>
-      <View style={{ gap: 8 }}>
+      <View style={{ gap: space.row }}>
         <Text style={[text.label, { marginBottom: 4 }]}>{title.toUpperCase()}</Text>
-        {options.map((option) => {
-          const selected = option.value === value;
-          return (
-            <Pressable
+        <RowPlates>
+          {options.map((option) => (
+            <RowPlate
               key={option.value}
+              selected={option.value === value}
               onPress={() => {
                 key();
                 onPick(option.value);
                 onClose();
               }}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              style={({ pressed }) => ({
-                minHeight: size.hit,
-                justifyContent: 'center',
-                paddingHorizontal: 16,
-                borderRadius: radius.row,
-                borderCurve: 'continuous',
-                backgroundColor: selected ? color.accent : wash.field,
-                borderWidth: selected ? 0 : 1,
-                borderColor: hairline.onPlate,
-                opacity: pressed ? 0.7 : 1,
-              })}
             >
-              <Text
-                style={{
-                  ...mono(selected ? 600 : 500),
-                  fontSize: 15,
-                  color: selected ? color.ink : color.hi,
-                }}
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+              <OptionLabel label={option.label} />
+            </RowPlate>
+          ))}
+        </RowPlates>
       </View>
     </Sheet>
+  );
+}
+
+function OptionLabel({ label }: { label: string }) {
+  const selected = useRowSelected();
+  return (
+    <View style={{ minHeight: size.hit, justifyContent: 'center' }}>
+      <Text
+        style={{
+          ...mono(selected ? 600 : 500),
+          fontSize: 15,
+          color: selected ? color.accent : color.hi,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }

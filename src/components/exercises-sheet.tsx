@@ -80,7 +80,9 @@ function ExerciseRow({
             {exercise.name}
           </Text>
         </View>
-        {meta ? <Text style={text.label}>{meta}</Text> : null}
+        {meta ? (
+          <Text style={[text.label, isCurrent && { color: color.accent }]}>{meta}</Text>
+        ) : null}
         <Chevron />
       </View>
     </RowPlate>

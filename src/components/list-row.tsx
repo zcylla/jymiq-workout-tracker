@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 import { color, size, text } from '@/theme';
 
 import { Chevron, Grip } from './icon';
+import { useRowSelected } from './row-plate';
 
 type Props = {
   title: string;
@@ -73,6 +74,7 @@ export function ListRow({
   chevron = !readOnly,
   dim = false,
 }: Props) {
+  const selected = useRowSelected();
   return (
     <View
       style={[
@@ -106,12 +108,16 @@ export function ListRow({
 
       <View style={{ gap: 3, flexShrink: 1 }}>
         <Text
-          style={[quiet ? text.rowName : text.rowTitle, danger && { color: color.live }]}
+          style={[
+            quiet ? text.rowName : text.rowTitle,
+            danger && { color: color.live },
+            selected && { color: color.accent },
+          ]}
           numberOfLines={1}
         >
           {title}
         </Text>
-        {meta ? <Text style={text.meta}>{meta}</Text> : null}
+        {meta ? <Text style={[text.meta, selected && { color: color.accent }]}>{meta}</Text> : null}
       </View>
 
       <View style={{ flex: 1 }} />
@@ -123,13 +129,23 @@ export function ListRow({
 }
 
 function RowValue({ label, value, dim }: { label?: string; value?: string; dim: boolean }) {
+  const selected = useRowSelected();
   if (!label && !value) return null;
-  if (label && !value) return <Text style={[text.label, { marginRight: VALUE_GAP }]}>{label}</Text>;
+  if (label && !value)
+    return (
+      <Text style={[text.label, { marginRight: VALUE_GAP }, selected && { color: color.accent }]}>
+        {label}
+      </Text>
+    );
 
   return (
     <View style={{ alignItems: 'flex-end', gap: 3, marginRight: VALUE_GAP }}>
-      {label ? <Text style={text.label}>{label}</Text> : null}
-      <Text style={[text.numSm, dim && { color: color.dim }]}>{value}</Text>
+      {label ? (
+        <Text style={[text.label, selected && { color: color.accent }]}>{label}</Text>
+      ) : null}
+      <Text style={[text.numSm, dim && { color: color.dim }, selected && { color: color.accent }]}>
+        {value}
+      </Text>
     </View>
   );
 }

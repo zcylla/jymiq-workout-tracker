@@ -123,17 +123,18 @@ function SetRow({
   disabled?: boolean;
 }) {
   const done = set.completedAt != null;
-  const indexColor = isCurrent
+  const selection = (isCurrent || selected) && !disabled;
+  const indexColor = selection
     ? color.accent
     : done && set.kind !== 'warmup'
       ? color.done
       : color.dim;
-  const valueColor = isCurrent ? color.accent : done ? color.hi : color.mid;
+  const valueColor = selection ? color.accent : done ? color.hi : color.mid;
   const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} × ${set.reps ?? '—'}`;
   return (
     <RowPlate
       tinted
-      selected={isCurrent || selected}
+      selected={selection}
       done={done && !picking}
       disabled={disabled}
       onPress={onPress}
@@ -141,6 +142,7 @@ function SetRow({
       <View
         accessible
         accessibilityRole="button"
+        accessibilityState={{ disabled, selected: selection }}
         accessibilityLabel={`Set ${set.position}, ${typeLabel}, ${values} ${unit}${done ? ', logged' : ''}. ${picking ? 'Link drop to this set' : 'Edit set'}`}
         style={{ flexDirection: 'row', alignItems: 'center', height: ROW_HEIGHT, gap: 9 }}
       >

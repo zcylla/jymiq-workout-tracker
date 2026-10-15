@@ -481,7 +481,7 @@ export type RowIndicator = {
   accentTitle?: boolean;
 };
 
-const rowLookWarm = {
+export const rowSurface = {
   fill: {
     backgroundColor: 'rgba(228,198,140,0.10)',
     borderWidth: 0.5,
@@ -498,44 +498,59 @@ const rowLookWarm = {
     backgroundColor: '#34201b',
     borderColor: 'rgba(223,84,65,0.40)',
   },
+  selected: { backgroundColor: 'rgba(228,198,140,0.26)' },
+  done: { backgroundColor: wash.done },
+} as const;
+
+export const tileSurface = {
+  ...rowSurface.fill,
+  backgroundColor: 'rgba(228,198,140,0.14)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.26)',
+} as const satisfies ViewStyle;
+
+export const chipSurface = {
+  fill: tileSurface,
+  selected: rowSurface.selected,
+  label: color.mid,
+  activeLabel: color.accent,
 } as const;
 
 export const rowLooks = {
   F1: {
-    ...rowLookWarm,
+    ...rowSurface,
     label: 'F baseline',
     note: '10% gold wash · 28% hairline · white rim.',
   },
   F2: {
-    ...rowLookWarm,
+    ...rowSurface,
     label: 'Sheen',
     note: 'F + 6% white sheen fading by 55%.',
     sheen: ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)'],
   },
   F3: {
-    ...rowLookWarm,
+    ...rowSurface,
     label: 'Deep bevel',
     note: 'F + dark bottom edge · inner shadow.',
     fill: {
-      ...rowLookWarm.fill,
+      ...rowSurface.fill,
       borderBottomWidth: 1,
       borderBottomColor: 'rgba(0,0,0,0.65)',
-      boxShadow: `${rowLookWarm.fill.boxShadow}, inset 0 -2px 1px rgba(0,0,0,0.20)`,
+      boxShadow: `${rowSurface.fill.boxShadow}, inset 0 -2px 1px rgba(0,0,0,0.20)`,
     },
   },
   F4: {
-    ...rowLookWarm,
+    ...rowSurface,
     label: 'Neutral warm',
     note: '5.5% gold wash · same hairline + rim.',
-    fill: { ...rowLookWarm.fill, backgroundColor: 'rgba(228,198,140,0.055)' },
+    fill: { ...rowSurface.fill, backgroundColor: 'rgba(228,198,140,0.055)' },
   },
   F5: {
-    ...rowLookWarm,
+    ...rowSurface,
     label: 'Rim glow',
     note: 'F + soft 12% gold outer glow.',
     fill: {
-      ...rowLookWarm.fill,
-      boxShadow: `${rowLookWarm.fill.boxShadow}, 0 2px 8px rgba(228,198,140,0.12)`,
+      ...rowSurface.fill,
+      boxShadow: `${rowSurface.fill.boxShadow}, 0 2px 8px rgba(228,198,140,0.12)`,
     },
   },
 } as const satisfies Record<string, RowLook>;
@@ -565,7 +580,7 @@ export const rowIndicators = {
     label: 'Accent wash',
     note: '26% wash · accent title · no ring.',
     accentTitle: true,
-    overlay: { backgroundColor: 'rgba(228,198,140,0.26)' },
+    overlay: rowSurface.selected,
   },
   S4: {
     label: 'Side bar',
