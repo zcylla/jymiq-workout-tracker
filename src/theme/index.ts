@@ -25,6 +25,8 @@ export {
   litEdge,
   motion,
   radius,
+  rowLooks,
+  type RowLook,
   size,
   space,
   trend,

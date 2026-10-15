@@ -460,6 +460,110 @@ export const wash = {
   scrim: 'rgba(10,9,8,0.62)',
 } as const;
 
+export type RowLook = {
+  label: string;
+  note: string;
+  fill: ViewStyle;
+  material?: readonly ViewStyle[];
+  selected: ViewStyle;
+  disabled: ViewStyle;
+  disabledContentOpacity: number;
+  destructive: ViewStyle;
+};
+
+const rowLookSelected = {
+  backgroundColor: wash.chip,
+  borderWidth: 1.5,
+  borderColor: color.accent,
+} as const;
+
+const rowLookDestructive = {
+  backgroundColor: '#34201b',
+  borderColor: 'rgba(223,84,65,0.40)',
+} as const;
+
+export const rowLooks = {
+  A: {
+    label: 'Solid deck',
+    note: 'Opaque raised fill · strong hairline.',
+    fill: {
+      backgroundColor: '#302b23',
+      borderWidth: 0.5,
+      borderColor: hairline.onPlate,
+      boxShadow: litEdge,
+    },
+    selected: rowLookSelected,
+    disabled: disabledControl.surface,
+    disabledContentOpacity: disabledControl.contentOpacity,
+    destructive: rowLookDestructive,
+  },
+  B: {
+    label: 'Bevel',
+    note: 'Light top rim · dark lower edge.',
+    fill: {
+      backgroundColor: '#2b2721',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.14)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 0 rgba(0,0,0,0.65)',
+    },
+    selected: rowLookSelected,
+    disabled: disabledControl.surface,
+    disabledContentOpacity: disabledControl.contentOpacity,
+    destructive: rowLookDestructive,
+  },
+  C: {
+    label: 'Static glass',
+    note: 'Static backdrop slice · old edge rim.',
+    fill: {
+      ...controlGlass.fill,
+      backgroundColor: 'transparent',
+      boxShadow: `${controlGlass.fill.boxShadow}, 0 4px 10px rgba(0,0,0,0.38)`,
+    },
+    material: [
+      { backgroundColor: backdropMaterial.ground },
+      { backgroundColor: backdropMaterial.defaultTint(20) },
+      controlGlass.fill,
+    ],
+    selected: rowLookSelected,
+    disabled: disabledControl.surface,
+    disabledContentOpacity: disabledControl.contentOpacity,
+    destructive: rowLookDestructive,
+  },
+  D: {
+    label: 'Warm plate',
+    note: 'Gold wash · selected ring + left marker.',
+    fill: {
+      backgroundColor: 'rgba(228,198,140,0.10)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(228,198,140,0.28)',
+      boxShadow: 'inset 0 1px 0 rgba(228,198,140,0.12)',
+    },
+    selected: {
+      backgroundColor: 'rgba(228,198,140,0.26)',
+      borderWidth: 2,
+      borderColor: color.accent,
+      boxShadow: 'inset 4px 0 0 #e4c68c',
+    },
+    disabled: disabledControl.surface,
+    disabledContentOpacity: disabledControl.contentOpacity,
+    destructive: rowLookDestructive,
+  },
+  E: {
+    label: 'Lifted',
+    note: 'Solid surface · two soft drop shadows.',
+    fill: {
+      backgroundColor: '#2a2722',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.12)',
+      boxShadow: '0 2px 3px rgba(0,0,0,0.55), 0 6px 12px rgba(0,0,0,0.42)',
+    },
+    selected: rowLookSelected,
+    disabled: disabledControl.surface,
+    disabledContentOpacity: disabledControl.contentOpacity,
+    destructive: rowLookDestructive,
+  },
+} as const satisfies Record<string, RowLook>;
+
 /**
  * The two marks of the day-state grammar (Lab 49 D1) that are not a fill: the
  * dashed outline of a planned day and the hatching of a missed one. Drawn in
