@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { color, controlEdgeDense, motion, radius, size, space, text } from '@/theme';
+import { color, modalSurface, motion, radius, size, space, text, wash } from '@/theme';
 
 export type DropdownAnchor = { x: number; y: number; width: number; height: number };
 export type DropdownItem = { label: string; onPress: () => void; tone?: 'destructive' };
@@ -122,7 +122,7 @@ function DropdownBody({
         accessibilityRole="button"
         accessibilityLabel="Close menu"
         onPress={onClose}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, { backgroundColor: wash.scrim }]}
       />
       <Animated.View
         accessibilityViewIsModal
@@ -136,13 +136,14 @@ function DropdownBody({
             borderRadius: radius.plate,
             borderCurve: 'continuous',
             transformOrigin: 'top right',
-            ...controlEdgeDense,
-            backgroundColor: color.raised,
+            ...modalSurface.fill,
           },
           panelStyle,
         ]}
       >
-        <View style={{ borderRadius: radius.plate, overflow: 'hidden', paddingVertical: 4 }}>
+        <View
+          style={{ borderRadius: radius.plate, overflow: 'hidden', paddingVertical: space.row }}
+        >
           {items.map((item) => (
             <Pressable
               key={item.label}

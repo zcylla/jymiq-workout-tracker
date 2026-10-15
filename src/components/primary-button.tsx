@@ -1,11 +1,11 @@
 import { Text } from 'react-native';
 
-import { color, radius, size, text } from '@/theme';
+import { color, radius, rowSurface, size, space, text, tileSurface } from '@/theme';
 import { disabledControl } from '@/theme/tokens';
 
 import { AnimatedPressable, usePressFeel } from './press';
 
-/** The one primary action inside a sheet: accent fill, sentence-case label, same as the action bar's primary. */
+/** The primary action inside a sheet. */
 export function PrimaryButton({
   label,
   onPress,
@@ -26,18 +26,23 @@ export function PrimaryButton({
       accessibilityState={{ disabled }}
       style={[
         {
+          ...tileSurface,
+          ...rowSurface.selected,
           minHeight: size.hit,
+          paddingHorizontal: space.within,
+          paddingVertical: space.row,
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: radius.row,
           borderCurve: 'continuous',
-          backgroundColor: color.accent,
         },
         disabled && disabledControl.surface,
         press.style,
       ]}
     >
-      <Text style={[text.action, disabled && { color: disabledControl.label }]}>{label}</Text>
+      <Text style={[text.action, { color: disabled ? disabledControl.label : color.accent }]}>
+        {label}
+      </Text>
     </AnimatedPressable>
   );
 }

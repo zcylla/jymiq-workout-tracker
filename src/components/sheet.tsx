@@ -20,7 +20,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { color, controlEdgeDense, hairline, motion, radius, space, wash } from '@/theme';
+import { modalSurface, motion, radius, space, wash } from '@/theme';
 
 import { useSheetOpenRegistration } from './screen-blur';
 
@@ -182,8 +182,7 @@ function SheetBody({
           {
             width,
             maxHeight: height * 0.8,
-            ...controlEdgeDense,
-            backgroundColor: color.raised,
+            ...modalSurface.fill,
             borderTopLeftRadius: radius.sheet,
             borderTopRightRadius: radius.sheet,
             borderCurve: 'continuous',
@@ -193,10 +192,8 @@ function SheetBody({
         ]}
       >
         <GestureDetector gesture={pan}>
-          <View style={{ alignItems: 'center', paddingTop: 14, paddingBottom: 12 }}>
-            <View
-              style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: hairline.onPlate }}
-            />
+          <View style={modalSurface.handleArea}>
+            <View style={modalSurface.handle} />
           </View>
         </GestureDetector>
         {header ? (

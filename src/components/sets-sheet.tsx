@@ -6,7 +6,7 @@ import { useSettings } from '@/data/settings';
 import { dropParent, isWorkingSet, setTypeLabel } from '@/lib/set-groups';
 import { formatWeight, type Unit } from '@/lib/units';
 import type { SetKind } from '@/lib/volume';
-import { color, hairline, ls, radius, sans, size, space, text, wash } from '@/theme';
+import { color, ls, modalSurface, radius, sans, size, space, text, tileSurface } from '@/theme';
 import { disabledControl } from '@/theme/tokens';
 
 import { Chevron } from './icon';
@@ -248,7 +248,10 @@ export function SetsSheet({
           const content = pickParent ? (
             row
           ) : (
-            <SwipeRow surface={color.raised} onDelete={onDelete ? () => onDelete(s.id) : undefined}>
+            <SwipeRow
+              surface={modalSurface.fill.backgroundColor}
+              onDelete={onDelete ? () => onDelete(s.id) : undefined}
+            >
               {row}
             </SwipeRow>
           );
@@ -289,9 +292,7 @@ export function SetsSheet({
                     justifyContent: 'center',
                     borderRadius: radius.row,
                     borderCurve: 'continuous',
-                    backgroundColor: wash.field,
-                    borderWidth: 1,
-                    borderColor: hairline.onPlate,
+                    ...tileSurface,
                     opacity: pressed ? 0.7 : 1,
                   },
                   add.disabled && disabledControl.surface,

@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { REST_SCALE, snapTo, stepBy } from '@/lib/scale';
 import { formatRest } from '@/lib/time';
-import { color, hairline, ls, mono, radius, sans, size, text, wash } from '@/theme';
+import { color, ls, mono, radius, rowSurface, sans, size, space, text, tileSurface } from '@/theme';
 
 import { Sheet } from './sheet';
 import { Tape } from './tape';
@@ -37,7 +37,7 @@ function Body({ title, value, onConfirm, onClose, onClear }: Omit<Props, 'open'>
   const [sec, setSec] = useState(() => snapTo(REST_SCALE, value ?? 90));
 
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: space.within }}>
       <Text style={text.label}>{title.toUpperCase()}</Text>
 
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -47,7 +47,7 @@ function Body({ title, value, onConfirm, onClose, onClear }: Omit<Props, 'open'>
           >
             {formatRest(sec)}
           </Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: space.row }}>
             <Step
               label={`−${FINE} s`}
               onPress={() => setSec((s) => stepBy(REST_SCALE, s, -FINE))}
@@ -58,7 +58,7 @@ function Body({ title, value, onConfirm, onClose, onClear }: Omit<Props, 'open'>
         <Tape scale={REST_SCALE} value={sec} unit="SEC" onDetent={setSec} />
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', gap: space.row }}>
         <Action label="Cancel" onPress={onClose} />
         {onClear ? (
           <Action
@@ -95,7 +95,7 @@ function Step({ label, onPress }: { label: string; onPress: () => void }) {
         justifyContent: 'center',
         borderRadius: radius.row,
         borderCurve: 'continuous',
-        backgroundColor: wash.field,
+        ...tileSurface,
         opacity: pressed ? 0.7 : 1,
       })}
     >
@@ -123,16 +123,15 @@ function Action({
         justifyContent: 'center',
         borderRadius: radius.row,
         borderCurve: 'continuous',
-        backgroundColor: primary ? color.accent : wash.field,
-        borderWidth: primary ? 0 : 1,
-        borderColor: hairline.onPlate,
+        ...tileSurface,
+        ...(primary ? rowSurface.selected : {}),
         opacity: pressed ? (primary ? 0.85 : 0.7) : 1,
       })}
     >
       <Text
         style={
           primary
-            ? { ...sans(600), fontSize: 15, color: color.ink }
+            ? { ...sans(600), fontSize: 15, color: color.accent }
             : { ...sans(500), fontSize: 14, color: color.hi }
         }
       >

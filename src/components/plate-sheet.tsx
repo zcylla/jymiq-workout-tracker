@@ -13,7 +13,7 @@ import {
   weighPlates,
 } from '@/lib/plates';
 import { formatWeight, type Unit } from '@/lib/units';
-import { color, hairline, radius, size, space, text, wash } from '@/theme';
+import { color, hairline, radius, size, space, text, tileSurface } from '@/theme';
 import { disabledControl } from '@/theme/tokens';
 
 import { tick } from './haptics';
@@ -93,9 +93,7 @@ function StepButton({
             justifyContent: 'center',
             borderRadius: radius.row,
             borderCurve: 'continuous',
-            backgroundColor: wash.field,
-            borderWidth: 1,
-            borderColor: hairline.onPlate,
+            ...tileSurface,
           },
           disabled && disabledControl.surface,
         ]}

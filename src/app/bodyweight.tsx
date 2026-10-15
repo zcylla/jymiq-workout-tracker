@@ -213,6 +213,7 @@ export default function BodyweightScreen() {
 
       <Sheet open={logging} onClose={close}>
         <Field
+          surface="modal"
           label={`WEIGHT · ${unitLabel}`}
           value={typed}
           onChangeText={(next) => {

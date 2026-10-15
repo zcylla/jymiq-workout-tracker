@@ -1,6 +1,6 @@
 import { Pressable, Text, TextInput, View } from 'react-native';
 
-import { color, size, text } from '@/theme';
+import { color, modalSurface, size, text } from '@/theme';
 
 import { Chevron } from './icon';
 
@@ -22,6 +22,7 @@ export function Field({
   prompt,
   autoFocus,
   keyboard = 'text',
+  surface,
 }: {
   label: string;
   value: string;
@@ -35,6 +36,7 @@ export function Field({
   autoFocus?: boolean;
   /** An email must not be title-cased, and wants the keyboard with the @ on it. */
   keyboard?: 'text' | 'email' | 'decimal';
+  surface?: 'modal';
 }) {
   const body = (
     <View style={{ gap: 6, paddingVertical: 7 }}>
@@ -56,7 +58,7 @@ export function Field({
                   ? 'decimal-pad'
                   : 'default'
             }
-            style={[text.field, { flex: 1, padding: 0 }]}
+            style={[text.field, { flex: 1, padding: 0 }, surface === 'modal' && modalSurface.field]}
           />
         ) : (
           <>

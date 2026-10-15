@@ -2,7 +2,18 @@ import { type ReactNode, createContext, useCallback, useContext, useMemo, useSta
 import { Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
-import { chromeShadow, color, containment, motion, radius, size, space, text, wash } from '@/theme';
+import {
+  color,
+  modalSurface,
+  motion,
+  radius,
+  rowSurface,
+  size,
+  space,
+  text,
+  tileSurface,
+  wash,
+} from '@/theme';
 
 /**
  * The app's own confirm, replacing `Alert.alert`.
@@ -54,7 +65,7 @@ const ACTION_COLOR: Record<DialogTone, string> = {
   default: color.hi,
   primary: color.accent,
   destructive: color.live,
-  cancel: color.lo,
+  cancel: color.mid,
 };
 
 const OK: DialogAction[] = [{ label: 'OK', tone: 'primary' }];
@@ -121,14 +132,11 @@ function DialogView({ request, onClose }: { request: DialogRequest; onClose: () 
             transform: [{ translateY: 12 }],
           })}
           style={[
-            containment.groupedPlate,
+            modalSurface.fill,
             {
-              // A dialog is chrome, and §0 gives chrome the heavier drop shadow
-              // that does the separating blur does on iOS. On a near-black
-              // ground the scrim alone barely dims anything, so the shadow is
-              // what actually lifts this off the screen behind it.
-              boxShadow: chromeShadow,
-              padding: 18,
+              borderRadius: radius.plate,
+              borderCurve: 'continuous',
+              padding: space.pad,
               gap: space.within,
               maxWidth: Math.min(width - space.pad * 2, 340),
               alignSelf: 'center',
@@ -142,7 +150,7 @@ function DialogView({ request, onClose }: { request: DialogRequest; onClose: () 
           {/* Stacked and full-width rather than a row of text buttons: every
               touchable in this app is a 44pt plate, and a stack reads the same
               with two actions as with three. */}
-          <View style={{ gap: space.row, paddingTop: 4 }}>
+          <View style={{ gap: space.row, paddingTop: space.row }}>
             {actions.map((action) => (
               <Pressable
                 key={action.label}
@@ -151,14 +159,19 @@ function DialogView({ request, onClose }: { request: DialogRequest; onClose: () 
                   onClose();
                   action.onPress?.();
                 }}
-                style={{
+                style={({ pressed }) => ({
+                  ...tileSurface,
+                  ...(action.tone === 'primary' ? rowSurface.selected : {}),
+                  ...(action.tone === 'destructive' ? rowSurface.destructive : {}),
+                  opacity: pressed ? 0.7 : 1,
+                  paddingHorizontal: space.within,
+                  paddingVertical: space.row,
                   minHeight: size.hit,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: radius.row,
                   borderCurve: 'continuous',
-                  backgroundColor: wash.field,
-                }}
+                })}
               >
                 <Text style={[text.rowName, { color: ACTION_COLOR[action.tone ?? 'default'] }]}>
                   {action.label}

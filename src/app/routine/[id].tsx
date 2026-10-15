@@ -324,7 +324,13 @@ export default function RoutineScreen() {
       />
       <Sheet open={menu === 'rename'} onClose={() => setMenu(null)}>
         <View style={{ gap: space.within }}>
-          <Field label="RENAME ROUTINE" value={name} onChangeText={setName} autoFocus />
+          <Field
+            surface="modal"
+            label="RENAME ROUTINE"
+            value={name}
+            onChangeText={setName}
+            autoFocus
+          />
           <PrimaryButton
             label="Save"
             disabled={!name.trim()}

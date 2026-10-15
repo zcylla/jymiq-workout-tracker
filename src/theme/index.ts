@@ -27,6 +27,7 @@ export {
   type Ink,
   litEdge,
   motion,
+  modalSurface,
   radius,
   rowLooks,
   rowSurface,

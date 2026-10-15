@@ -511,6 +511,33 @@ export const tileSurface = {
   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
 } as const satisfies ViewStyle;
 
+export const modalSurface = {
+  fill: {
+    ...rowSurface.fill,
+    backgroundColor: '#262626',
+    boxShadow: `${tileSurface.boxShadow}, ${controlBarDrop}`,
+  },
+  field: {
+    ...tileSurface,
+    minHeight: size.hit,
+    borderColor: hairline.onPlate,
+    borderRadius: radius.row,
+    borderCurve: 'continuous',
+    padding: space.within,
+  },
+  handleArea: {
+    minHeight: size.hit,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: radius.full,
+    backgroundColor: hairline.onPlate,
+  },
+} as const;
+
 export const chipSurface = {
   fill: tileSurface,
   selected: {

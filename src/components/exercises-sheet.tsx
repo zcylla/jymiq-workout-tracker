@@ -4,7 +4,19 @@ import { Pressable, Text, View } from 'react-native';
 
 import { setSessionCursor } from '@/data/mutations/sessions';
 import { exerciseStillFor } from '@/data/exercise-image';
-import { color, hairline, type Ink, ls, radius, sans, size, space, text, wash } from '@/theme';
+import {
+  color,
+  hairline,
+  type Ink,
+  ls,
+  modalSurface,
+  radius,
+  sans,
+  size,
+  space,
+  text,
+  tileSurface,
+} from '@/theme';
 
 import { Chevron } from './icon';
 import { ReorderList } from './reorder-list';
@@ -127,7 +139,7 @@ export function ExercisesSheet({
             <View style={{ flex: 1 }} />
             <Text style={[text.label, { flexShrink: 0 }]}>{`${done}/${exercises.length}`}</Text>
           </View>
-          <View style={{ height: 1, backgroundColor: hairline.onPlate, marginTop: space.within }} />
+          <View style={{ height: 0.5, backgroundColor: hairline.inset, marginTop: space.within }} />
         </>
       }
     >
@@ -139,7 +151,7 @@ export function ExercisesSheet({
         renderRow={(e, i, handle) => (
           <SwipeRow
             key={e.id}
-            surface={color.raised}
+            surface={modalSurface.fill.backgroundColor}
             onDelete={onDelete ? () => onDelete(e.id) : undefined}
             onSwap={onReplace ? () => onReplace(e.id) : undefined}
           >
@@ -163,9 +175,7 @@ export function ExercisesSheet({
             justifyContent: 'center',
             borderRadius: radius.row,
             borderCurve: 'continuous',
-            backgroundColor: wash.field,
-            borderWidth: 1,
-            borderColor: hairline.onPlate,
+            ...tileSurface,
             opacity: pressed ? 0.7 : 1,
           })}
         >

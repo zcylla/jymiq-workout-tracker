@@ -6,7 +6,7 @@ import { updateSet } from '@/data/mutations/sessions';
 import { resolveKeypadValue } from '@/lib/keypad';
 import { REPS_SCALE, RPE_SCALE, type Scale, targetLoadScale } from '@/lib/scale';
 import { formatWeight, toKg, type Unit } from '@/lib/units';
-import { color, hairline, lh, ls, mono, radius, sans, text, wash } from '@/theme';
+import { color, lh, ls, mono, radius, rowSurface, sans, space, text, tileSurface } from '@/theme';
 import { disabledControl } from '@/theme/tokens';
 
 import { key, pop } from './haptics';
@@ -129,14 +129,14 @@ export function NumberSheet({
 
   return (
     <Sheet open={open} onClose={onClose}>
-      <View style={{ gap: 12 }}>
+      <View style={{ gap: space.within }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={text.label}>{label}</Text>
           <View style={{ flex: 1 }} />
           <Text style={text.label}>{`WAS ${was}`}</Text>
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.row }}>
           <Text
             style={{
               ...mono(600),
@@ -151,9 +151,9 @@ export function NumberSheet({
           <View style={{ width: 2, height: 34, borderRadius: 1, backgroundColor: color.accent }} />
         </View>
 
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: space.row }}>
           {ROWS.map((row, i) => (
-            <View key={i} style={{ flexDirection: 'row', gap: 8 }}>
+            <View key={i} style={{ flexDirection: 'row', gap: space.row }}>
               {row.map((k) => (
                 <Pressable
                   key={k}
@@ -164,7 +164,8 @@ export function NumberSheet({
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: radius.row,
-                    backgroundColor: wash.field,
+                    ...tileSurface,
+                    borderCurve: 'continuous',
                     opacity: pressed ? 0.7 : 1,
                   })}
                 >
@@ -177,7 +178,7 @@ export function NumberSheet({
           ))}
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', gap: space.row }}>
           <Pressable
             onPress={onClose}
             style={({ pressed }) => ({
@@ -187,9 +188,7 @@ export function NumberSheet({
               justifyContent: 'center',
               borderRadius: radius.row,
               borderCurve: 'continuous',
-              backgroundColor: wash.field,
-              borderWidth: 1,
-              borderColor: hairline.onPlate,
+              ...tileSurface,
               opacity: pressed ? 0.7 : 1,
             })}
           >
@@ -209,9 +208,7 @@ export function NumberSheet({
                 justifyContent: 'center',
                 borderRadius: radius.row,
                 borderCurve: 'continuous',
-                backgroundColor: wash.field,
-                borderWidth: 1,
-                borderColor: hairline.onPlate,
+                ...tileSurface,
                 opacity: pressed ? 0.7 : 1,
               })}
             >
@@ -230,9 +227,9 @@ export function NumberSheet({
               justifyContent: 'center',
               borderRadius: radius.row,
               borderCurve: 'continuous',
-              backgroundColor:
-                resolved == null ? disabledControl.surface.backgroundColor : color.accent,
-              boxShadow: resolved == null ? disabledControl.surface.boxShadow : undefined,
+              ...tileSurface,
+              ...rowSurface.selected,
+              ...(resolved == null ? disabledControl.surface : {}),
               opacity: resolved == null ? 1 : pressed ? 0.85 : 1,
             })}
           >
@@ -240,7 +237,7 @@ export function NumberSheet({
               style={{
                 ...sans(600),
                 fontSize: 15,
-                color: resolved == null ? disabledControl.label : color.ink,
+                color: resolved == null ? disabledControl.label : color.accent,
               }}
             >
               {resolved == null ? `Set ${unit}` : `Set ${resolved} ${unit}`}

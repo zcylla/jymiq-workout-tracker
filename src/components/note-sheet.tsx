@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
-import { color, size, space, text } from '@/theme';
+import { color, modalSurface, size, space, text } from '@/theme';
 
 import { Sheet } from './sheet';
 
@@ -40,7 +40,7 @@ export function NoteSheet({ open, onClose, exerciseName, note, onChange }: Props
           multiline
           autoFocus
           textAlignVertical="top"
-          style={[text.field, { minHeight: size.hit * 2, padding: 0 }]}
+          style={[text.field, modalSurface.field, { minHeight: size.hit * 2 }]}
         />
       </View>
     </Sheet>
