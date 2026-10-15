@@ -53,7 +53,7 @@ export function ExerciseLog({ exerciseId }: { exerciseId: string }) {
                 {e.sets.map((s) => (
                   <Text
                     key={s.id}
-                    style={[text.label, s.kind === 'warmup' && { color: color.dim }]}
+                    style={[text.label, s.kind === 'warmup' && { color: color.warmup }]}
                   >
                     {formatLogSet(s, unit)}
                   </Text>

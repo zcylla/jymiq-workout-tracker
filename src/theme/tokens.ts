@@ -16,6 +16,7 @@ export const color = {
 
   accent: '#e4c68c',
   done: '#9fae3a',
+  warmup: '#8fa8c4',
   live: '#df5441',
 
   hi: '#f6f3ec',
@@ -455,6 +456,7 @@ export const wash = {
   chip: 'rgba(228,198,140,0.15)',
   accent: 'rgba(228,198,140,0.13)',
   done: 'rgba(159,174,58,0.16)',
+  warmup: 'rgba(143,168,196,0.16)',
   live: 'rgba(223,84,65,0.14)',
   /** Behind a sheet. Dark enough to kill the plate edges underneath it. */
   scrim: 'rgba(10,9,8,0.62)',
@@ -503,8 +505,9 @@ export const rowSurface = {
     borderColor: color.accent,
   },
   done: {
+    backgroundColor: 'rgba(159,174,58,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(159,174,58,0.55)',
+    borderColor: color.done,
   },
 } as const;
 

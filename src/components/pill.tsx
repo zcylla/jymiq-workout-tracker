@@ -6,6 +6,7 @@ import { color, radius, text, wash } from '@/theme';
 const TONE = {
   accent: { fg: color.accent, bg: wash.accent },
   done: { fg: color.done, bg: wash.done },
+  warmup: { fg: color.warmup, bg: wash.warmup },
   live: { fg: color.live, bg: wash.live },
   dim: { fg: color.dim, bg: wash.field },
   quiet: { fg: color.lo, bg: wash.field },

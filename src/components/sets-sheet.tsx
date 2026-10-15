@@ -126,9 +126,11 @@ function SetRow({
   const selection = (isCurrent || selected) && !disabled;
   const indexColor = selection
     ? color.accent
-    : done && set.kind !== 'warmup'
-      ? color.done
-      : color.dim;
+    : set.kind === 'warmup'
+      ? color.warmup
+      : done
+        ? color.done
+        : color.dim;
   const valueColor = selection ? color.accent : done ? color.hi : color.mid;
   const values = `${set.weightKg == null ? '—' : formatWeight(set.weightKg, unit)} × ${set.reps ?? '—'}`;
   return (
@@ -151,7 +153,10 @@ function SetRow({
           {String(set.position).padStart(2, '0')}
         </Text>
         {set.kind === 'working' ? null : (
-          <Pill label={typeLabel.toUpperCase()} tone={set.kind === 'warmup' ? 'dim' : 'accent'} />
+          <Pill
+            label={typeLabel.toUpperCase()}
+            tone={set.kind === 'warmup' ? 'warmup' : 'accent'}
+          />
         )}
         <View style={{ flex: 1 }} />
         <Text style={[text.numSm, { color: valueColor }]} numberOfLines={1}>

@@ -23,7 +23,7 @@ export function SetCounter({
   onType: () => void;
   compact: boolean;
 }) {
-  const pillTone = kind === 'warmup' ? 'dim' : 'accent';
+  const pillTone = kind === 'warmup' ? 'warmup' : 'accent';
   const plain = kind === 'working';
   const ink = plain ? color.lo : color[pillTone];
   return (
