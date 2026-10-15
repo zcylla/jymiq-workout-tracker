@@ -19,6 +19,7 @@ export const ICON_NAMES = [
   'up',
   'down',
   'keypad',
+  'health',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
@@ -54,6 +55,7 @@ export const ICON_SIZE = {
 
   /** In the live session's type-a-value button, the number pad it opens. */
   keypad: 22,
+  health: 20,
 } as const satisfies Record<IconName, number>;
 
 const NAV_STROKE = (1.6 * 24) / 22;
@@ -84,4 +86,5 @@ export const ICON_STROKE_WIDTH = {
   up: (1.8 * 24) / 10,
   down: (1.8 * 24) / 10,
   keypad: NAV_STROKE,
+  health: 1.8,
 } as const satisfies Record<IconName, number>;

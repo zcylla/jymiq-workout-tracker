@@ -1,6 +1,16 @@
 import { router } from 'expo-router';
 
-import { ListRow, RowPlate, RowPlates, Screen, ScreenHeader, Section, Toggle } from '@/components';
+import {
+  Icon,
+  ListRow,
+  RowPlate,
+  RowPlates,
+  Screen,
+  ScreenHeader,
+  Section,
+  Toggle,
+} from '@/components';
+import { connectors } from '@/components/connectors';
 import { useHealthStatus } from '@/data/health/use-health-status';
 import { useHeartRateToggle } from '@/data/health/use-heart-rate-toggle';
 import { useWorkoutExport } from '@/data/health/use-workout-export';
@@ -13,7 +23,11 @@ export default function HealthConnectScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title="Health Connect" onBack={() => router.back()} />
+      <ScreenHeader
+        title={connectors.healthConnect.title}
+        onBack={() => router.back()}
+        right={<Icon name={connectors.healthConnect.icon} size={24} />}
+      />
       <Section first label="CONNECTION" plated={false}>
         <RowPlates tinted>
           <RowPlate onPress={health.press} disabled={health.status === 'unsupported'}>

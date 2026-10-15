@@ -9,6 +9,7 @@ import Clock01Icon from '@hugeicons/core-free-icons/Clock01Icon';
 import DialpadSquare02Icon from '@hugeicons/core-free-icons/DialpadSquare02Icon';
 import Dumbbell01Icon from '@hugeicons/core-free-icons/Dumbbell01Icon';
 import FileTextIcon from '@hugeicons/core-free-icons/FileTextIcon';
+import HeartPulseIcon from '@hugeicons/core-free-icons/HeartPulseIcon';
 import HistoryIcon from '@hugeicons/core-free-icons/HistoryIcon';
 import MoreVerticalCircle01Icon from '@hugeicons/core-free-icons/MoreVerticalCircle01Icon';
 import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
@@ -41,4 +42,5 @@ export const ICON_MAP = {
   up: ArrowUp02Icon,
   down: ArrowDown02Icon,
   keypad: DialpadSquare02Icon,
+  health: HeartPulseIcon,
 } as const satisfies Record<IconName, IconSvgElement>;

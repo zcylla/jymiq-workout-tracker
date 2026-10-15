@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 
 import {
   DurationSheet,
+  Icon,
   ListRow,
   NumberSheet,
   OptionSheet,
@@ -13,6 +14,7 @@ import {
   Section,
   Toggle,
 } from '@/components';
+import { connectors } from '@/components/connectors';
 import { ReadinessPill } from '@/components/pill';
 import { useHealthStatus } from '@/data/health/use-health-status';
 import { askNotificationPermission } from '@/data/live-notification';
@@ -182,7 +184,8 @@ export default function SettingsScreen() {
             <RowPlate onPress={() => router.push('/health-connect')}>
               <ListRow
                 quiet
-                title="Health Connect"
+                title={connectors.healthConnect.title}
+                thumb={<Icon name={connectors.healthConnect.icon} />}
                 value={health.status ? healthStatusLabel(health.status) : '—'}
               />
             </RowPlate>
