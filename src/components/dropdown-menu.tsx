@@ -10,19 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import {
-  color,
-  controlEdgeDense,
-  controlSheetBlur,
-  motion,
-  radius,
-  size,
-  space,
-  text,
-} from '@/theme';
-
-import { GlassUnder, glassStyle } from './glass';
-import { useFloatingBlurTarget } from './screen-blur';
+import { color, controlEdgeDense, motion, radius, size, space, text } from '@/theme';
 
 export type DropdownAnchor = { x: number; y: number; width: number; height: number };
 export type DropdownItem = { label: string; onPress: () => void; tone?: 'destructive' };
@@ -73,7 +61,6 @@ function DropdownBody({
   bounds: DropdownAnchor | null;
   onBounds: (bounds: DropdownAnchor) => void;
 }) {
-  const target = useFloatingBlurTarget();
   const window = useWindowDimensions();
   const overlayRef = useRef<View>(null);
   const progressSV = useSharedValue(0);
@@ -149,25 +136,12 @@ function DropdownBody({
             borderRadius: radius.plate,
             borderCurve: 'continuous',
             transformOrigin: 'top right',
-            ...(target
-              ? {
-                  ...glassStyle(controlSheetBlur, controlSheetBlur.blur),
-                  borderWidth: controlEdgeDense.borderWidth,
-                  borderColor: 'transparent',
-                }
-              : { ...controlEdgeDense, backgroundColor: color.raised }),
+            ...controlEdgeDense,
+            backgroundColor: color.raised,
           },
           panelStyle,
         ]}
       >
-        {target ? (
-          <GlassUnder
-            recipe={controlSheetBlur}
-            blur={controlSheetBlur.blur}
-            target={target}
-            radius={radius.plate}
-          />
-        ) : null}
         <View style={{ borderRadius: radius.plate, overflow: 'hidden', paddingVertical: 4 }}>
           {items.map((item) => (
             <Pressable

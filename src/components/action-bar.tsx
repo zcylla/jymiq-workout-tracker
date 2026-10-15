@@ -1,13 +1,12 @@
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { color, controlBarBlur, controlEdgeDense, fabShadow, radius, text } from '@/theme';
+import { color, controlEdgeDense, fabShadow, radius, text } from '@/theme';
 import { disabledControl } from '@/theme/tokens';
 
-import { GlassUnder, glassStyle } from './glass';
 import { tick } from './haptics';
 import { AnimatedPressable, usePressFeel } from './press';
-import { useFloatingBlurTarget, useSheetOpen } from './screen-blur';
+import { useSheetOpen } from './screen-blur';
 
 /** The plane the bar occupies, so a `Screen` under it can clear its last row. */
 export function useActionBarHeight() {
@@ -41,7 +40,6 @@ export function ActionBar({
   const secondaryPress = usePressFeel();
   const primaryPress = usePressFeel(0.15, disabled);
   const sheetOpen = useSheetOpen();
-  const target = useFloatingBlurTarget(!sheetOpen);
   return (
     <View
       pointerEvents={sheetOpen ? 'none' : 'auto'}
@@ -66,26 +64,12 @@ export function ActionBar({
               justifyContent: 'center',
               borderRadius: radius.bar,
               borderCurve: 'continuous',
-              ...(target
-                ? {
-                    ...glassStyle(controlBarBlur, controlBarBlur.blur),
-                    borderWidth: controlEdgeDense.borderWidth,
-                    borderColor: 'transparent',
-                  }
-                : controlEdgeDense),
+              ...controlEdgeDense,
+              backgroundColor: color.raised,
             },
             secondaryPress.style,
           ]}
         >
-          {target ? (
-            <GlassUnder
-              fadeIn
-              recipe={controlBarBlur}
-              blur={controlBarBlur.blur}
-              target={target}
-              radius={radius.bar}
-            />
-          ) : null}
           <Text style={[text.pill, { color: color.hi }]}>{secondary}</Text>
         </AnimatedPressable>
       ) : null}

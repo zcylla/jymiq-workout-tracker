@@ -7,8 +7,7 @@ import {
   Skia,
   vec,
 } from '@shopify/react-native-skia';
-import { BlurTargetView } from 'expo-blur';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Text, TextInput, type TextInputProps, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -21,7 +20,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { useGlassTrial } from '@/data/glass-trial';
 import { axisLabel, type Bucket, type Granularity, type Metric } from '@/lib/exercise-progress';
 import {
   chartWindow,
@@ -37,18 +35,7 @@ import {
 } from '@/lib/line-chart';
 import { progressTooltip } from '@/lib/progress-tooltip';
 import type { Unit } from '@/lib/units';
-import {
-  color,
-  controlBarBlur,
-  controlEdgeDense,
-  hairline,
-  radius,
-  space,
-  text,
-  trend as fill,
-} from '@/theme';
-
-import { GlassUnder, glassStyle } from './glass';
+import { color, controlEdgeDense, hairline, radius, space, text, trend as fill } from '@/theme';
 
 const HEIGHT = 96;
 const DOT = 2.5;
@@ -237,9 +224,6 @@ function InteractiveChart({
 }: Props & { inspection: Inspection }) {
   const [width, setWidth] = useState(0);
   const [selected, setSelected] = useState(-1);
-  const chartTargetRef = useRef<View>(null);
-  const trial = useGlassTrial();
-  const blurs = trial.style !== 'off' && trial.scope !== 'off';
   const windowSV = useSharedValue<ChartWindow>(chartWindow(slots, 1, 0));
   const initialSV = useSharedValue<ChartWindow>(chartWindow(slots, 1, 0));
   const focalSV = useSharedValue(0);
@@ -458,15 +442,7 @@ function InteractiveChart({
             onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
             style={{ height: HEIGHT }}
           >
-            {width > 0 ? (
-              blurs ? (
-                <BlurTargetView ref={chartTargetRef} style={{ width, height: HEIGHT }}>
-                  {canvas}
-                </BlurTargetView>
-              ) : (
-                canvas
-              )
-            ) : null}
+            {width > 0 ? canvas : null}
             <Animated.View
               pointerEvents="none"
               style={[
@@ -489,25 +465,12 @@ function InteractiveChart({
                     gap: 4,
                     borderRadius: radius.row,
                     borderCurve: 'continuous',
-                    ...(blurs
-                      ? {
-                          ...glassStyle(controlBarBlur, controlBarBlur.blur),
-                          borderWidth: controlEdgeDense.borderWidth,
-                          borderColor: 'transparent',
-                        }
-                      : controlEdgeDense),
+                    ...controlEdgeDense,
+                    backgroundColor: color.raised,
                   },
                   tooltipStyle,
                 ]}
               >
-                {blurs ? (
-                  <GlassUnder
-                    recipe={controlBarBlur}
-                    blur={controlBarBlur.blur}
-                    target={chartTargetRef}
-                    radius={radius.row}
-                  />
-                ) : null}
                 <Text numberOfLines={1} style={[text.meta, { color: color.hi }]}>
                   {content.heading}
                 </Text>
