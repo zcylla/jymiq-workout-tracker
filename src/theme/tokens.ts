@@ -483,14 +483,13 @@ export type RowIndicator = {
 
 export const rowSurface = {
   fill: {
-    backgroundColor: 'rgba(228,198,140,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 0.5,
-    borderColor: 'rgba(228,198,140,0.28)',
-    boxShadow: 'inset 0 1px 0 rgba(228,198,140,0.12)',
+    borderColor: 'rgba(255,255,255,0.14)',
   },
   rim: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.26)',
+    borderTopColor: 'rgba(255,255,255,0.20)',
   },
   disabled: disabledControl.surface,
   disabledContentOpacity: disabledControl.contentOpacity,
@@ -652,7 +651,7 @@ export const rowLooks = {
       ...rowSurface.fill,
       borderBottomWidth: 1,
       borderBottomColor: 'rgba(0,0,0,0.65)',
-      boxShadow: `${rowSurface.fill.boxShadow}, inset 0 -2px 1px rgba(0,0,0,0.20)`,
+      boxShadow: 'inset 0 -2px 1px rgba(0,0,0,0.20)',
     },
   },
   F4: {
@@ -667,7 +666,7 @@ export const rowLooks = {
     note: 'F + soft 12% gold outer glow.',
     fill: {
       ...rowSurface.fill,
-      boxShadow: `${rowSurface.fill.boxShadow}, 0 2px 8px rgba(228,198,140,0.12)`,
+      boxShadow: '0 2px 8px rgba(228,198,140,0.12)',
     },
   },
 } as const satisfies Record<string, RowLook>;
