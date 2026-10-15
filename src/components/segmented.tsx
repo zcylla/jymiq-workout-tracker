@@ -12,7 +12,7 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
-  surface = 'control',
+  surface = 'inner',
 }: {
   options: readonly { key: T; label: string }[];
   value: T;

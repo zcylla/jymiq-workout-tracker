@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text } from 'react-native';
 
-import { chipSurface, color, text } from '@/theme';
+import { chipSurface, text } from '@/theme';
 
-import { GlassUnder, glassStyle, useControlGlass } from './glass';
 import { pop } from './haptics';
 
-/** A static warm selector; selection uses an accent wash and label. */
+/** A static neutral selector; selection uses an accent wash and label. */
 export function EdgeChip({
   label,
   active,
@@ -15,7 +14,6 @@ export function EdgeChip({
   radius,
   minWidth,
   hitSlop,
-  surface = 'inner',
 }: {
   label: ReactNode;
   active: boolean;
@@ -26,8 +24,6 @@ export function EdgeChip({
   hitSlop?: { top: number; bottom: number };
   surface?: 'inner' | 'control';
 }) {
-  const { recipe, blur, target } = useControlGlass();
-  const inner = surface === 'inner';
   return (
     <Pressable
       hitSlop={hitSlop}
@@ -47,19 +43,12 @@ export function EdgeChip({
           borderRadius: radius,
           borderCurve: 'continuous',
         },
-        inner ? chipSurface.fill : recipe ? glassStyle(recipe, blur) : null,
-        active && (inner ? chipSurface.selected : { boxShadow: `0 0 0 1.5px ${color.accent}` }),
+        active ? chipSurface.selected : chipSurface.fill,
       ]}
     >
-      {!inner && recipe ? (
-        <GlassUnder recipe={recipe} blur={blur} target={target} radius={radius} />
-      ) : null}
       <Text
         numberOfLines={1}
-        style={[
-          text.pill,
-          { color: active ? chipSurface.activeLabel : inner ? chipSurface.label : color.lo },
-        ]}
+        style={[text.pill, { color: active ? chipSurface.activeLabel : chipSurface.label }]}
       >
         {label}
       </Text>

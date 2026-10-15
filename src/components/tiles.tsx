@@ -41,7 +41,7 @@ export function StatTiles({
 }: {
   items: Tile[];
   columns?: number;
-  /** Legacy hints; every inner tile now uses the same static warm surface. */
+  /** Legacy hints; every inner tile uses the same static neutral surface. */
   surface?: 'panel' | 'raised';
   glass?: boolean;
 }) {

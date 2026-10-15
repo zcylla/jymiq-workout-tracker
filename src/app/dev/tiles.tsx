@@ -242,7 +242,7 @@ function ChipRow<T extends string>({
     <View style={styles.chipRow}>
       {options.map((option) => {
         const active = option.key === value;
-        if (choice === 'C0' && (active || look === tileLooks.T0)) {
+        if (choice === 'C0') {
           return (
             <EdgeChip
               key={option.key}

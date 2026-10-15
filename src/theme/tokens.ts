@@ -503,14 +503,19 @@ export const rowSurface = {
 } as const;
 
 export const tileSurface = {
-  ...rowSurface.fill,
-  backgroundColor: 'rgba(228,198,140,0.14)',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.26)',
+  backgroundColor: 'rgba(255,255,255,0.08)',
+  borderWidth: 0.5,
+  borderColor: 'rgba(255,255,255,0.14)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
 } as const satisfies ViewStyle;
 
 export const chipSurface = {
   fill: tileSurface,
-  selected: rowSurface.selected,
+  selected: {
+    backgroundColor: 'rgba(228,198,140,0.12)',
+    borderWidth: 1,
+    borderColor: color.accent,
+  },
   label: color.mid,
   activeLabel: color.accent,
 } as const;
@@ -523,8 +528,8 @@ export type TileLook = {
 
 export const tileLooks = {
   T0: {
-    label: 'Current (shipping)',
-    note: '14% gold fill · 28% gold edge.',
+    label: 'Shipping (now = T1)',
+    note: '8% white lift · 14% white edge · 20% top rim.',
     fill: tileSurface,
   },
   T1: {
@@ -590,9 +595,9 @@ export type ChipLook = {
 
 export const chipLooks = {
   C0: {
-    label: 'Current (S3 accent wash)',
-    note: '26% accent wash · shipping gold edge.',
-    fill: { ...chipSurface.fill, ...chipSurface.selected },
+    label: 'Shipping (now = C3)',
+    note: '12% accent wash · 1pt accent edge + label.',
+    fill: chipSurface.selected,
     activeLabel: chipSurface.activeLabel,
   },
   C1: {
