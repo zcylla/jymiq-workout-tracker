@@ -1,9 +1,8 @@
-import { type ReactNode, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
-import { color, radius, space, text } from '@/theme';
+import { color, radius, space, text, tileSurface } from '@/theme';
 
-import { GlassHeroContext, GlassUnder, glassStyle, useControlGlass, useGlass } from './glass';
 import { Waiting } from './waiting';
 
 export type Tile = {
@@ -39,29 +38,13 @@ function toneOf(tile: Tile): NonNullable<Tile['tone']> {
 export function StatTiles({
   items,
   columns = 2,
-  surface = 'panel',
-  glass = false,
 }: {
   items: Tile[];
   columns?: number;
-  /**
-   * The surface the tiles sit on, not the tiles' own fill — a tile takes the
-   * other colour so it reads as a step. Raised tiles on a raised plate are
-   * invisible, which is kit's reason for inverting it here rather than at the
-   * call site.
-   */
+  /** Legacy hints; every inner tile now uses the same static warm surface. */
   surface?: 'panel' | 'raised';
-  /** Each tile wears the edge control look with blur, like a row. */
   glass?: boolean;
 }) {
-  const fill = surface === 'raised' ? color.panel : color.raised;
-  const inHero = useContext(GlassHeroContext);
-  const control = useControlGlass();
-  const inner = useGlass('inner');
-  const { recipe, blur, target } = glass ? control : inner;
-  const tileSurface =
-    glass && recipe ? glassStyle(recipe, blur) : inHero && recipe ? recipe.tile : null;
-
   // Chunked rather than wrapped: flexWrap would stretch a short last row.
   const rows: Tile[][] = [];
   for (let i = 0; i < items.length; i += columns) rows.push(items.slice(i, i + columns));
@@ -79,16 +62,12 @@ export function StatTiles({
                   gap: 5,
                   paddingVertical: 11,
                   paddingHorizontal: 12,
-                  backgroundColor: fill,
                   borderRadius: radius.tile,
                   borderCurve: 'continuous',
                 },
                 tileSurface,
               ]}
             >
-              {glass && recipe ? (
-                <GlassUnder recipe={recipe} blur={blur} target={target} radius={radius.tile} />
-              ) : null}
               <Text style={text.label}>{tile.label}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <TileValue tile={tile} />

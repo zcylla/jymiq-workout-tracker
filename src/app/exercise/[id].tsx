@@ -230,7 +230,7 @@ export default function ExerciseScreen() {
               right={<TrendFlag trend={trendOf(series.points)} />}
               plated={false}
             >
-              <Segmented options={METRICS} value={metric} onChange={setMetric} />
+              <Segmented options={METRICS} value={metric} onChange={setMetric} surface="inner" />
               <PeriodTabs options={GRANULARITIES} value={gran} onChange={setGran} />
               <LineChart
                 points={series.points}

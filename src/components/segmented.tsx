@@ -12,10 +12,12 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  surface = 'control',
 }: {
   options: readonly { key: T; label: string }[];
   value: T;
   onChange: (key: T) => void;
+  surface?: 'inner' | 'control';
 }) {
   return (
     <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -27,6 +29,7 @@ export function Segmented<T extends string>({
           onPress={() => onChange(o.key)}
           height={size.hit}
           radius={radius.chip}
+          surface={surface}
         />
       ))}
     </View>
