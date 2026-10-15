@@ -18,6 +18,7 @@ export { ExercisesSheet } from './exercises-sheet';
 export { ExerciseStill } from './exercise-still';
 export { KeypadSheet, NumberSheet } from './keypad-sheet';
 export { Field } from './field';
+export { HealthSection } from './health-section';
 export { Chevron, Grip, Icon, type IconName } from './icon';
 export { LineChart } from './line-chart';
 export { ListRow } from './list-row';

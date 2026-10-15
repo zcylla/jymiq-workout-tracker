@@ -7,6 +7,7 @@ import {
   ActionBar,
   Delta,
   ExerciseStill,
+  HealthSection,
   Pill,
   RoutineChangesSection,
   Screen,
@@ -99,7 +100,6 @@ export default function SummaryScreen() {
   const stats = sessionSummaryStats(allSets, session?.durationSec ?? null);
   const weightTiles: Tile[] = [];
   const activityTiles: Tile[] = [];
-  const healthTiles: Tile[] = [];
   const unitLabel = settings.weightUnit.toUpperCase();
   if (stats.heaviestSet != null) {
     weightTiles.push({
@@ -124,13 +124,6 @@ export default function SummaryScreen() {
       label: 'DENSITY',
       value: `${formatTonnage(stats.densityKgPerMinute, settings.weightUnit)}/MIN`,
     });
-  }
-
-  if (session?.avgHr != null && session?.maxHr != null) {
-    healthTiles.push(
-      { label: 'AVG HEART RATE', value: `${session.avgHr} BPM` },
-      { label: 'MAX HEART RATE', value: `${session.maxHr} BPM` },
-    );
   }
 
   const setsByExercise = new Map<string, typeof allSets>();
@@ -215,11 +208,7 @@ export default function SummaryScreen() {
           />
         ) : null}
 
-        {healthTiles.length > 0 ? (
-          <Section label="HEALTH" pad={13}>
-            <StatTiles items={healthTiles} columns={healthTiles.length} surface="raised" />
-          </Section>
-        ) : null}
+        <HealthSection avgHr={session?.avgHr ?? null} maxHr={session?.maxHr ?? null} />
 
         <Section label="LIFTS" plated={false}>
           {lifted.map((ex) => (
