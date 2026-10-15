@@ -516,6 +516,7 @@ function DevLinks() {
             ['/dev/glass', 'Glass lab', 'style, blur, background and scope'],
             ['/dev/control-tint', 'Control tint', 'six flatter controls beside current chrome'],
             ['/dev/rows', 'Row looks', 'zero-blur row variations and selected indicators'],
+            ['/dev/tiles', 'Tile looks', 'inner tiles and chips, less gold'],
             ['/dev/health', 'Health Connect', 'what Health Connect holds, diagnostics'],
             ['/dev/db', 'Database', 'row counts per table'],
           ] as const
