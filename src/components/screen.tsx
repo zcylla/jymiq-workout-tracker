@@ -1,6 +1,6 @@
 import { BlurTargetView } from 'expo-blur';
 import { useIsFocused } from 'expo-router';
-import { type ReactNode, type Ref, useEffect, useRef } from 'react';
+import { createContext, type ReactNode, type Ref, useContext, useEffect, useRef } from 'react';
 import type { ScrollView } from 'react-native';
 import { Platform, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -14,6 +14,8 @@ import { Backdrop } from './backdrop';
 import { BlurTargetContext } from './glass';
 import { ScreenBlurTargetContext, useScreenBlurRegistration } from './screen-blur';
 import { useTabBarScroll } from './tab-bar';
+
+export const TabScreenContext = createContext(false);
 
 /**
  * The screen shell — kit's `.scr`. Ground, the 22pt side margin, and the real
@@ -45,9 +47,10 @@ export function Screen({
   const rootTargetRef = useRef<View>(null);
   const registerBlurTarget = useScreenBlurRegistration();
   const focused = useIsFocused();
+  const tabScreen = useContext(TabScreenContext);
   const trial = useGlassTrial();
   const blurs = screenBlurs(trial);
-  const floatingBlurs = trial.style !== 'off' && trial.scope !== 'off';
+  const floatingBlurs = tabScreen && trial.style !== 'off' && trial.scope !== 'off';
   useEffect(() => {
     if (!focused || !floatingBlurs || !registerBlurTarget) return;
     return registerBlurTarget(rootTargetRef);

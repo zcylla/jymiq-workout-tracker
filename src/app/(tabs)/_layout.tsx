@@ -1,6 +1,7 @@
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
 
 import { StartButton, TabBar, TabBarProvider, TabItem } from '@/components';
+import { TabScreenContext } from '@/components/screen';
 import { useTabBlurMotionListeners } from '@/components/screen-blur';
 import { useStartSession } from '@/data/start';
 
@@ -26,7 +27,9 @@ export default function TabsLayout() {
         style={{ flex: 1 }}
         options={{ backBehavior: 'firstRoute', screenListeners: listeners }}
       >
-        <TabSlot />
+        <TabScreenContext.Provider value={true}>
+          <TabSlot />
+        </TabScreenContext.Provider>
 
         <TabList style={{ display: 'none' }}>
           <TabTrigger name="today" href="/" />
