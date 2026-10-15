@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { Link, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -47,6 +48,7 @@ import { useStartSession } from '@/data/start';
 import { trainedDays } from '@/lib/calendar';
 import { nextKicker } from '@/lib/next';
 import { type ScheduledDay, nextScheduled } from '@/lib/program';
+import { sentryEnvironment } from '@/lib/sentry-env';
 import { dateLabel, sessionDotTone } from '@/lib/time';
 import { formatTonnage } from '@/lib/volume';
 import { type StripDay, sessionsMeter, weekStrip } from '@/lib/week';
@@ -162,7 +164,9 @@ export default function TodayScreen() {
 
       <RecentRail />
 
-      {__DEV__ ? <DevLinks /> : null}
+      {__DEV__ || sentryEnvironment(Constants.expoConfig?.android?.package) === 'development' ? (
+        <DevLinks />
+      ) : null}
     </Screen>
   );
 }
@@ -501,20 +505,24 @@ function DevLinks() {
   return (
     <Section label="DEV" plated={false}>
       <RowPlates>
-        {[
-          ['/dev/kitchen-sink', 'Kitchen sink', 'every primitive, every state'],
-          ['/dev/lab34-a1', 'Lab 34 A1', 'routines, from the primitives'],
-          ['/dev/chart', 'Column chart', 'Lab 34 A4 and Lab 39 Q1'],
-          ['/dev/lab33', 'Lab 33', 'live workout inputs'],
-          ['/dev/fonts', 'Type ramp', "phase 1's gate"],
-          ['/dev/gestures', 'Gestures', "phase 6's gate"],
-          ['/dev/glass', 'Glass lab', 'style, blur, background and scope'],
-          ['/dev/control-tint', 'Control tint', 'six flatter controls beside current chrome'],
-          ['/dev/db', 'Database', 'row counts per table'],
-        ].map(([href, title, meta]) => (
-          <Link key={href} href={href as never} asChild>
+        {(
+          [
+            ['/dev/kitchen-sink', 'Kitchen sink', 'every primitive, every state'],
+            ['/dev/lab34-a1', 'Lab 34 A1', 'routines, from the primitives'],
+            ['/dev/chart', 'Column chart', 'Lab 34 A4 and Lab 39 Q1'],
+            ['/dev/lab33', 'Lab 33', 'live workout inputs'],
+            ['/dev/fonts', 'Type ramp', "phase 1's gate"],
+            ['/dev/gestures', 'Gestures', "phase 6's gate"],
+            ['/dev/glass', 'Glass lab', 'style, blur, background and scope'],
+            ['/dev/control-tint', 'Control tint', 'six flatter controls beside current chrome'],
+            ['/dev/rows', 'Row looks', 'zero-blur row variations and selected indicators'],
+            ['/dev/health', 'Health Connect', 'what Health Connect holds, diagnostics'],
+            ['/dev/db', 'Database', 'row counts per table'],
+          ] as const
+        ).map(([href, title, meta]) => (
+          <Link key={href} href={href} asChild>
             <RowPlate onPress={() => {}}>
-              <ListRow title={title as string} meta={meta as string} />
+              <ListRow title={title} meta={meta} />
             </RowPlate>
           </Link>
         ))}
