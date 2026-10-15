@@ -515,6 +515,118 @@ export const chipSurface = {
   activeLabel: color.accent,
 } as const;
 
+export type TileLook = {
+  label: string;
+  note: string;
+  fill: ViewStyle;
+};
+
+export const tileLooks = {
+  T0: {
+    label: 'Current (shipping)',
+    note: '14% gold fill · 28% gold edge.',
+    fill: tileSurface,
+  },
+  T1: {
+    label: 'Neutral lift',
+    note: '8% white lift · 14% white edge · 20% top rim.',
+    fill: {
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.14)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
+    },
+  },
+  T2: {
+    label: 'Warm grey',
+    note: 'Grey + 3% gold · warm-grey edge · 1pt top rim.',
+    fill: {
+      backgroundColor: '#333331',
+      borderWidth: 0.5,
+      borderColor: 'rgba(190,187,180,0.20)',
+      boxShadow: 'inset 0 1px 0 rgba(220,217,210,0.20)',
+    },
+  },
+  T3: {
+    label: 'Inset',
+    note: '22% black well · dark top · light bottom edge.',
+    fill: {
+      backgroundColor: 'rgba(0,0,0,0.22)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.09)',
+      boxShadow: 'inset 0 1px 0 rgba(0,0,0,0.48), inset 0 -1px 0 rgba(255,255,255,0.22)',
+    },
+  },
+  T4: {
+    label: 'Outline',
+    note: '1.5% white fill · 22% white edge · 24% rim.',
+    fill: {
+      backgroundColor: 'rgba(255,255,255,0.015)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(255,255,255,0.22)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.24)',
+    },
+  },
+  T5: {
+    label: 'Cool slate',
+    note: '13% blue-grey fill · 22% cool edge · 1pt rim.',
+    fill: {
+      backgroundColor: 'rgba(126,151,181,0.13)',
+      borderWidth: 0.5,
+      borderColor: 'rgba(164,188,216,0.22)',
+      boxShadow: 'inset 0 1px 0 rgba(190,210,232,0.22)',
+    },
+  },
+} as const satisfies Record<string, TileLook>;
+
+export type ChipLook = {
+  label: string;
+  note: string;
+  fill: ViewStyle;
+  activeLabel: string;
+  useTileFill?: boolean;
+  bar?: ViewStyle;
+};
+
+export const chipLooks = {
+  C0: {
+    label: 'Current (S3 accent wash)',
+    note: '26% accent wash · shipping gold edge.',
+    fill: { ...chipSurface.fill, ...chipSurface.selected },
+    activeLabel: chipSurface.activeLabel,
+  },
+  C1: {
+    label: 'Accent hairline + accent label (no fill)',
+    note: 'No fill · 1pt accent edge + label.',
+    fill: { backgroundColor: 'transparent', borderWidth: 1, borderColor: color.accent },
+    activeLabel: color.accent,
+  },
+  C2: {
+    label: 'Inverted: light neutral fill with dark label',
+    note: 'Light neutral fill · dark label.',
+    fill: { backgroundColor: '#d5d5d5', borderWidth: 1, borderColor: '#d5d5d5' },
+    activeLabel: color.ink,
+  },
+  C3: {
+    label: 'Soft wash',
+    note: '12% accent wash · 1pt accent edge + label.',
+    fill: {
+      backgroundColor: 'rgba(228,198,140,0.12)',
+      borderWidth: 1,
+      borderColor: color.accent,
+    },
+    activeLabel: color.accent,
+  },
+  C4: {
+    label: 'Neutral lift + accent underline bar',
+    note: 'Tile-matched lift · 3pt accent underline.',
+    fill: {},
+    activeLabel: color.hi,
+    useTileFill: true,
+    bar: { height: 3, backgroundColor: color.accent },
+  },
+} as const satisfies Record<string, ChipLook>;
+
 export const rowLooks = {
   F1: {
     ...rowSurface,

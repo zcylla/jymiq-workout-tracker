@@ -9,6 +9,8 @@ export {
   type GlassRecipe,
   color,
   chipSurface,
+  chipLooks,
+  type ChipLook,
   controlRecipes,
   controlEdgeDense,
   controlBarBlur,
@@ -35,5 +37,7 @@ export {
   space,
   trend,
   tileSurface,
+  tileLooks,
+  type TileLook,
   wash,
 } from './tokens';
