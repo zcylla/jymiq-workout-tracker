@@ -26,6 +26,8 @@ export {
   motion,
   radius,
   rowLooks,
+  rowIndicators,
+  type RowIndicator,
   type RowLook,
   size,
   space,

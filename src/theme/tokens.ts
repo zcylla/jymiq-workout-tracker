@@ -464,25 +464,22 @@ export type RowLook = {
   label: string;
   note: string;
   fill: ViewStyle;
-  material?: readonly ViewStyle[];
-  rim?: ViewStyle;
-  blur?: { intensity: number; tint: 'dark' | 'default' };
-  selected: ViewStyle;
+  rim: ViewStyle;
+  sheen?: readonly [string, string];
   disabled: ViewStyle;
   disabledContentOpacity: number;
   destructive: ViewStyle;
 };
 
-const rowLookSelected = {
-  backgroundColor: wash.chip,
-  borderWidth: 1.5,
-  borderColor: color.accent,
-} as const;
-
-const rowLookDestructive = {
-  backgroundColor: '#34201b',
-  borderColor: 'rgba(223,84,65,0.40)',
-} as const;
+export type RowIndicator = {
+  label: string;
+  note: string;
+  overlay: ViewStyle;
+  rim?: ViewStyle;
+  bar?: ViewStyle;
+  check?: boolean;
+  accentTitle?: boolean;
+};
 
 const rowLookWarm = {
   fill: {
@@ -491,115 +488,102 @@ const rowLookWarm = {
     borderColor: 'rgba(228,198,140,0.28)',
     boxShadow: 'inset 0 1px 0 rgba(228,198,140,0.12)',
   },
-  selected: {
-    backgroundColor: 'rgba(228,198,140,0.26)',
-    borderWidth: 2,
-    borderColor: color.accent,
-    boxShadow: 'inset 4px 0 0 #e4c68c',
+  rim: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.26)',
   },
   disabled: disabledControl.surface,
   disabledContentOpacity: disabledControl.contentOpacity,
-  destructive: rowLookDestructive,
-} as const;
-
-const rowLookRim = {
-  borderTopWidth: 1,
-  borderTopColor: 'rgba(255,255,255,0.26)',
+  destructive: {
+    backgroundColor: '#34201b',
+    borderColor: 'rgba(223,84,65,0.40)',
+  },
 } as const;
 
 export const rowLooks = {
-  A: {
-    label: 'Solid deck',
-    note: 'Opaque raised fill · strong hairline.',
-    fill: {
-      backgroundColor: '#302b23',
-      borderWidth: 0.5,
-      borderColor: hairline.onPlate,
-      boxShadow: litEdge,
-    },
-    selected: rowLookSelected,
-    disabled: disabledControl.surface,
-    disabledContentOpacity: disabledControl.contentOpacity,
-    destructive: rowLookDestructive,
-  },
-  B: {
-    label: 'Bevel',
-    note: 'Light top rim · dark lower edge.',
-    fill: {
-      backgroundColor: '#2b2721',
-      borderWidth: 0.5,
-      borderColor: 'rgba(255,255,255,0.14)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 0 rgba(0,0,0,0.65)',
-    },
-    selected: rowLookSelected,
-    disabled: disabledControl.surface,
-    disabledContentOpacity: disabledControl.contentOpacity,
-    destructive: rowLookDestructive,
-  },
-  C: {
-    label: 'Static glass',
-    note: 'Static backdrop slice · old edge rim.',
-    fill: {
-      ...controlGlass.fill,
-      backgroundColor: 'transparent',
-      boxShadow: `${controlGlass.fill.boxShadow}, 0 4px 10px rgba(0,0,0,0.38)`,
-    },
-    material: [
-      { backgroundColor: backdropMaterial.ground },
-      { backgroundColor: backdropMaterial.defaultTint(20) },
-      controlGlass.fill,
-    ],
-    selected: rowLookSelected,
-    disabled: disabledControl.surface,
-    disabledContentOpacity: disabledControl.contentOpacity,
-    destructive: rowLookDestructive,
-  },
-  D: {
+  F1: {
     ...rowLookWarm,
-    label: 'Warm plate',
-    note: 'Gold wash · selected ring + left marker.',
+    label: 'F baseline',
+    note: '10% gold wash · 28% hairline · white rim.',
   },
-  E: {
-    label: 'Lifted',
-    note: 'Solid surface · two soft drop shadows.',
-    fill: {
-      backgroundColor: '#2a2722',
-      borderWidth: 0.5,
-      borderColor: 'rgba(255,255,255,0.12)',
-      boxShadow: '0 2px 3px rgba(0,0,0,0.55), 0 6px 12px rgba(0,0,0,0.42)',
-    },
-    selected: rowLookSelected,
-    disabled: disabledControl.surface,
-    disabledContentOpacity: disabledControl.contentOpacity,
-    destructive: rowLookDestructive,
-  },
-  F: {
+  F2: {
     ...rowLookWarm,
-    label: 'D + rim',
-    note: 'Recommended · 10% gold wash · 26% white top rim.',
-    rim: rowLookRim,
+    label: 'Sheen',
+    note: 'F + 6% white sheen fading by 55%.',
+    sheen: ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)'],
   },
-  G: {
-    label: 'Real blur edge',
-    note: 'Old edge · 1% white wash · 16% hairline · blur 20.',
-    fill: {
-      ...controlGlass.fill,
-      boxShadow: `${controlGlass.fill.boxShadow}, 0 4px 10px rgba(0,0,0,0.38)`,
-    },
-    blur: { intensity: 20, tint: 'dark' },
-    selected: rowLookSelected,
-    disabled: disabledControl.surface,
-    disabledContentOpacity: disabledControl.contentOpacity,
-    destructive: rowLookDestructive,
-  },
-  H: {
+  F3: {
     ...rowLookWarm,
-    label: 'Real blur warm',
-    note: '10% gold wash · 28% gold hairline · white rim · blur 20.',
-    rim: rowLookRim,
-    blur: { intensity: 20, tint: 'dark' },
+    label: 'Deep bevel',
+    note: 'F + dark bottom edge · inner shadow.',
+    fill: {
+      ...rowLookWarm.fill,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(0,0,0,0.65)',
+      boxShadow: `${rowLookWarm.fill.boxShadow}, inset 0 -2px 1px rgba(0,0,0,0.20)`,
+    },
+  },
+  F4: {
+    ...rowLookWarm,
+    label: 'Neutral warm',
+    note: '5.5% gold wash · same hairline + rim.',
+    fill: { ...rowLookWarm.fill, backgroundColor: 'rgba(228,198,140,0.055)' },
+  },
+  F5: {
+    ...rowLookWarm,
+    label: 'Rim glow',
+    note: 'F + soft 12% gold outer glow.',
+    fill: {
+      ...rowLookWarm.fill,
+      boxShadow: `${rowLookWarm.fill.boxShadow}, 0 2px 8px rgba(228,198,140,0.12)`,
+    },
   },
 } as const satisfies Record<string, RowLook>;
+
+export const rowIndicators = {
+  S1: {
+    label: 'Ring + marker',
+    note: '2pt ring · 4pt marker · 26% wash.',
+    overlay: {
+      backgroundColor: 'rgba(228,198,140,0.26)',
+      borderWidth: 2,
+      borderColor: color.accent,
+      boxShadow: 'inset 4px 0 0 #e4c68c',
+    },
+  },
+  S2: {
+    label: 'Check',
+    note: 'Check · 1pt hairline · 14% wash.',
+    check: true,
+    overlay: {
+      backgroundColor: 'rgba(228,198,140,0.14)',
+      borderWidth: 1,
+      borderColor: color.accent,
+    },
+  },
+  S3: {
+    label: 'Accent wash',
+    note: '26% wash · accent title · no ring.',
+    accentTitle: true,
+    overlay: { backgroundColor: 'rgba(228,198,140,0.26)' },
+  },
+  S4: {
+    label: 'Side bar',
+    note: '4pt full-height bar · 14% wash.',
+    overlay: { backgroundColor: 'rgba(228,198,140,0.14)' },
+    bar: { width: 4, backgroundColor: color.accent },
+  },
+  S5: {
+    label: 'Accent rim',
+    note: 'Accent rim · 1pt hairline · gold glow.',
+    overlay: {
+      borderWidth: 1,
+      borderColor: color.accent,
+      boxShadow: '0 2px 6px rgba(228,198,140,0.14)',
+    },
+    rim: { borderTopWidth: 1, borderTopColor: color.accent },
+  },
+} as const satisfies Record<string, RowIndicator>;
 
 /**
  * The two marks of the day-state grammar (Lab 49 D1) that are not a fill: the
