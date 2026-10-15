@@ -6,6 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 import {
   ActionBar,
   ExerciseStill,
+  HealthSection,
   Pill,
   Screen,
   ScreenHeader,
@@ -111,9 +112,9 @@ export default function HistoryScreen() {
   const showRpe = allSets.some((s) => wasPerformed(s) && s.rpe != null);
 
   const durationLabel = session ? formatSessionDuration(session.durationSec) : DASH;
+  const hasHealth = session?.avgHr != null && session?.maxHr != null;
   const kickerParts = session ? [session.name.toUpperCase()] : [];
   if (durationLabel !== DASH) kickerParts.push(durationLabel);
-  if (session?.avgHr != null) kickerParts.push(`${session.avgHr} AVG BPM`);
 
   const again = () => {
     if (!running) {
@@ -153,6 +154,8 @@ export default function HistoryScreen() {
           }
         />
 
+        <HealthSection avgHr={session?.avgHr ?? null} maxHr={session?.maxHr ?? null} first />
+
         {anyPerformed || loading ? (
           <>
             {lifted.map((ex, i) => (
@@ -160,7 +163,7 @@ export default function HistoryScreen() {
                 key={ex.id}
                 exercise={ex}
                 sets={performedByExercise.get(ex.id) ?? []}
-                first={i === 0}
+                first={!hasHealth && i === 0}
                 hasRecord={prExerciseIds.has(ex.exerciseId)}
                 showRpe={showRpe}
               />
@@ -169,7 +172,7 @@ export default function HistoryScreen() {
               which is worth saying — but §0 keeps an empty thing dim, and it
               does not give it a heading of its own. */}
             {skipped.length ? (
-              <Section label="SKIPPED" plated={false} first={lifted.length === 0}>
+              <Section label="SKIPPED" plated={false} first={!hasHealth && lifted.length === 0}>
                 <Text style={text.prose}>{skipped.map((ex) => ex.name).join(' · ')}</Text>
               </Section>
             ) : null}
