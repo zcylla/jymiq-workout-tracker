@@ -465,6 +465,8 @@ export type RowLook = {
   note: string;
   fill: ViewStyle;
   material?: readonly ViewStyle[];
+  rim?: ViewStyle;
+  blur?: { intensity: number; tint: 'dark' | 'default' };
   selected: ViewStyle;
   disabled: ViewStyle;
   disabledContentOpacity: number;
@@ -480,6 +482,29 @@ const rowLookSelected = {
 const rowLookDestructive = {
   backgroundColor: '#34201b',
   borderColor: 'rgba(223,84,65,0.40)',
+} as const;
+
+const rowLookWarm = {
+  fill: {
+    backgroundColor: 'rgba(228,198,140,0.10)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(228,198,140,0.28)',
+    boxShadow: 'inset 0 1px 0 rgba(228,198,140,0.12)',
+  },
+  selected: {
+    backgroundColor: 'rgba(228,198,140,0.26)',
+    borderWidth: 2,
+    borderColor: color.accent,
+    boxShadow: 'inset 4px 0 0 #e4c68c',
+  },
+  disabled: disabledControl.surface,
+  disabledContentOpacity: disabledControl.contentOpacity,
+  destructive: rowLookDestructive,
+} as const;
+
+const rowLookRim = {
+  borderTopWidth: 1,
+  borderTopColor: 'rgba(255,255,255,0.26)',
 } as const;
 
 export const rowLooks = {
@@ -530,23 +555,9 @@ export const rowLooks = {
     destructive: rowLookDestructive,
   },
   D: {
+    ...rowLookWarm,
     label: 'Warm plate',
     note: 'Gold wash · selected ring + left marker.',
-    fill: {
-      backgroundColor: 'rgba(228,198,140,0.10)',
-      borderWidth: 0.5,
-      borderColor: 'rgba(228,198,140,0.28)',
-      boxShadow: 'inset 0 1px 0 rgba(228,198,140,0.12)',
-    },
-    selected: {
-      backgroundColor: 'rgba(228,198,140,0.26)',
-      borderWidth: 2,
-      borderColor: color.accent,
-      boxShadow: 'inset 4px 0 0 #e4c68c',
-    },
-    disabled: disabledControl.surface,
-    disabledContentOpacity: disabledControl.contentOpacity,
-    destructive: rowLookDestructive,
   },
   E: {
     label: 'Lifted',
@@ -561,6 +572,32 @@ export const rowLooks = {
     disabled: disabledControl.surface,
     disabledContentOpacity: disabledControl.contentOpacity,
     destructive: rowLookDestructive,
+  },
+  F: {
+    ...rowLookWarm,
+    label: 'D + rim',
+    note: 'Recommended · 10% gold wash · 26% white top rim.',
+    rim: rowLookRim,
+  },
+  G: {
+    label: 'Real blur edge',
+    note: 'Old edge · 1% white wash · 16% hairline · blur 20.',
+    fill: {
+      ...controlGlass.fill,
+      boxShadow: `${controlGlass.fill.boxShadow}, 0 4px 10px rgba(0,0,0,0.38)`,
+    },
+    blur: { intensity: 20, tint: 'dark' },
+    selected: rowLookSelected,
+    disabled: disabledControl.surface,
+    disabledContentOpacity: disabledControl.contentOpacity,
+    destructive: rowLookDestructive,
+  },
+  H: {
+    ...rowLookWarm,
+    label: 'Real blur warm',
+    note: '10% gold wash · 28% gold hairline · white rim · blur 20.',
+    rim: rowLookRim,
+    blur: { intensity: 20, tint: 'dark' },
   },
 } as const satisfies Record<string, RowLook>;
 
