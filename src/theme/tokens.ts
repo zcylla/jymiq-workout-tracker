@@ -497,8 +497,11 @@ export const rowSurface = {
     backgroundColor: '#34201b',
     borderColor: 'rgba(223,84,65,0.40)',
   },
-  selected: { backgroundColor: 'rgba(228,198,140,0.26)' },
-  done: { backgroundColor: wash.done },
+  selected: {
+    backgroundColor: 'rgba(228,198,140,0.12)',
+    borderWidth: 1,
+    borderColor: color.accent,
+  },
 } as const;
 
 export const tileSurface = {

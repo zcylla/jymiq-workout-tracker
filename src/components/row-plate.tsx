@@ -19,7 +19,6 @@ export function RowPlate({
   tone = 'raised',
   disabled = false,
   selected = false,
-  done = false,
 }: {
   children: ReactNode;
   onPress?: () => void;
@@ -27,9 +26,9 @@ export function RowPlate({
   disabled?: boolean;
   /** Retained for compatibility: every row now uses the F surface. */
   tinted?: boolean;
-  /** Accent wash and accent text, without a selection ring or marker. */
+  /** A soft accent wash with an accent hairline and accent text. */
   selected?: boolean;
-  /** Done-green wash. `selected` wins when both are set. */
+  /** Retained for compatibility: a done row stays gray and its content carries the green. */
   done?: boolean;
 }) {
   const press = usePressFeel(0.3, disabled);
@@ -49,11 +48,8 @@ export function RowPlate({
       {!disabled && !destructive ? (
         <>
           <View pointerEvents="none" style={[styles.overlay, rowSurface.rim]} />
-          {selection || done ? (
-            <View
-              pointerEvents="none"
-              style={[styles.overlay, selection ? rowSurface.selected : rowSurface.done]}
-            />
+          {selection ? (
+            <View pointerEvents="none" style={[styles.overlay, rowSurface.selected]} />
           ) : null}
         </>
       ) : null}
