@@ -502,6 +502,10 @@ export const rowSurface = {
     borderWidth: 1,
     borderColor: color.accent,
   },
+  done: {
+    borderWidth: 1,
+    borderColor: 'rgba(159,174,58,0.55)',
+  },
 } as const;
 
 export const tileSurface = {
